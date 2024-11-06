@@ -3,9 +3,9 @@ import { config } from "./config";
 import { goals } from "./goals";
 import { updateGoalUI } from "./ui";
 
-export const newBoard = (seed: number, parkStorage:Configuration) => {
-    const randomBoard = generateBingoBoard(goals(seed, parkStorage), seed);
-    const slottedBoard = assignSlots(randomBoard);
+export const newBoard = (seed: number) => {
+    const randomBoard = generateBingoBoard(goals(seed), seed);
+    const slottedBoard = assignSlotsWithCompletionStatus(randomBoard);
     return slottedBoard;
 }
 /**
@@ -17,10 +17,32 @@ function generateBingoBoard(goals: Goal[], seed?: number): BingoBoard {
 }
 
 /**
- * Assigns slot numbers to each goal in the Bingo board
+ * Assigns slot numbers to each goal in the Bingo board and checks if each goal is completed.
+ * If in server mode, resets all goals to "incomplete" in parkStorage before assigning slots.
  */
-function assignSlots(board: BingoBoard): BingoBoard {
-    return board.map((goal, index) => ({ ...goal, slot: `${index + 1}` }));
+function assignSlotsWithCompletionStatus(board: BingoBoard): BingoBoard {
+    if (network.mode === "server") {
+        // Reset all goals to incomplete in parkStorage if in server mode
+        board.forEach((_, index) => {
+            const slot = `${index + 1}`;
+            const goalKey = `${config.namespace}.goal_${slot}`;
+            setGoalCompletionStatus(goalKey, false); // Reset goal to incomplete
+        });
+    }
+
+    return board.map((goal, index) => {
+        const slot = `${index + 1}`;
+        const goalKey = `${config.namespace}.goal_${slot}`;
+
+        // Check if the goal is marked as completed in parkStorage
+        const isCompleted = context.getParkStorage().get(goalKey, false);
+
+        return {
+            ...goal,
+            slot,
+            status: isCompleted ? "completed" : goal.status
+        };
+    });
 }
 
 /**
@@ -106,22 +128,74 @@ export function subscribeToGoalChecks(board: BingoBoard) {
 }
 
 /**
+ * Wrapper function to set goal completion status in parkStorage using the setGoalCompletion action.
+ * @param {string} goalKey - The key of the goal to update.
+ * @param {boolean} completed - The completion status to set (true for completed, false for incomplete).
+ * @param {string} goalName - Optional name of the goal for logging purposes.
+ */
+function setGoalCompletionStatus(goalKey: string, completed: boolean, goalName?: string) {
+    context.executeAction(
+        "setGoalCompletion",
+        { args: { goalKey, completed } }, // Pass args as an object with explicit keys
+        (result) => {
+            if (result.error) {
+                console.log(`Failed to set completion for ${goalName || goalKey}:`, result.errorMessage);
+            } else {
+                console.log(`Goal ${goalName || goalKey} completion status set to ${completed}.`);
+            }
+        }
+    );
+}
+
+/**
+ * Resets all goals to "incomplete" in parkStorage by invoking the setGoalCompletion action through the wrapper.
+ */
+function resetAllGoalsToIncomplete(board: BingoBoard) {
+    board.forEach((_, index) => {
+        const slot = `${index + 1}`;
+        const goalKey = `${config.namespace}.goal_${slot}`;
+
+        // Reset each goal to incomplete using the wrapper function
+        setGoalCompletionStatus(goalKey, false, `Goal at slot ${slot}`);
+    });
+}
+
+/**
  * Iterates over goals, checks conditions, and updates UI if conditions are met.
+ * Uses a game action to set goal completion in `parkStorage` to ensure synchronization across clients.
  * @param {BingoBoard} board - Array of 25 goals to check.
  * @param {Socket} [socket] - Optional socket connection to send updates.
  */
 function checkGoals(board: BingoBoard, socket?: Socket) {
     console.log("Goal check interval running...");
+
     try {
         board.forEach((goal, index) => {
-            if (goal.status === "incomplete" && goal.checkCondition()) {
-                goal.status = "completed";
-                const selectGoalAction = JSON.stringify({ action: "selectGoal", slot: goal.slot, color: "red" }) + "\n";
-                if (socket) socket.write(selectGoalAction);
-                console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);
+            const goalKey = `${config.namespace}.goal_${goal.slot}`;
 
-                // Update only the specific button in the UI
-                updateGoalUI(index, board);
+            if (network.mode === "client") {
+                // In client mode, read goal status from parkStorage
+                const isCompleted = context.getParkStorage().get(goalKey, false);
+                if (isCompleted && goal.status !== "completed") {
+                    goal.status = "completed";
+                    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
+                    updateGoalUI(index, board);
+                }
+            } else if (network.mode === "server" || network.mode === "none") {
+                // In server or offline mode, perform goal check and update parkStorage via game action
+                if (goal.status === "incomplete" && goal.checkCondition()) {
+                    goal.status = "completed";
+
+                    // Set goal completion status in parkStorage
+                    setGoalCompletionStatus(goalKey, true, goal.name);
+
+                    // Send goal completion action to socket if connected
+                    const selectGoalAction = JSON.stringify({ action: "selectGoal", slot: goal.slot, color: "red" }) + "\n";
+                    if (socket) socket.write(selectGoalAction);
+
+                    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);
+                    updateGoalUI(index, board);
+                }
             }
         });
     } catch (error) {
@@ -129,29 +203,30 @@ function checkGoals(board: BingoBoard, socket?: Socket) {
     }
 }
 
+
+
 export const getSeed = (): number => {
     const parkStorage = context.getParkStorage();
     return parkStorage.get(`${config.namespace}.bingoSeed`, config.defaultSeed); // Default seed if not found
-  };
-  
-  export const setSeed = () => {
+};
+
+export const setSeed = () => {
     const newSeed = Math.floor(Math.random() * 100000);
     context.executeAction('setSeed', { args: { seed: newSeed } }, (result) => {
-      if (result.error) {
-        console.log('Failed to set seed:', result.errorMessage);
-      }
+        if (result.error) {
+            console.log('Failed to set seed:', result.errorMessage);
+        }
     });
     return newSeed;
-  }
-  
-  /**
-   * Generates a seeded random number generator function
-   */
-  export function createSeededRandom(seed: number): () => number {
+}
+
+/**
+ * Generates a seeded random number generator function
+ */
+export function createSeededRandom(seed: number): () => number {
     let s = seed % 2147483647;
     return function () {
-      s = (s * 16807) % 2147483647;
-      return (s - 1) / 2147483646;
+        s = (s * 16807) % 2147483647;
+        return (s - 1) / 2147483646;
     };
-  }
-  
+}

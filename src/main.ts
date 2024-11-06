@@ -48,7 +48,7 @@ export function main(): void {
   registerActions(context, newBoard, openBingoBoard);
   ui.registerShortcut({ id: "bingoSync.openBingoBoardDialog", text: "Open Bingo Board", bindings: ["CTRL+SHIFT+B"], callback: openBingoBoardDialog });
 
- 
+  const seed = getSeed();
   if (network.mode === "server") {
     // Host sets the initial seed if not set
     setSeed();
@@ -62,8 +62,7 @@ export function main(): void {
   } else if (network.mode === "client") {
     const seed = getSeed();
     console.log(`Seed received from host: ${seed}`);
-    const parkStorage = context.getParkStorage();
-    const board = newBoard(seed, parkStorage); // Clients use the stored seed
+    const board = newBoard(seed); // Clients use the stored seed
     try {
       subscribeToGoalChecks(board);
       openBingoBoard(board);
@@ -72,11 +71,9 @@ export function main(): void {
     }
 
   } else if (network.mode === "none") {
-    const seed = getSeed();
     ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
     showConnectDialog();
-    const parkStorage = context.getParkStorage();
-    const board = newBoard(seed, parkStorage); // Offline mode also uses stored seed
+    const board = newBoard(seed); // Offline mode also uses stored seed
     subscribeToGoalChecks(board);
     openBingoBoard(board);
   }

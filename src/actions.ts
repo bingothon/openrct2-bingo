@@ -1,12 +1,12 @@
 import type { BingoBoard } from "./types";
-import {config} from "./config";
+import { config } from "./config";
 import { subscribeToGoalChecks } from "./ui-helpers";
 const NAMESPACE = config.namespace;
 
 /**
  * Action to update the board seed
  */
-export function updateBoardSeedAction(newBoard: (seed: number, parkStorage:Configuration) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
+export function updateBoardSeedAction(newBoard: (seed: number, parkStorage: Configuration) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
   return {
     name: "updateBoardSeed",
     query: (event: GameActionEventArgs<{ seed: number }>): GameActionResult => {
@@ -73,13 +73,35 @@ export function setSeedAction(context: any) {
 }
 
 /**
+ * Action to set goal completion status
+ */
+export function setGoalCompletionAction() {
+  return {
+    name: "setGoalCompletion",
+    query: (event: GameActionEventArgs<{ goalKey: string; completed: boolean }>): GameActionResult => {
+      console.log("Querying goal completion action with event args:", event.args);
+      return { error: 0 };
+    },
+    execute: (event: GameActionEventArgs<{ goalKey: string; completed: boolean }>): GameActionResult => {
+      if (!event.args || event.args.goalKey === undefined || event.args.completed === undefined) {
+        return { error: 1, errorMessage: "Goal key or completion status is missing." };
+      }
+      context.getParkStorage().set(event.args.goalKey, event.args.completed);
+      console.log(`Goal completion status set for ${event.args.goalKey}: ${event.args.completed}`);
+      return { error: 0 };
+    }
+  };
+}
+
+/**
  * Registers all actions
  */
-export function registerActions(context: any, newBoard: (seed: number, parkStorage:Configuration) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
+export function registerActions(context: any, newBoard: (seed: number, parkStorage: Configuration) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
   const actions = [
     updateBoardSeedAction(newBoard, openBingoBoard),
     updateBoardDataAction(openBingoBoard),
-    setSeedAction(context)
+    setSeedAction(context),
+    setGoalCompletionAction()  // Register the custom goal completion action
   ];
 
   actions.forEach(action => {

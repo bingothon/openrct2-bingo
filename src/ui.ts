@@ -2,7 +2,7 @@
 import { config } from "./config";
 import { goals } from "./goals";
 import { BingoBoard, BingoSyncBoardData } from "./types";
-import { addLineBreak, newBoard, updateBoardWithData, updateBoardWithSeed, getSeed, setSeed } from "./ui-helpers";
+import { addLineBreak, getSeed, newBoard, setSeed, updateBoardWithData, updateBoardWithSeed } from "./ui-helpers";
 let userNameInput = "openrct2";
 let roomNameInput = "OpenRCT2 Bingo";
 let roomIdInput = "";
@@ -66,8 +66,7 @@ function convertForBingoSync(board: BingoBoard): { name: string }[] {
 
 export function connectToServer() {
     setSeed();
-    const parkStorage = context.getParkStorage();
-    const board = newBoard(getSeed(), parkStorage);
+    const board = newBoard(getSeed());
     const bingoSyncFormat = convertForBingoSync(board);
     const socket = network.createSocket();
 
@@ -122,9 +121,8 @@ function processMessage(message: string) {
             // // Check if `boardData` exists and has exactly 25 items
             if (response.boardData) {
                 const boardData: BingoSyncBoardData[] = response.boardData || [];
-                const parkStorage = context.getParkStorage();
                 const convertedBoardData: BingoBoard = boardData.map((goal: BingoSyncBoardData) => {
-                    const matchedGoal = goals(config.defaultSeed, parkStorage).filter((g) => g.name === goal.name)[0]; //TODO: this does not work due to it having nothing to do with the seed
+                    const matchedGoal = goals(config.defaultSeed).filter((g) => g.name === goal.name)[0]; //TODO: this does not work due to it having nothing to do with the seed
 
                     // Extract the numeric part of the slot
                     const slotNumber = goal.slot.replace(/^slot/, "");
@@ -209,8 +207,7 @@ export function updateGoalUI(index: number, board: BingoBoard) {
 }
 
 export function openBingoBoardDialog() {
-    const parkStorage = context.getParkStorage();
-    const board = newBoard(getSeed(), parkStorage);
+    const board = newBoard(getSeed());
     openBingoBoard(board);
 }
 
