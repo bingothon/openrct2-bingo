@@ -2,8 +2,7 @@
 import { config } from "./config";
 import { goals } from "./goals";
 import { BingoBoard, BingoSyncBoardData } from "./types";
-import { addLineBreak, newBoard, updateBoardWithData, updateBoardWithSeed } from "./ui-helpers";
-import { getSeed, setSeed } from "./utils";
+import { addLineBreak, newBoard, updateBoardWithData, updateBoardWithSeed, getSeed, setSeed } from "./ui-helpers";
 let userNameInput = "openrct2";
 let roomNameInput = "OpenRCT2 Bingo";
 let roomIdInput = "";
