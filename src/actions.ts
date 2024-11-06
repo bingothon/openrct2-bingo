@@ -6,7 +6,7 @@ const NAMESPACE = config.namespace;
 /**
  * Action to update the board seed
  */
-export function updateBoardSeedAction(newBoard: (seed: number) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
+export function updateBoardSeedAction(newBoard: (seed: number, parkStorage:Configuration) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
   return {
     name: "updateBoardSeed",
     query: (event: GameActionEventArgs<{ seed: number }>): GameActionResult => {
@@ -18,7 +18,8 @@ export function updateBoardSeedAction(newBoard: (seed: number) => BingoBoard, op
         return { error: 1, errorMessage: "Seed is undefined or event args are missing." };
       }
       const seed = event.args.seed;
-      const board = newBoard(seed);
+      const parkStorage = context.getParkStorage();
+      const board = newBoard(seed, parkStorage);
       subscribeToGoalChecks(board);
       openBingoBoard(board);
       console.log(`Bingo board updated with new seed: ${seed}`);
@@ -74,7 +75,7 @@ export function setSeedAction(context: any) {
 /**
  * Registers all actions
  */
-export function registerActions(context: any, newBoard: (seed: number) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
+export function registerActions(context: any, newBoard: (seed: number, parkStorage:Configuration) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
   const actions = [
     updateBoardSeedAction(newBoard, openBingoBoard),
     updateBoardDataAction(openBingoBoard),

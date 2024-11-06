@@ -46,34 +46,45 @@ function refurbishRides() {
 
 export function main(): void {
   registerActions(context, newBoard, openBingoBoard);
+  ui.registerShortcut({ id: "bingoSync.openBingoBoardDialog", text: "Open Bingo Board", bindings: ["CTRL+SHIFT+B"], callback: openBingoBoardDialog });
 
-  const seed = getSeed();
+ 
   if (network.mode === "server") {
     // Host sets the initial seed if not set
     setSeed();
     ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
     showConnectDialog();
-  } else if (network.mode === "client") {
+
     context.subscribe("network.join", () => {
-      const parkStorage = context.getParkStorage();
-      const seed = parkStorage.get(`${config.namespace}.bingoSeed`, config.defaultSeed); // Default seed if not found
-      console.log(`Seed received from host: ${seed}`);
-      const board = newBoard(seed); // Clients use the stored seed
+
+    });
+
+  } else if (network.mode === "client") {
+    const seed = getSeed();
+    console.log(`Seed received from host: ${seed}`);
+    const parkStorage = context.getParkStorage();
+    const board = newBoard(seed, parkStorage); // Clients use the stored seed
+    try {
       subscribeToGoalChecks(board);
       openBingoBoard(board);
-    });
+    } catch (error) {
+      console.log("Error opening Bingo board:", error);
+    }
+
   } else if (network.mode === "none") {
+    const seed = getSeed();
     ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
     showConnectDialog();
-    const board = newBoard(seed); // Offline mode also uses stored seed
+    const parkStorage = context.getParkStorage();
+    const board = newBoard(seed, parkStorage); // Offline mode also uses stored seed
     subscribeToGoalChecks(board);
     openBingoBoard(board);
   }
-  
+
   context.executeAction("gamesetspeed", { speed: 4 });
 
-  
-  
+
+
   context.subscribe("interval.day", () => {
     dayCounter++;
     if (dayCounter >= 180) {
@@ -81,7 +92,7 @@ export function main(): void {
       dayCounter = 0; // Reset the counter after refurbishing
     }
   });
-  
 
-  ui.registerShortcut({ id: "bingoSync.openBingoBoardDialog", text: "Open Bingo Board", bindings: ["CTRL+SHIFT+B"], callback: openBingoBoardDialog });
+
+
 }

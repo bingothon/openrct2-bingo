@@ -1,4 +1,5 @@
 
+import { config } from "./config";
 import type { Goal } from "./types";
 import { createSeededRandom } from "./ui-helpers";
 type ThoughtKey = keyof typeof thoughtTypes;
@@ -64,7 +65,7 @@ const awardTypes = {
     "Best Gentle Rides": "The park with the best gentle rides"
 };
 
-export const goals = (seed: number) => {
+export const goals = (seed: number, parkStorage: Configuration) => {
     const rng = seed !== undefined ? createSeededRandom(seed) : Math.random;
     const thoughtKeys = Object.keys(thoughtTypes) as ThoughtKey[];
     const awardKeys = Object.keys(awardTypes) as AwardKey[];
@@ -176,6 +177,7 @@ export const goals = (seed: number) => {
             colors: "blank",
             status: "incomplete",
             checkCondition: (() => {
+                
                 let startMonth = date.monthsElapsed;
                 let consecutiveCleanMonths = 0;
                 let lastCheckedMonth = startMonth;
@@ -196,8 +198,13 @@ export const goals = (seed: number) => {
                         }
                     }
             
-                    console.log(`Consecutive clean months: ${consecutiveCleanMonths}`);
-            
+                    // Save the consecutive clean months if in server mode, otherwise get it
+                    if(network.mode === "server") {
+                        parkStorage.set(`${config.namespace}.consecutiveCleanMonths`, consecutiveCleanMonths);
+                    }else{
+                        consecutiveCleanMonths = parkStorage.get(`${config.namespace}.consecutiveCleanMonths`, consecutiveCleanMonths);
+                    }
+                    console.log(`clean months: ${consecutiveCleanMonths}`);
                     // Return true if park has been clean for six consecutive months
                     return consecutiveCleanMonths >= 6;
                 };

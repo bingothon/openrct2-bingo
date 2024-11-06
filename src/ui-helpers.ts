@@ -3,8 +3,8 @@ import { config } from "./config";
 import { goals } from "./goals";
 import { updateGoalUI } from "./ui";
 
-export const newBoard = (seed: number) => {
-    const randomBoard = generateBingoBoard(goals(seed), seed);
+export const newBoard = (seed: number, parkStorage:Configuration) => {
+    const randomBoard = generateBingoBoard(goals(seed, parkStorage), seed);
     const slottedBoard = assignSlots(randomBoard);
     return slottedBoard;
 }
@@ -103,8 +103,6 @@ export function subscribeToGoalChecks(board: BingoBoard) {
             tickCounter = 0;
         }
     });
-
-
 }
 
 /**

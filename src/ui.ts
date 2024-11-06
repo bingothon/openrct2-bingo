@@ -66,7 +66,8 @@ function convertForBingoSync(board: BingoBoard): { name: string }[] {
 
 export function connectToServer() {
     setSeed();
-    const board = newBoard(getSeed());
+    const parkStorage = context.getParkStorage();
+    const board = newBoard(getSeed(), parkStorage);
     const bingoSyncFormat = convertForBingoSync(board);
     const socket = network.createSocket();
 
@@ -121,8 +122,9 @@ function processMessage(message: string) {
             // // Check if `boardData` exists and has exactly 25 items
             if (response.boardData) {
                 const boardData: BingoSyncBoardData[] = response.boardData || [];
+                const parkStorage = context.getParkStorage();
                 const convertedBoardData: BingoBoard = boardData.map((goal: BingoSyncBoardData) => {
-                    const matchedGoal = goals(config.defaultSeed).filter((g) => g.name === goal.name)[0]; //TODO: this does not work due to it having nothing to do with the seed
+                    const matchedGoal = goals(config.defaultSeed, parkStorage).filter((g) => g.name === goal.name)[0]; //TODO: this does not work due to it having nothing to do with the seed
 
                     // Extract the numeric part of the slot
                     const slotNumber = goal.slot.replace(/^slot/, "");
@@ -207,7 +209,8 @@ export function updateGoalUI(index: number, board: BingoBoard) {
 }
 
 export function openBingoBoardDialog() {
-    const board = newBoard(getSeed());
+    const parkStorage = context.getParkStorage();
+    const board = newBoard(getSeed(), parkStorage);
     openBingoBoard(board);
 }
 
