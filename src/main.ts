@@ -1,8 +1,7 @@
 
 
-import { getSeed, setSeed } from "./utils";
 import { config } from "./config";
-import { newBoard, subscribeToGoalChecks } from "./ui-helpers";
+import { getSeed, newBoard, setSeed, subscribeToGoalChecks } from "./ui-helpers";
 import { registerActions } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
 let dayCounter = 0; // Counter for days passed
