@@ -1,8 +1,8 @@
-import {createSeededRandom} from "./utils";
+
 import type { Goal } from "./types";
+import { createSeededRandom } from "./ui-helpers";
 type ThoughtKey = keyof typeof thoughtTypes;
 type AwardKey = keyof typeof awardTypes;
-let dayCounter = 0;
 const thoughtTypes = {
     "cant_afford_ride": "Thought: Can't afford this ride",
     "spent_money": "Thought: Spent too much money",
@@ -176,27 +176,33 @@ export const goals = (seed: number) => {
             colors: "blank",
             status: "incomplete",
             checkCondition: (() => {
-                let cleanDaysCounter = 0;
-                let lastCheckedDay = dayCounter;
-
+                let startMonth = date.monthsElapsed;
+                let consecutiveCleanMonths = 0;
+                let lastCheckedMonth = startMonth;
+            
                 return () => {
+                    const currentMonth = date.monthsElapsed;
                     const litterCount = map.getAllEntities('litter').length;
-                    const isNewDay = dayCounter !== lastCheckedDay;
-
-                    if (isNewDay) {
-                        lastCheckedDay = dayCounter;
-
+            
+                    // Only proceed if a new month has started
+                    if (currentMonth !== lastCheckedMonth) {
+                        lastCheckedMonth = currentMonth;
+            
+                        // Check cleanliness for the month
                         if (litterCount <= 10) {
-                            cleanDaysCounter++; // Increment on clean day
+                            consecutiveCleanMonths++; // Increment if park was clean this month
                         } else {
-                            cleanDaysCounter = 0; // Reset if litter exceeds limit
+                            consecutiveCleanMonths = 0; // Reset if cleanliness condition fails
                         }
                     }
-
-                    // Check if the park has been clean for 180 consecutive days
-                    return cleanDaysCounter >= 180;
+            
+                    console.log(`Consecutive clean months: ${consecutiveCleanMonths}`);
+            
+                    // Return true if park has been clean for six consecutive months
+                    return consecutiveCleanMonths >= 6;
                 };
             })()
+            
         },
 
         {
