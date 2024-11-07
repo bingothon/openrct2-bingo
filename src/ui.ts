@@ -1,13 +1,11 @@
 // ui.ts
+
 import { config } from "./config";
-import { goals } from "./goals";
-import { BingoBoard, BingoSyncBoardData } from "./types";
-import { addLineBreak, getSeed, configureBoard, setSeed, updateBoardWithData, updateBoardWithSeed } from "./ui-helpers";
-let userNameInput = "openrct2";
-let roomNameInput = "OpenRCT2 Bingo";
-let roomIdInput = "";
-let roomPasswordInput = "";
-let connected = false;
+import { connectToServer } from "./bingosync-handler";
+import { BingoBoard } from "./types";
+import { addLineBreak, getSeed, configureBoard } from "./ui-helpers";
+
+
 const colorRed = "\x1b[31m";
 const colorBlue = "\x1b[34m";
 const colorReset = "\x1b[0m";
@@ -43,112 +41,20 @@ export function showConnectDialog() {
         height: 200,
         widgets: [
             { type: "label", text: "Username:", x: 10, y: 20, width: 80, height: 20 },
-            { type: "textbox", x: 100, y: 20, width: 90, height: 20, onChange: (text) => (userNameInput = text), },
+            { type: "textbox", x: 100, y: 20, width: 90, height: 20, onChange: (text) => (config.userNameInput = text), },
             { type: "label", text: "Room Name:", x: 10, y: 50, width: 80, height: 20 },
-            { type: "textbox", x: 100, y: 50, width: 90, height: 20, onChange: (text) => (roomNameInput = text), },
+            { type: "textbox", x: 100, y: 50, width: 90, height: 20, onChange: (text) => (config.roomNameInput = text), },
             { type: "label", text: "Password:", x: 10, y: 80, width: 180, height: 10 },
-            { type: "textbox", x: 100, y: 80, width: 90, height: 20, onChange: (text) => (roomPasswordInput = text), },
+            { type: "textbox", x: 100, y: 80, width: 90, height: 20, onChange: (text) => (config.roomPasswordInput = text), },
             { type: "label", text: "(only enter to connect to an \nexisting board)", x: 10, y: 110, width: 180, height: 10 },
             { type: "label", text: "Room ID:", x: 10, y: 140, width: 180, height: 10 },
-            { type: "textbox", x: 100, y: 140, width: 90, height: 20, onChange: (text) => (roomIdInput = text), },
+            { type: "textbox", x: 100, y: 140, width: 90, height: 20, onChange: (text) => (config.roomIdInput = text), },
             { type: "button", name: "connectButton", text: "Connect", x: 50, y: 170, width: 100, height: 20, onClick: connectToServer, },
 
         ],
     });
 }
 
-/**
-* Converts Bingo board goals to BingoSync format
-*/
-function convertForBingoSync(board: BingoBoard): { name: string }[] {
-    return board.map((goal) => ({ name: goal.name }));
-}
-
-export function connectToServer() {
-    setSeed();
-    const board = configureBoard(getSeed());
-    const bingoSyncFormat = convertForBingoSync(board);
-    const socket = network.createSocket();
-
-    try {
-        socket.connect(3000, "localhost", () => {
-            console.log("Connected to server");
-            const creationRequest = JSON.stringify({
-                action: "connectOrCreate",
-                room_name: roomNameInput,
-                username: userNameInput,
-                roomId: roomIdInput,
-                roomPassword: roomPasswordInput,
-                boardData: bingoSyncFormat,
-            }) + "\n";
-            socket.write(creationRequest);
-        });
-    } catch (connectError) {
-        console.log("Error during connection:", connectError);
-    }
-
-    setupSocketDataHandler(socket);
-}
-/**
- * Sets up data handling and goal-check interval on server socket connection
- */
-function setupSocketDataHandler(socket: Socket) {
-    let buffer = "";
-
-    socket.on("data", (data) => {
-        buffer += data.toString();
-        const messages = buffer.split("\n");
-        buffer = messages.pop() || "";
-
-        for (const message of messages) {
-            processMessage(message.trim());
-        }
-    });
-
-    socket.on("error", (error) => console.log("Socket error:", error));
-    socket.on("close", (hadError) => console.log("Connection closed", hadError ? "with error" : "without error"));
-}
-
-/**
-* Processes each incoming message, checks conditions, and sends updates if needed
-*/
-function processMessage(message: string) {
-    try {
-        const response = JSON.parse(message);
-        if (response.roomUrl && !connected) {
-            connected = true;
-
-            // // Check if `boardData` exists and has exactly 25 items
-            if (response.boardData) {
-                const boardData: BingoSyncBoardData[] = response.boardData || [];
-                const convertedBoardData: BingoBoard = boardData.map((goal: BingoSyncBoardData) => {
-                    const matchedGoal = goals(config.defaultSeed).filter((g) => g.name === goal.name)[0]; //TODO: this does not work due to it having nothing to do with the seed
-
-                    // Extract the numeric part of the slot
-                    const slotNumber = goal.slot.replace(/^slot/, "");
-
-                    return {
-                        name: goal.name,
-                        slot: slotNumber, // Assign the numeric part of the slot
-                        colors: goal.colors,
-                        status: matchedGoal ? "incomplete" : "completed",
-                        checkCondition: matchedGoal ? matchedGoal.checkCondition : () => false,
-                    };
-                });
-                updateBoardWithData(convertedBoardData);
-            }
-
-            updateUIOnConnect(response.roomUrl, response.passphrase);
-            const board = configureBoard(getSeed(), true);
-            openBingoBoard(board);
-            updateBoardWithSeed(getSeed());
-
-            return
-        }
-    } catch (error) {
-        console.log("error processing bingosync:", error);
-    }
-}
 /**
  * Displays the Bingo board dialog with a 5x5 grid of buttons representing each Bingo slot.
  * @param {Goal[]} board - Array of 25 goals to display on the board.

@@ -1,6 +1,6 @@
 
 import type { Goal } from "./types";
-import { createSeededRandom } from "./ui-helpers";
+import { createSeededRandom } from "./util";
 type ThoughtKey = keyof typeof thoughtTypes;
 type AwardKey = keyof typeof awardTypes;
 const thoughtTypes = {
