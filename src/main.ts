@@ -1,9 +1,8 @@
 
-import { getSeed, configureBoard, setSeed
- } from "./ui-helpers";
+import { configureBoard } from "./ui-helpers";
 import { registerActions } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
-import { subscribeToGoalChecks } from "./goals";
+import { getSeed, setSeed, subscribeToGoalChecks } from "./bingo";
 let dayCounter = 0; // Counter for days passed
 
 
@@ -46,7 +45,7 @@ function refurbishRides() {
 
 export function main(): void {
   registerActions();
-  
+
 
   const seed = getSeed();
   if (network.mode === "server") {
@@ -77,6 +76,8 @@ export function main(): void {
     subscribeToGoalChecks(board);
     openBingoBoard(board);
   }
+
+  // Game actions
 
   context.executeAction("gamesetspeed", { speed: 4 });
   context.subscribe("interval.day", () => {

@@ -1,7 +1,6 @@
 import type { Goal, BingoBoard } from "./types";
 import { config } from "./config";
-import { checkGoals, goals } from "./goals";
-import { updateGoalUI } from "./ui";
+import { goals, setGoalCompletionStatus } from "./bingo";
 import { createSeededRandom, shuffle } from "./util";
 
 export const configureBoard = (seed: number,  isNewBoard: boolean = false) => {
@@ -101,37 +100,6 @@ export function updateBoardWithSeed(newSeed: number) {
         (result) => {
             if (result.error) {
                 console.log("Failed to update board with new seed:", result.errorMessage);
-            }
-        }
-    );
-}
-
-export function subscribeToGoalChecks(board: BingoBoard) {
-    let tickCounter = 0;
-    context.subscribe("interval.tick", () => {
-        tickCounter++;
-        if (tickCounter % 1000 === 0) {
-            checkGoals(board);
-            tickCounter = 0;
-        }
-    });
-}
-
-/**
- * Wrapper function to set goal completion status in parkStorage using the setGoalCompletion action.
- * @param {string} goalKey - The key of the goal to update.
- * @param {boolean} completed - The completion status to set (true for completed, false for incomplete).
- * @param {string} goalName - Optional name of the goal for logging purposes.
- */
-function setGoalCompletionStatus(goalKey: string, completed: boolean, goalName?: string) {
-    context.executeAction(
-        "setGoalCompletion",
-        { args: { goalKey, completed } }, // Pass args as an object with explicit keys
-        (result) => {
-            if (result.error) {
-                console.log(`Failed to set completion for ${goalName || goalKey}:`, result.errorMessage);
-            } else {
-                console.log(`Goal ${goalName || goalKey} completion status set to ${completed}.`);
             }
         }
     );

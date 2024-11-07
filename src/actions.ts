@@ -2,7 +2,7 @@ import type { BingoBoard } from "./types";
 import { config } from "./config";
 import { configureBoard } from "./ui-helpers";
 import { openBingoBoard } from "./ui";
-import { subscribeToGoalChecks } from "./goals";
+import { subscribeToGoalChecks } from "./bingo";
 const NAMESPACE = config.namespace;
 
 /**

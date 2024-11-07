@@ -1,7 +1,7 @@
-import { goals } from "./goals";
+import { getSeed, goals, setSeed } from "./bingo";
 import { BingoBoard, BingoSyncBoardData } from "./types";
 import { config } from "./config";
-import { configureBoard, getSeed, setSeed, updateBoardWithData, updateBoardWithSeed } from "src/ui-helpers";
+import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui-helpers";
 import { updateUIOnConnect } from "src/ui";
 
 

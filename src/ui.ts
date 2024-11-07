@@ -3,7 +3,8 @@
 import { config } from "./config";
 import { connectToServer } from "./bingosync-handler";
 import { BingoBoard } from "./types";
-import { addLineBreak, getSeed, configureBoard } from "./ui-helpers";
+import { addLineBreak, configureBoard } from "./ui-helpers";
+import { getSeed } from "./bingo";
 
 
 const colorRed = "\x1b[31m";

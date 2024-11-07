@@ -69,6 +69,22 @@ const awardTypes = {
     "Best Gentle Rides": "The park with the best gentle rides"
 };
 
+
+export const getSeed = (): number => {
+    const parkStorage = context.getParkStorage();
+    return parkStorage.get(`${config.namespace}.bingoSeed`, config.defaultSeed); // Default seed if not found
+};
+
+export const setSeed = () => {
+    const newSeed = Math.floor(Math.random() * 100000);
+    context.executeAction('setSeed', { args: { seed: newSeed } }, (result) => {
+        if (result.error) {
+            console.log('Failed to set seed:', result.errorMessage);
+        }
+    });
+    return newSeed;
+}
+
 export function subscribeToGoalChecks(board: BingoBoard) {
     // Dispose of any existing subscription to prevent duplicates
     if (intervalSubscription) {
@@ -129,6 +145,26 @@ export function checkGoals(board: BingoBoard, socket?: Socket) {
     } catch (error) {
         console.log("Error checking goals:", error);
     }
+}
+
+/**
+ * Wrapper function to set goal completion status in parkStorage using the setGoalCompletion action.
+ * @param {string} goalKey - The key of the goal to update.
+ * @param {boolean} completed - The completion status to set (true for completed, false for incomplete).
+ * @param {string} goalName - Optional name of the goal for logging purposes.
+ */
+export function setGoalCompletionStatus(goalKey: string, completed: boolean, goalName?: string) {
+    context.executeAction(
+        "setGoalCompletion",
+        { args: { goalKey, completed } }, // Pass args as an object with explicit keys
+        (result) => {
+            if (result.error) {
+                console.log(`Failed to set completion for ${goalName || goalKey}:`, result.errorMessage);
+            } else {
+                console.log(`Goal ${goalName || goalKey} completion status set to ${completed}.`);
+            }
+        }
+    );
 }
 
 export const goals = (seed: number) => {
@@ -395,8 +431,4 @@ export const goals = (seed: number) => {
         }
     ];
     return goals;
-}
-
-function setGoalCompletionStatus(goalKey: string, arg1: boolean, name: string) {
-    throw new Error("Function not implemented.");
-}
+};
