@@ -3,9 +3,9 @@ import { config } from "./config";
 import { goals } from "./goals";
 import { updateGoalUI } from "./ui";
 
-export const newBoard = (seed: number) => {
+export const configureBoard = (seed: number,  isNewBoard: boolean = false) => {
     const randomBoard = generateBingoBoard(goals(seed), seed);
-    const slottedBoard = assignSlotsWithCompletionStatus(randomBoard);
+    const slottedBoard = assignSlotsWithCompletionStatus(randomBoard, isNewBoard);
     return slottedBoard;
 }
 /**
@@ -20,8 +20,8 @@ function generateBingoBoard(goals: Goal[], seed?: number): BingoBoard {
  * Assigns slot numbers to each goal in the Bingo board and checks if each goal is completed.
  * If in server mode, resets all goals to "incomplete" in parkStorage before assigning slots.
  */
-function assignSlotsWithCompletionStatus(board: BingoBoard): BingoBoard {
-    if (network.mode === "server") {
+function assignSlotsWithCompletionStatus(board: BingoBoard, isNewBoard: boolean = false): BingoBoard {
+    if (network.mode === "server" && isNewBoard) {
         // Reset all goals to incomplete in parkStorage if in server mode
         board.forEach((_, index) => {
             const slot = `${index + 1}`;
@@ -145,19 +145,6 @@ function setGoalCompletionStatus(goalKey: string, completed: boolean, goalName?:
             }
         }
     );
-}
-
-/**
- * Resets all goals to "incomplete" in parkStorage by invoking the setGoalCompletion action through the wrapper.
- */
-function resetAllGoalsToIncomplete(board: BingoBoard) {
-    board.forEach((_, index) => {
-        const slot = `${index + 1}`;
-        const goalKey = `${config.namespace}.goal_${slot}`;
-
-        // Reset each goal to incomplete using the wrapper function
-        setGoalCompletionStatus(goalKey, false, `Goal at slot ${slot}`);
-    });
 }
 
 /**

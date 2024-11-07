@@ -1,7 +1,5 @@
 
-
-import { config } from "./config";
-import { getSeed, newBoard, setSeed, subscribeToGoalChecks } from "./ui-helpers";
+import { getSeed, configureBoard, setSeed, subscribeToGoalChecks } from "./ui-helpers";
 import { registerActions } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
 let dayCounter = 0; // Counter for days passed
@@ -45,8 +43,8 @@ function refurbishRides() {
 }
 
 export function main(): void {
-  registerActions(context, newBoard, openBingoBoard);
-  ui.registerShortcut({ id: "bingoSync.openBingoBoardDialog", text: "Open Bingo Board", bindings: ["CTRL+SHIFT+B"], callback: openBingoBoardDialog });
+  registerActions();
+  
 
   const seed = getSeed();
   if (network.mode === "server") {
@@ -62,7 +60,7 @@ export function main(): void {
   } else if (network.mode === "client") {
     const seed = getSeed();
     console.log(`Seed received from host: ${seed}`);
-    const board = newBoard(seed); // Clients use the stored seed
+    const board = configureBoard(seed); // Clients use the stored seed
     try {
       subscribeToGoalChecks(board);
       openBingoBoard(board);
@@ -73,7 +71,7 @@ export function main(): void {
   } else if (network.mode === "none") {
     ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
     showConnectDialog();
-    const board = newBoard(seed); // Offline mode also uses stored seed
+    const board = configureBoard(seed); // Offline mode also uses stored seed
     subscribeToGoalChecks(board);
     openBingoBoard(board);
   }
@@ -89,6 +87,8 @@ export function main(): void {
       dayCounter = 0; // Reset the counter after refurbishing
     }
   });
+
+  ui.registerShortcut({ id: "bingoSync.openBingoBoardDialog", text: "Open Bingo Board", bindings: ["CTRL+SHIFT+B"], callback: openBingoBoardDialog });
 
 
 

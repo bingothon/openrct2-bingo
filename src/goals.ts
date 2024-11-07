@@ -222,7 +222,7 @@ export const goals = (seed: number) => {
             slot: undefined,
             colors: "blank",
             status: "incomplete",
-            checkCondition: function () { return map.rides.filter(function (ride) { return ride.classification === 'stall'; }).length >= 50; }
+            checkCondition: function () { return map.rides.filter(function (ride) { return ride.classification === 'stall'; }).length >= 25; }
         },
         {
             name: "Create 10 rides",
@@ -236,7 +236,7 @@ export const goals = (seed: number) => {
             slot: undefined,
             colors: "blank",
             status: "incomplete",
-            checkCondition: () => map.rides.filter(ride => ride.maxSpeed >= 200).length >= 1
+            checkCondition: () => map.rides.filter(ride => ride.maxSpeed >= 2000).length >= 1
         },
         {
             name: "Airtime (20+ sec)",

@@ -2,7 +2,7 @@
 import { config } from "./config";
 import { goals } from "./goals";
 import { BingoBoard, BingoSyncBoardData } from "./types";
-import { addLineBreak, getSeed, newBoard, setSeed, updateBoardWithData, updateBoardWithSeed } from "./ui-helpers";
+import { addLineBreak, getSeed, configureBoard, setSeed, updateBoardWithData, updateBoardWithSeed } from "./ui-helpers";
 let userNameInput = "openrct2";
 let roomNameInput = "OpenRCT2 Bingo";
 let roomIdInput = "";
@@ -66,7 +66,7 @@ function convertForBingoSync(board: BingoBoard): { name: string }[] {
 
 export function connectToServer() {
     setSeed();
-    const board = newBoard(getSeed());
+    const board = configureBoard(getSeed());
     const bingoSyncFormat = convertForBingoSync(board);
     const socket = network.createSocket();
 
@@ -139,6 +139,8 @@ function processMessage(message: string) {
             }
 
             updateUIOnConnect(response.roomUrl, response.passphrase);
+            const board = configureBoard(getSeed(), true);
+            openBingoBoard(board);
             updateBoardWithSeed(getSeed());
 
             return
@@ -207,7 +209,7 @@ export function updateGoalUI(index: number, board: BingoBoard) {
 }
 
 export function openBingoBoardDialog() {
-    const board = newBoard(getSeed());
+    const board = configureBoard(getSeed());
     openBingoBoard(board);
 }
 

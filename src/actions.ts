@@ -1,12 +1,13 @@
 import type { BingoBoard } from "./types";
 import { config } from "./config";
-import { subscribeToGoalChecks } from "./ui-helpers";
+import { subscribeToGoalChecks, configureBoard } from "./ui-helpers";
+import { openBingoBoard } from "./ui";
 const NAMESPACE = config.namespace;
 
 /**
  * Action to update the board seed
  */
-export function updateBoardSeedAction(newBoard: (seed: number, parkStorage: Configuration) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
+export function updateBoardSeedAction() {
   return {
     name: "updateBoardSeed",
     query: (event: GameActionEventArgs<{ seed: number }>): GameActionResult => {
@@ -18,8 +19,7 @@ export function updateBoardSeedAction(newBoard: (seed: number, parkStorage: Conf
         return { error: 1, errorMessage: "Seed is undefined or event args are missing." };
       }
       const seed = event.args.seed;
-      const parkStorage = context.getParkStorage();
-      const board = newBoard(seed, parkStorage);
+      const board = configureBoard(seed);
       subscribeToGoalChecks(board);
       openBingoBoard(board);
       console.log(`Bingo board updated with new seed: ${seed}`);
@@ -31,7 +31,7 @@ export function updateBoardSeedAction(newBoard: (seed: number, parkStorage: Conf
 /**
  * Action to update the board data
  */
-export function updateBoardDataAction(openBingoBoard: (board: BingoBoard) => void) {
+export function updateBoardDataAction() {
   return {
     name: "updateBoardData",
     query: (event: GameActionEventArgs<{ board: BingoBoard }>): GameActionResult => {
@@ -53,7 +53,7 @@ export function updateBoardDataAction(openBingoBoard: (board: BingoBoard) => voi
 /**
  * Action to set the seed
  */
-export function setSeedAction(context: any) {
+export function setSeedAction() {
   return {
     name: 'setSeed',
     query: (event: GameActionEventArgs<{ seed: number }>): GameActionResult => {
@@ -65,7 +65,8 @@ export function setSeedAction(context: any) {
         return { error: 1, errorMessage: 'Seed is undefined or event args are missing.' };
       }
       const seed = event.args.seed;
-      context.getParkStorage().set(`${NAMESPACE}.bingoSeed`, seed);
+      const parkStorage = context.getParkStorage();
+      parkStorage.set(`${NAMESPACE}.bingoSeed`, seed);
       console.log(`New seed set: ${seed}`);
       return { error: 0 };
     }
@@ -86,7 +87,8 @@ export function setGoalCompletionAction() {
       if (!event.args || event.args.goalKey === undefined || event.args.completed === undefined) {
         return { error: 1, errorMessage: "Goal key or completion status is missing." };
       }
-      context.getParkStorage().set(event.args.goalKey, event.args.completed);
+      const parkStorage = context.getParkStorage();
+      parkStorage.set(event.args.goalKey, event.args.completed);
       console.log(`Goal completion status set for ${event.args.goalKey}: ${event.args.completed}`);
       return { error: 0 };
     }
@@ -94,17 +96,18 @@ export function setGoalCompletionAction() {
 }
 
 /**
- * Registers all actions
+ * Registers all actions individually
  */
-export function registerActions(context: any, newBoard: (seed: number, parkStorage: Configuration) => BingoBoard, openBingoBoard: (board: BingoBoard) => void) {
-  const actions = [
-    updateBoardSeedAction(newBoard, openBingoBoard),
-    updateBoardDataAction(openBingoBoard),
-    setSeedAction(context),
-    setGoalCompletionAction()  // Register the custom goal completion action
-  ];
+export function registerActions() {
+  const seedAction = updateBoardSeedAction();
+  context.registerAction(seedAction.name, seedAction.query, seedAction.execute);
 
-  actions.forEach(action => {
-    context.registerAction(action.name, action.query, action.execute);
-  });
+  const dataAction = updateBoardDataAction();
+  context.registerAction(dataAction.name, dataAction.query, dataAction.execute);
+
+  const seedSetAction = setSeedAction();
+  context.registerAction(seedSetAction.name, seedSetAction.query, seedSetAction.execute);
+
+  const goalCompletionAction = setGoalCompletionAction();
+  context.registerAction(goalCompletionAction.name, goalCompletionAction.query, goalCompletionAction.execute);
 }
