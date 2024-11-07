@@ -1,7 +1,9 @@
 
-import { getSeed, configureBoard, setSeed, subscribeToGoalChecks } from "./ui-helpers";
+import { getSeed, configureBoard, setSeed
+ } from "./ui-helpers";
 import { registerActions } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
+import { subscribeToGoalChecks } from "./goals";
 let dayCounter = 0; // Counter for days passed
 
 
@@ -60,7 +62,7 @@ export function main(): void {
   } else if (network.mode === "client") {
     const seed = getSeed();
     console.log(`Seed received from host: ${seed}`);
-    const board = configureBoard(seed); // Clients use the stored seed
+    const board = configureBoard(seed);
     try {
       subscribeToGoalChecks(board);
       openBingoBoard(board);
@@ -71,15 +73,12 @@ export function main(): void {
   } else if (network.mode === "none") {
     ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
     showConnectDialog();
-    const board = configureBoard(seed); // Offline mode also uses stored seed
+    const board = configureBoard(seed);
     subscribeToGoalChecks(board);
     openBingoBoard(board);
   }
 
   context.executeAction("gamesetspeed", { speed: 4 });
-
-
-
   context.subscribe("interval.day", () => {
     dayCounter++;
     if (dayCounter >= 180) {

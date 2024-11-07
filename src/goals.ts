@@ -1,6 +1,11 @@
 
-import type { Goal } from "./types";
+import { config } from "./config";
+import type { BingoBoard, Goal } from "./types";
+import { updateGoalUI } from "./ui";
 import { createSeededRandom } from "./util";
+
+let intervalSubscription: IDisposable | null = null; // Store the subscription reference
+
 type ThoughtKey = keyof typeof thoughtTypes;
 type AwardKey = keyof typeof awardTypes;
 const thoughtTypes = {
@@ -63,6 +68,68 @@ const awardTypes = {
     "Most Confusing Layout": "The park with the most confusing layout",
     "Best Gentle Rides": "The park with the best gentle rides"
 };
+
+export function subscribeToGoalChecks(board: BingoBoard) {
+    // Dispose of any existing subscription to prevent duplicates
+    if (intervalSubscription) {
+        intervalSubscription.dispose();
+    }
+
+    let tickCounter = 0;
+
+    // Create a new subscription and store the IDisposable reference
+    intervalSubscription = context.subscribe("interval.tick", () => {
+        tickCounter++;
+        if (tickCounter % 1000 === 0) {
+            checkGoals(board);
+            tickCounter = 0;
+        }
+    });
+}
+
+
+/**
+ * Iterates over goals, checks conditions, and updates UI if conditions are met.
+ * Uses a game action to set goal completion in `parkStorage` to ensure synchronization across clients.
+ * @param {BingoBoard} board - Array of 25 goals to check.
+ * @param {Socket} [socket] - Optional socket connection to send updates.
+ */
+export function checkGoals(board: BingoBoard, socket?: Socket) {
+    console.log("Goal check interval running...");
+
+    try {
+        board.forEach((goal, index) => {
+            const goalKey = `${config.namespace}.goal_${goal.slot}`;
+
+            if (network.mode === "client") {
+                // In client mode, read goal status from parkStorage
+                const isCompleted = context.getParkStorage().get(goalKey, false);
+                if (isCompleted && goal.status !== "completed") {
+                    goal.status = "completed";
+                    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
+                    updateGoalUI(index, board);
+                }
+            } else if (network.mode === "server" || network.mode === "none") {
+                // In server or offline mode, perform goal check and update parkStorage via game action
+                if (goal.status === "incomplete" && goal.checkCondition()) {
+                    goal.status = "completed";
+
+                    // Set goal completion status in parkStorage
+                    setGoalCompletionStatus(goalKey, true, goal.name);
+
+                    // Send goal completion action to socket if connected
+                    const selectGoalAction = JSON.stringify({ action: "selectGoal", slot: goal.slot, color: "red" }) + "\n";
+                    if (socket) socket.write(selectGoalAction);
+
+                    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);
+                    updateGoalUI(index, board);
+                }
+            }
+        });
+    } catch (error) {
+        console.log("Error checking goals:", error);
+    }
+}
 
 export const goals = (seed: number) => {
     const rng = seed !== undefined ? createSeededRandom(seed) : Math.random;
@@ -328,4 +395,8 @@ export const goals = (seed: number) => {
         }
     ];
     return goals;
+}
+
+function setGoalCompletionStatus(goalKey: string, arg1: boolean, name: string) {
+    throw new Error("Function not implemented.");
 }

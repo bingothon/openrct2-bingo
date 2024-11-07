@@ -1,7 +1,8 @@
 import type { BingoBoard } from "./types";
 import { config } from "./config";
-import { subscribeToGoalChecks, configureBoard } from "./ui-helpers";
+import { configureBoard } from "./ui-helpers";
 import { openBingoBoard } from "./ui";
+import { subscribeToGoalChecks } from "./goals";
 const NAMESPACE = config.namespace;
 
 /**

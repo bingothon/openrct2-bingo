@@ -2,8 +2,8 @@ import { goals } from "./goals";
 import { BingoBoard, BingoSyncBoardData } from "./types";
 import { config } from "./config";
 import { configureBoard, getSeed, setSeed, updateBoardWithData, updateBoardWithSeed } from "src/ui-helpers";
-import { openBingoBoard, updateUIOnConnect } from "src/ui";
-let connected = false;
+import { updateUIOnConnect } from "src/ui";
+
 
 /**
 * Converts Bingo board goals to BingoSync format
@@ -63,8 +63,7 @@ export function setupSocketDataHandler(socket: Socket) {
 export function processMessage(message: string) {
     try {
         const response = JSON.parse(message);
-        if (response.roomUrl && !connected) {
-            connected = true;
+        if (response.roomUrl) {
 
             // // Check if `boardData` exists and has exactly 25 items
             if (response.boardData) {
@@ -86,9 +85,8 @@ export function processMessage(message: string) {
                 updateBoardWithData(convertedBoardData);
             }
 
+            configureBoard(getSeed(), true);
             updateUIOnConnect(response.roomUrl, response.passphrase);
-            const board = configureBoard(getSeed(), true);
-            openBingoBoard(board);
             updateBoardWithSeed(getSeed());
 
             return

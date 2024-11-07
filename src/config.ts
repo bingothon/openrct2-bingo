@@ -6,6 +6,7 @@ const config = {
   roomNameInput: "OpenRCT2 Bingo",
   roomIdInput: "", 
   roomPasswordInput: "",
+  connected: false,
 } as {
   readonly pluginVersion: string;
   readonly namespace: string;
@@ -14,6 +15,7 @@ const config = {
   roomNameInput: string;
   roomIdInput: string;
   roomPasswordInput: string;
+  connected:boolean;
 };
 
 export { config };

@@ -1,6 +1,6 @@
 import type { Goal, BingoBoard } from "./types";
 import { config } from "./config";
-import { goals } from "./goals";
+import { checkGoals, goals } from "./goals";
 import { updateGoalUI } from "./ui";
 import { createSeededRandom, shuffle } from "./util";
 
@@ -136,50 +136,6 @@ function setGoalCompletionStatus(goalKey: string, completed: boolean, goalName?:
         }
     );
 }
-
-/**
- * Iterates over goals, checks conditions, and updates UI if conditions are met.
- * Uses a game action to set goal completion in `parkStorage` to ensure synchronization across clients.
- * @param {BingoBoard} board - Array of 25 goals to check.
- * @param {Socket} [socket] - Optional socket connection to send updates.
- */
-function checkGoals(board: BingoBoard, socket?: Socket) {
-    console.log("Goal check interval running...");
-
-    try {
-        board.forEach((goal, index) => {
-            const goalKey = `${config.namespace}.goal_${goal.slot}`;
-
-            if (network.mode === "client") {
-                // In client mode, read goal status from parkStorage
-                const isCompleted = context.getParkStorage().get(goalKey, false);
-                if (isCompleted && goal.status !== "completed") {
-                    goal.status = "completed";
-                    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
-                    updateGoalUI(index, board);
-                }
-            } else if (network.mode === "server" || network.mode === "none") {
-                // In server or offline mode, perform goal check and update parkStorage via game action
-                if (goal.status === "incomplete" && goal.checkCondition()) {
-                    goal.status = "completed";
-
-                    // Set goal completion status in parkStorage
-                    setGoalCompletionStatus(goalKey, true, goal.name);
-
-                    // Send goal completion action to socket if connected
-                    const selectGoalAction = JSON.stringify({ action: "selectGoal", slot: goal.slot, color: "red" }) + "\n";
-                    if (socket) socket.write(selectGoalAction);
-
-                    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);
-                    updateGoalUI(index, board);
-                }
-            }
-        });
-    } catch (error) {
-        console.log("Error checking goals:", error);
-    }
-}
-
 
 
 export const getSeed = (): number => {
