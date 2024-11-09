@@ -2,7 +2,7 @@
 import { configureBoard } from "./ui-helpers";
 import { registerActions } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
-import { subscribeToGoalChecks, triggerBingo } from "./bingo/main";
+import { subscribeToGoalChecks } from "./bingo/main";
 import { getSeed, setSeed } from "./util";
 let dayCounter = 0; // Counter for days passed
 

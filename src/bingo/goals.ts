@@ -161,12 +161,12 @@ export const goals = (seed: number) => {
             checkCondition: () => map.rides.reduce((acc, ride) => acc + ride.totalCustomers, 0) >= 13337
         },
         {
-            name: "Dirty (+500 litter)",
+            name: "Dirty (+250 litter)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
             checkCondition: () => {
-                return map.getAllEntities('litter').length >= 500
+                return map.getAllEntities('litter').length >= 250;
             }
         },
         {
@@ -206,14 +206,14 @@ export const goals = (seed: number) => {
         },
 
         {
-            name: "Long track (10000m+)",
+            name: "Long track (5000m+)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
 
             checkCondition: () => {
 
-                return map.rides.filter(ride => ride.rideLength >= 10000).length >= 1
+                return map.rides.filter(ride => ride.rideLength >= 5000).length >= 1
             }
         },
         {
@@ -231,13 +231,6 @@ export const goals = (seed: number) => {
             checkCondition: function () { return map.rides.filter(function (ride) { return ride.classification !== 'stall'; }).length >= 10; }
         },
         {
-            name: "Fast Average Track (200km/h+)",
-            slot: undefined,
-            colors: "blank",
-            status: "incomplete",
-            checkCondition: () => map.rides.filter(ride => ride.maxSpeed >= 2000).length >= 1
-        },
-        {
             name: "Airtime (20+ sec)",
             slot: undefined,
             colors: "blank",
@@ -245,11 +238,11 @@ export const goals = (seed: number) => {
             checkCondition: () => map.rides.filter(ride => ride.totalAirTime >= 20).length >= 1
         },
         {
-            name: "Average Speed (100km/h+)",
+            name: "Coaster Average Speed (77mph+)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
-            checkCondition: () => map.rides.filter(ride => ride.averageSpeed >= 1000).length >= 1
+            checkCondition: () => map.rides.filter(ride => ride.averageSpeed >= 770).length >= 1
         },
         {
             name: "Get 1000 guests in the park",
@@ -287,11 +280,11 @@ export const goals = (seed: number) => {
             checkCondition: () => map.rides.reduce((acc, ride) => acc + ride.totalProfit, 0) >= 133370
         },
         {
-            name: "Long Ride Time (10+ min)",
+            name: "Long Ride Time (5+ min)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
-            checkCondition: () => map.rides.filter(ride => ride.rideTime >= 600).length >= 1
+            checkCondition: () => map.rides.filter(ride => ride.rideTime >= 500).length >= 1
         },
         {
             name: `Award: ${randomAwardKey}`,
@@ -305,13 +298,13 @@ export const goals = (seed: number) => {
             }
         },
         {
-            name: `${randomThought} (100+ times)`,
+            name: `${randomThought} (50+ times)`,
             slot: undefined,
             colors: "blank",
             status: "incomplete",
             checkCondition: () => {
                 const guests = map.getAllEntities('guest');
-                return guests.filter(guest => guest.thoughts.some(thought => thought.type === randomThoughtKey)).length >= 100;
+                return guests.filter(guest => guest.thoughts.some(thought => thought.type === randomThoughtKey)).length >= 50;
             }
         },
         {
