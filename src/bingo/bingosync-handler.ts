@@ -1,10 +1,28 @@
-import { getSeed, goals, setSeed } from "./bingo";
-import { BingoBoard, BingoSyncBoardData } from "./types";
-import { config } from "./config";
+import { goals } from "./goals";
+import { getSeed, setSeed } from "../util";
+import { BingoBoard, BingoSyncBoardData } from "../types";
+import { config } from "../config";
 import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui-helpers";
-import { updateUIOnConnect } from "src/ui";
 
-
+/**
+ * Updates the UI after a successful connection.
+ */
+export function updateUIOnConnect(roomUrl: string, roomPassphrase: string) {
+    ui.closeAllWindows();
+    ui.openWindow({
+        classification: "bingo-sync",
+        title: "BingoSync Connection",
+        width: 200,
+        height: 130,
+        widgets: [
+            { type: "label", text: "Connected to BingoSync!", x: 35, y: 22, width: 160, height: 20 },
+            { type: "label", text: "Room URL:", x: 10, y: 40, width: 80, height: 20 },
+            { type: "textbox", x: 100, y: 40, width: 90, height: 20, text: roomUrl },
+            { type: "label", text: "Password:", x: 10, y: 70, width: 80, height: 20 },
+            { type: "textbox", x: 100, y: 70, width: 90, height: 20, text: roomPassphrase },
+        ],
+    });
+}
 /**
 * Converts Bingo board goals to BingoSync format
 */
@@ -13,10 +31,13 @@ function convertForBingoSync(board: BingoBoard): { name: string }[] {
 }
 
 export function connectToServer() {
-    setSeed();
-    const board = configureBoard(getSeed());
+    console.log("before seed", getSeed());
+    const seed = setSeed();
+    console.log("seed after", seed);
+    const board = configureBoard(seed);
     const bingoSyncFormat = convertForBingoSync(board);
-    const socket = network.createSocket();
+    config.socket = network.createSocket();
+    const socket = config.socket;
 
     try {
         socket.connect(3000, "localhost", () => {
@@ -64,7 +85,9 @@ export function processMessage(message: string) {
     try {
         const response = JSON.parse(message);
         if (response.roomUrl) {
-
+            // https://bingosync.com/room/1hwupb2WSea4ZL2yJ1I0hA parse the last bit of the url
+            const roomId = response.roomUrl.split("/").pop();
+            config.room = roomId;
             // // Check if `boardData` exists and has exactly 25 items
             if (response.boardData) {
                 const boardData: BingoSyncBoardData[] = response.boardData || [];

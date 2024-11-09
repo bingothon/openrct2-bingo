@@ -1,6 +1,7 @@
 import type { Goal, BingoBoard } from "./types";
 import { config } from "./config";
-import { goals, setGoalCompletionStatus } from "./bingo";
+import { setGoalCompletionStatus } from "./bingo/main";
+import { goals } from "./bingo/goals";
 import { createSeededRandom, shuffle } from "./util";
 
 export const configureBoard = (seed: number,  isNewBoard: boolean = false) => {
@@ -23,10 +24,10 @@ function generateBingoBoard(goals: Goal[], seed?: number): BingoBoard {
 function assignSlotsWithCompletionStatus(board: BingoBoard, isNewBoard: boolean = false): BingoBoard {
     if (network.mode === "server" && isNewBoard) {
         // Reset all goals to incomplete in parkStorage if in server mode
-        board.forEach((_, index) => {
+        board.forEach((goal, index) => {
             const slot = `${index + 1}`;
             const goalKey = `${config.namespace}.goal_${slot}`;
-            setGoalCompletionStatus(goalKey, false); // Reset goal to incomplete
+            setGoalCompletionStatus(goalKey, false, goal.name); // Reset goal to incomplete
         });
     }
 
@@ -106,19 +107,5 @@ export function updateBoardWithSeed(newSeed: number) {
 }
 
 
-export const getSeed = (): number => {
-    const parkStorage = context.getParkStorage();
-    return parkStorage.get(`${config.namespace}.bingoSeed`, config.defaultSeed); // Default seed if not found
-};
-
-export const setSeed = () => {
-    const newSeed = Math.floor(Math.random() * 100000);
-    context.executeAction('setSeed', { args: { seed: newSeed } }, (result) => {
-        if (result.error) {
-            console.log('Failed to set seed:', result.errorMessage);
-        }
-    });
-    return newSeed;
-}
 
 

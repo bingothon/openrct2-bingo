@@ -7,6 +7,7 @@ const config = {
   roomIdInput: "", 
   roomPasswordInput: "",
   connected: false,
+  socket: undefined
 } as {
   readonly pluginVersion: string;
   readonly namespace: string;
@@ -14,8 +15,10 @@ const config = {
   userNameInput: string;
   roomNameInput: string;
   roomIdInput: string;
+  room: string;
   roomPasswordInput: string;
   connected:boolean;
+  socket: Socket | undefined;
 };
 
 export { config };

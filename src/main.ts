@@ -2,7 +2,8 @@
 import { configureBoard } from "./ui-helpers";
 import { registerActions } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
-import { getSeed, setSeed, subscribeToGoalChecks } from "./bingo";
+import { subscribeToGoalChecks, triggerBingo } from "./bingo/main";
+import { getSeed, setSeed } from "./util";
 let dayCounter = 0; // Counter for days passed
 
 
@@ -45,6 +46,8 @@ function refurbishRides() {
 
 export function main(): void {
   registerActions();
+  // triggerBingo("row_0");
+  
 
 
   const seed = getSeed();
@@ -77,7 +80,7 @@ export function main(): void {
     openBingoBoard(board);
   }
 
-  // Game actions
+  // Game actionsd
 
   context.executeAction("gamesetspeed", { speed: 4 });
   context.subscribe("interval.day", () => {

@@ -2,7 +2,9 @@ import type { BingoBoard } from "./types";
 import { config } from "./config";
 import { configureBoard } from "./ui-helpers";
 import { openBingoBoard } from "./ui";
-import { subscribeToGoalChecks } from "./bingo";
+import { subscribeToGoalChecks } from "./bingo/main";
+import { notifyTextBingo, notifyTextGoal } from "./bingo/notifications/text";
+import { notifyGroundBingo } from "./bingo/notifications/ground";
 const NAMESPACE = config.namespace;
 
 /**
@@ -15,13 +17,15 @@ export function updateBoardSeedAction() {
       console.log("Querying action with event args:", event.args);
       return { error: 0 };
     },
-    execute: (event: GameActionEventArgs<{ seed?: number }>): GameActionResult => {
+    execute: (event: GameActionEventArgs<{ seed: number }>): GameActionResult => {
       if (!event.args || event.args.seed === undefined) {
         return { error: 1, errorMessage: "Seed is undefined or event args are missing." };
       }
       const seed = event.args.seed;
+
       const board = configureBoard(seed);
       subscribeToGoalChecks(board);
+      
       openBingoBoard(board);
       console.log(`Bingo board updated with new seed: ${seed}`);
       return { error: 0 };
@@ -90,11 +94,39 @@ export function setGoalCompletionAction() {
       }
       const parkStorage = context.getParkStorage();
       parkStorage.set(event.args.goalKey, event.args.completed);
+      notifyTextGoal(event.args.goalKey);
       console.log(`Goal completion status set for ${event.args.goalKey}: ${event.args.completed}`);
       return { error: 0 };
     }
   };
 }
+
+export function notifyBingoAction() {
+  return {
+    name: "notifyBingo",
+    query: (event: GameActionEventArgs<{ lineKey: string }>): GameActionResult => {
+      console.log("Querying action with event args:", event.args);
+      return { error: 0 };
+    },
+    execute: (event: GameActionEventArgs<{ lineKey: string }>): GameActionResult => {
+      if (!event.args || event.args.lineKey === undefined) {
+        return { error: 1, errorMessage: "Line key is missing." };
+      }
+
+      notifyTextBingo(event.args.lineKey);
+      notifyGroundBingo();
+      park.cash += 100000000;
+
+
+
+      return { error: 0 };
+    }
+  };
+}
+
+
+
+
 
 /**
  * Registers all actions individually
@@ -111,4 +143,9 @@ export function registerActions() {
 
   const goalCompletionAction = setGoalCompletionAction();
   context.registerAction(goalCompletionAction.name, goalCompletionAction.query, goalCompletionAction.execute);
+
+  const bingoAction = notifyBingoAction();
+  context.registerAction(bingoAction.name, bingoAction.query, bingoAction.execute);
+
+  console.log("Actions registered.");
 }

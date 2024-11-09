@@ -1,35 +1,15 @@
 // ui.ts
 
 import { config } from "./config";
-import { connectToServer } from "./bingosync-handler";
+import { connectToServer } from "./bingo/bingosync-handler";
 import { BingoBoard } from "./types";
 import { addLineBreak, configureBoard } from "./ui-helpers";
-import { getSeed } from "./bingo";
+import { getSeed } from "./util";
 
 
 const colorRed = "\x1b[31m";
 const colorBlue = "\x1b[34m";
 const colorReset = "\x1b[0m";
-
-/**
- * Updates the UI after a successful connection.
- */
-export function updateUIOnConnect(roomUrl: string, roomPassphrase: string) {
-    ui.closeAllWindows();
-    ui.openWindow({
-        classification: "bingo-sync",
-        title: "BingoSync Connection",
-        width: 200,
-        height: 130,
-        widgets: [
-            { type: "label", text: "Connected to BingoSync!", x: 35, y: 22, width: 160, height: 20 },
-            { type: "label", text: "Room URL:", x: 10, y: 40, width: 80, height: 20 },
-            { type: "textbox", x: 100, y: 40, width: 90, height: 20, text: roomUrl },
-            { type: "label", text: "Password:", x: 10, y: 70, width: 80, height: 20 },
-            { type: "textbox", x: 100, y: 70, width: 90, height: 20, text: roomPassphrase },
-        ],
-    });
-}
 
 /**
  * Displays the Connect dialog with a button to trigger server connection
@@ -60,7 +40,7 @@ export function showConnectDialog() {
  * Displays the Bingo board dialog with a 5x5 grid of buttons representing each Bingo slot.
  * @param {Goal[]} board - Array of 25 goals to display on the board.
  */
-export function showBingoBoardDialog(board: BingoBoard) {
+function showBingoBoardDialog(board: BingoBoard) {
     const widgets = [];
     const gridSize = 5;
     const buttonSize = 100; // Button width and height
@@ -100,20 +80,7 @@ export function showBingoBoardDialog(board: BingoBoard) {
     });
 }
 
-/**
- * Updates the UI to reflect a completed goal without refreshing the entire Bingo board.
- */
-export function updateGoalUI(index: number, board: BingoBoard) {
-    const window = ui.getWindow("bingo-board");
-    if (window) {
-        const button = window.findWidget<ButtonWidget>(`slot${index + 1}`);
-        if (button) {
-            button.isPressed = true;
-            button.border = false;
-            button.text = `✓ ${board[index].name}`;
-        }
-    }
-}
+
 
 export function openBingoBoardDialog() {
     const board = configureBoard(getSeed());
