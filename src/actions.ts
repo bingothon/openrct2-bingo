@@ -85,17 +85,20 @@ export function setSeedAction() {
 export function setGoalCompletionAction() {
   return {
     name: "setGoalCompletion",
-    query: (event: GameActionEventArgs<{ goalName:string, goalKey: string; completed: boolean }>): GameActionResult => {
+    query: (event: GameActionEventArgs<{ goalKey: string; completed: boolean, goalName?: string }>): GameActionResult => {
       console.log("Querying goal completion action with event args:", event.args);
       return { error: 0 };
     },
-    execute: (event: GameActionEventArgs<{ goalName:string, goalKey: string; completed: boolean }>): GameActionResult => {
+    execute: (event: GameActionEventArgs<{ goalKey: string; completed: boolean, goalName?: string }>): GameActionResult => {
       if (!event.args || event.args.goalKey === undefined || event.args.completed === undefined) {
         return { error: 1, errorMessage: "Goal key or completion status is missing." };
       }
       const parkStorage = context.getParkStorage();
+      console.log(`Setting goal completion status for ${event.args.goalKey}: ${event.args.completed}`);
       parkStorage.set(event.args.goalKey, event.args.completed);
-      notifyTextGoal(event.args.goalName);
+      if (event.args.goalName) {
+        notifyTextGoal(event.args.goalName);
+      }
       console.log(`Goal completion status set for ${event.args.goalKey}: ${event.args.completed}`);
       return { error: 0 };
     }
@@ -113,10 +116,11 @@ export function notifyBingoAction() {
       if (!event.args || event.args.lineKey === undefined) {
         return { error: 1, errorMessage: "Line key is missing." };
       }
-
-      notifyTextBingo(event.args.lineKey);
+      if (network.mode === "server") {
+        notifyTextBingo(event.args.lineKey);
+      }
       notifyGroundBingo();
-      
+
       return { error: 0 };
     }
   };
@@ -136,6 +140,26 @@ export function addCashAction() {
 
       park.cash += event.args.cash;
       console.log(`Added cash: ${event.args.cash}`);
+      return { error: 0 };
+    }
+  };
+}
+
+export function moveToAction() {
+  return {
+    name: "moveTo",
+    query: (event: GameActionEventArgs<{ x: number; y: number }>): GameActionResult => {
+      console.log("Querying action with event args:", event.args);
+      return { error: 0 };
+    },
+    execute: (event: GameActionEventArgs<{ x: number; y: number }>): GameActionResult => {
+      if (!event.args || event.args.x === undefined || event.args.y === undefined) {
+        return { error: 1, errorMessage: "X or Y position is missing." };
+      }
+
+      const { x, y } = event.args;
+      ui.mainViewport.moveTo({ x: x, y: y });
+      console.log(`Moved view to: ${x}, ${y}`);
       return { error: 0 };
     }
   };
@@ -166,6 +190,9 @@ export function registerActions() {
 
   const cashAction = addCashAction();
   context.registerAction(cashAction.name, cashAction.query, cashAction.execute);
+
+  const moveAction = moveToAction();
+  context.registerAction(moveAction.name, moveAction.query, moveAction.execute);
 
   console.log("Actions registered.");
 }

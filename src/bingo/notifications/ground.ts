@@ -53,30 +53,27 @@ export function placeSmallSceneryObject({
 
 export function notifyGroundBingo() {
     console.log("Notifying ground bingo...");
-    context.executeAction("addCash", {args: {cash: 10000000}}, (result) => {
+    context.executeAction("addCash", { args: { cash: 10000000 } }, (result) => {
         if (result.error) {
             console.log("Failed to add cash:", result.errorMessage);
         } else {
             console.log("Successfully added cash.");
             debugMode(1, () => {
                 console.log("Debug mode enabled.");
-                // Once sandbox mode is enabled, perform the actions
-                const pos = 64 * 32;
-                ui.mainViewport.moveTo({ x: pos, y: pos });
-        
-                if(!bingoBeingNotified && network.mode === "server") {
+
+                if (!bingoBeingNotified && network.mode === "server") {
                     bingoBeingNotified = true;
                     notifyBingoHelper();
                 }
-                
+
                 // clearAndSetForSale('bottom-right', () => {
                 //     
                 // });
-        
+
             });
         }
     });
-    
+
     // console.log("Notifying ground bingo...");
 
 
@@ -166,7 +163,7 @@ function writingBingo(baseX: number, baseY: number, callback?: () => void) {
                         objectId,
                         baseX,
                         baseY,
-                        z + 112 + (50*16),
+                        z + 112 + (50 * 16),
                         scale
                     );
                 });
@@ -218,6 +215,7 @@ function notifyBingoHelper() {
             writingBingo(baseX, baseY, () => {
                 lowerLandMultpleTimes(baseX, baseY, width, height, 50, () => {
                     clearMiddle(() => {
+                        bingoBeingNotified = false;
                         console.log("Completed ground bingo notification.");
                     });
                 });

@@ -34,7 +34,7 @@ function assignSlotsWithCompletionStatus(board: BingoBoard, isNewBoard: boolean 
     return board.map((goal, index) => {
         const slot = `${index + 1}`;
         const goalKey = `${config.namespace}.goal_${slot}`;
-
+        console.log("Goal key:", goalKey);
         // Check if the goal is marked as completed in parkStorage
         const isCompleted = context.getParkStorage().get(goalKey, false);
 
