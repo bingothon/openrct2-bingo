@@ -46,15 +46,31 @@ const completedBingos: Record<string, boolean> = {};
  * @param board The bingo board array.
  */
 function checkForBingo(board: BingoBoard) {
+    let bingoTriggered = false; // Flag to ensure only one bingo is triggered
+
     // Check rows and columns for bingo
     for (let i = 0; i < 5; i++) {
-        if (isLineCompleted(board, 'row', i)) triggerBingo(`row_${i}`);
-        if (isLineCompleted(board, 'column', i)) triggerBingo(`column_${i}`);
+        if (!bingoTriggered && isLineCompleted(board, 'row', i)) {
+            triggerBingo(`row_${i}`);
+            bingoTriggered = true;
+            break; // Stop further checks once a bingo is triggered
+        }
+        if (!bingoTriggered && isLineCompleted(board, 'column', i)) {
+            triggerBingo(`column_${i}`);
+            bingoTriggered = true;
+            break; // Stop further checks once a bingo is triggered
+        }
     }
 
-    // Check diagonals for bingo
-    if (isLineCompleted(board, 'diagonal', 0)) triggerBingo("diagonal_0");
-    if (isLineCompleted(board, 'diagonal', 1)) triggerBingo("diagonal_1");
+    // Check diagonals for bingo only if no bingo was triggered
+    if (!bingoTriggered && isLineCompleted(board, 'diagonal', 0)) {
+        triggerBingo("diagonal_0");
+        bingoTriggered = true;
+    }
+    if (!bingoTriggered && isLineCompleted(board, 'diagonal', 1)) {
+        triggerBingo("diagonal_1");
+        bingoTriggered = true;
+    }
 }
 
 /**
