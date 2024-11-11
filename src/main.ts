@@ -4,6 +4,7 @@ import { registerActions } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
 import { subscribeToGoalChecks, triggerBingo } from "./bingo/main";
 import { clearMiddle, getSeed, renewRides, setSeed } from "./util";
+import { bingosyncUI } from "./bingo/bingosync-handler";
 let dayCounter = 0; // Counter for days passed
 
 
@@ -41,6 +42,9 @@ export function main(): void {
     } catch (error) {
       console.log("Error opening Bingo board:", error);
     }
+    bingosyncUI();
+    ui.registerShortcut({ id: "bingoSync.connectionDetails", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: bingosyncUI });
+
 
   } else if (network.mode === "none") {
     ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });

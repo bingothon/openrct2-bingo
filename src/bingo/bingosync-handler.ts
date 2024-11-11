@@ -8,7 +8,7 @@ import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui
  * Updates the UI after a successful connection.
  */
 export function updateUIOnConnect(roomUrl: string, roomPassphrase: string) {
-    ui.closeAllWindows();
+    ui.closeWindows("bingo-sync");
     ui.openWindow({
         classification: "bingo-sync",
         title: "BingoSync Connection",
@@ -20,6 +20,22 @@ export function updateUIOnConnect(roomUrl: string, roomPassphrase: string) {
             { type: "textbox", x: 100, y: 40, width: 90, height: 20, text: roomUrl },
             { type: "label", text: "Password:", x: 10, y: 70, width: 80, height: 20 },
             { type: "textbox", x: 100, y: 70, width: 90, height: 20, text: roomPassphrase },
+        ],
+    });
+}
+
+export function bingosyncUI() {
+    ui.openWindow({
+        classification: "bingosync-connection",
+        title: "BingoSync Connection",
+        width: 200,
+        height: 130,
+        widgets: [
+            { type: "label", text: "Connected to BingoSync!", x: 35, y: 22, width: 160, height: 20 },
+            { type: "label", text: "Room URL:", x: 10, y: 40, width: 80, height: 20 },
+            { type: "textbox", x: 100, y: 40, width: 90, height: 20, text: context.getParkStorage().get('roomUrl') },
+            { type: "label", text: "Password:", x: 10, y: 70, width: 80, height: 20 },
+            { type: "textbox", x: 100, y: 70, width: 90, height: 20, text: context.getParkStorage().get('roomPassword') },
         ],
     });
 }
@@ -52,6 +68,7 @@ export function connectToServer() {
             }) + "\n";
             socket.write(creationRequest);
         });
+        
     } catch (connectError) {
         console.log("Error during connection:", connectError);
     }
@@ -110,6 +127,7 @@ export function processMessage(message: string) {
 
             configureBoard(getSeed(), true);
             updateUIOnConnect(response.roomUrl, response.passphrase);
+            context.executeAction("connectionDetails", { args: { roomUrl: response.roomUrl, roomPassword: response.passphrase } });
             updateBoardWithSeed(getSeed());
 
             return
