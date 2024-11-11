@@ -235,7 +235,7 @@ export const goals = (seed: number) => {
             checkCondition: () => map.rides.filter(ride => ride.totalAirTime >= 10).length >= 1
         },
         {
-            name: "Coaster Average Speed (80mph/100km/h+)",
+            name: "Coaster Average Speed (80mph-100kmh+)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
