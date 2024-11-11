@@ -127,7 +127,7 @@ export function processMessage(message: string) {
             }
 
             configureBoard(getSeed(), true);
-            updateUIOnConnect(response.roomUrl, response.passphrase);
+            if(typeof ui !== 'undefined') updateUIOnConnect(response.roomUrl, response.passphrase);
             context.executeAction("connectionDetails", { args: { roomUrl: response.roomUrl, roomPassword: response.passphrase } });
             updateBoardWithSeed(getSeed());
 

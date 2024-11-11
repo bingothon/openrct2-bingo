@@ -26,13 +26,14 @@ export function main(): void {
 
   if (network.mode === "server") {
 
-    if (!ui) {
-      connectToServer();
-    } else {
-      // Host sets the initial seed if not set
+    if (typeof ui !== 'undefined') {
+      
       setSeed();
       ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
       showConnectDialog();
+    } else {
+      // Host sets the initial seed if not set
+      connectToServer();
     }
 
   } else if (network.mode === "client") {
@@ -43,11 +44,12 @@ export function main(): void {
     const board = configureBoard(seed);
     try {
       subscribeToGoalChecks(board);
+      bingosyncUI();
       openBingoBoard(board);
     } catch (error) {
       console.log("Error opening Bingo board:", error);
     }
-    bingosyncUI();
+    
     context.setInterval(() => {
       const parkStorage = context.getParkStorage();
       const roomUrlStored: string | undefined = parkStorage.get("roomUrl");

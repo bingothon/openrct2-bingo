@@ -28,7 +28,7 @@ export function updateBoardSeedAction() {
       const board = configureBoard(seed);
       subscribeToGoalChecks(board);
 
-      openBingoBoard(board);
+      if(typeof ui !== 'undefined') openBingoBoard(board);
       console.log(`Bingo board updated with new seed: ${seed}`);
       return { error: 0 };
     }
