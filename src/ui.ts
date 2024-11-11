@@ -15,6 +15,7 @@ const colorReset = "\x1b[0m";
  * Displays the Connect dialog with a button to trigger server connection
  */
 export function showConnectDialog() {
+    ui.closeAllWindows();
     ui.openWindow({
         classification: "bingo-sync",
         title: "BingoSync Connection",

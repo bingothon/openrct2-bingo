@@ -5,6 +5,7 @@ import { openBingoBoard } from "./ui";
 import { subscribeToGoalChecks } from "./bingo/main";
 import { notifyTextBingo, notifyTextGoal } from "./bingo/notifications/text";
 import { notifyGroundBingo } from "./bingo/notifications/ground";
+import { bingosyncUI } from "./bingo/bingosync-handler";
 const NAMESPACE = config.namespace;
 let bingoBeingNotified = false;
 
@@ -175,6 +176,7 @@ export function connectionDetailsAction() {
     execute: (event: GameActionEventArgs<{ roomUrl: string; roomPassword: string }>): GameActionResult => {
       context.getParkStorage().set('roomUrl', event.args.roomUrl);
       context.getParkStorage().set('roomPassword', event.args.roomPassword);
+      bingosyncUI()
       return { error: 0 };
     }
   };
