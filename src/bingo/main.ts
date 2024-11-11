@@ -30,7 +30,7 @@ export function subscribeToGoalChecks(board: BingoBoard) {
     // Create a new subscription and store the IDisposable reference
     intervalSubscription = context.subscribe("interval.tick", () => {
         tickCounter++;
-        if (tickCounter % 1000 === 0) {
+        if (tickCounter % 10000 === 0) {
             checkGoals(board);
             tickCounter = 0;
         }

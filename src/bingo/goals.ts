@@ -310,15 +310,15 @@ export const goals = (seed: number) => {
             }
         },
         {
-            name: "White Castle (Burger Stall Highest Possible)",
+            name: "White Castle (Burger Stall Highest Possible, with Profit)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
-            checkCondition: () => map.rides.filter(
+            checkCondition: () => {return map.rides.filter(
                 ride => ride.classification === 'stall' &&
                     ride.type === 28 &&
                     ride.stations.some(station => station.start && station.start.z >= 2000)
-            ).length >= 1
+            )[0].totalProfit >= 0}
         }
     ];
     return goals;
