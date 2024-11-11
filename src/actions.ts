@@ -6,6 +6,7 @@ import { subscribeToGoalChecks } from "./bingo/main";
 import { notifyTextBingo, notifyTextGoal } from "./bingo/notifications/text";
 import { notifyGroundBingo } from "./bingo/notifications/ground";
 const NAMESPACE = config.namespace;
+let bingoBeingNotified = false;
 
 /**
  * Action to update the board seed
@@ -25,7 +26,7 @@ export function updateBoardSeedAction() {
 
       const board = configureBoard(seed);
       subscribeToGoalChecks(board);
-      
+
       openBingoBoard(board);
       console.log(`Bingo board updated with new seed: ${seed}`);
       return { error: 0 };
@@ -84,17 +85,17 @@ export function setSeedAction() {
 export function setGoalCompletionAction() {
   return {
     name: "setGoalCompletion",
-    query: (event: GameActionEventArgs<{ goalKey: string; completed: boolean }>): GameActionResult => {
+    query: (event: GameActionEventArgs<{ goalName:string, goalKey: string; completed: boolean }>): GameActionResult => {
       console.log("Querying goal completion action with event args:", event.args);
       return { error: 0 };
     },
-    execute: (event: GameActionEventArgs<{ goalKey: string; completed: boolean }>): GameActionResult => {
+    execute: (event: GameActionEventArgs<{ goalName:string, goalKey: string; completed: boolean }>): GameActionResult => {
       if (!event.args || event.args.goalKey === undefined || event.args.completed === undefined) {
         return { error: 1, errorMessage: "Goal key or completion status is missing." };
       }
       const parkStorage = context.getParkStorage();
       parkStorage.set(event.args.goalKey, event.args.completed);
-      notifyTextGoal(event.args.goalKey);
+      notifyTextGoal(event.args.goalName);
       console.log(`Goal completion status set for ${event.args.goalKey}: ${event.args.completed}`);
       return { error: 0 };
     }
@@ -115,10 +116,26 @@ export function notifyBingoAction() {
 
       notifyTextBingo(event.args.lineKey);
       notifyGroundBingo();
-      park.cash += 100000000;
+      
+      return { error: 0 };
+    }
+  };
+}
 
+export function addCashAction() {
+  return {
+    name: "addCash",
+    query: (event: GameActionEventArgs<{ cash: number }>): GameActionResult => {
+      console.log("Querying action with event args:", event.args);
+      return { error: 0 };
+    },
+    execute: (event: GameActionEventArgs<{ cash: number }>): GameActionResult => {
+      if (!event.args || event.args.cash === undefined) {
+        return { error: 1, errorMessage: "Cash amount is missing." };
+      }
 
-
+      park.cash += event.args.cash;
+      console.log(`Added cash: ${event.args.cash}`);
       return { error: 0 };
     }
   };
@@ -146,6 +163,9 @@ export function registerActions() {
 
   const bingoAction = notifyBingoAction();
   context.registerAction(bingoAction.name, bingoAction.query, bingoAction.execute);
+
+  const cashAction = addCashAction();
+  context.registerAction(cashAction.name, cashAction.query, cashAction.execute);
 
   console.log("Actions registered.");
 }

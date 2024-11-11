@@ -2,8 +2,8 @@
 import { configureBoard } from "./ui-helpers";
 import { registerActions } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
-import { subscribeToGoalChecks } from "./bingo/main";
-import { getSeed, setSeed } from "./util";
+import { subscribeToGoalChecks, triggerBingo } from "./bingo/main";
+import { clearMiddle, getSeed, renewRides, setSeed } from "./util";
 let dayCounter = 0; // Counter for days passed
 
 
@@ -16,52 +16,22 @@ function showError(result: GameActionResult, ride: Ride) {
   return
 }
 
-/**
- * Function to refurbish rides
- */
-
-function refurbishRides() {
-  const rides = map.rides;
-  const unwantedStatusArray = ['testing', 'simulating'];
-  const filteredRides = rides.filter(ride => !unwantedStatusArray.some(status => status === ride.status) && ride.classification !== 'stall' && ride.classification !== 'facility');
-  filteredRides.forEach(ride => {
-    context.executeAction('ridesetstatus', { ride: ride.id, status: 0 }, (result) => {
-      showError(result, ride);
-      context.executeAction('ridesetstatus', { ride: ride.id, status: 0 }, (result) => {
-        showError(result, ride);
-        context.queryAction('ridedemolish', { ride: ride.id, modifyType: 1 }, (result) => {
-          const cost = result.cost;
-          if (cost) park.cash += cost;
-          context.executeAction("ridedemolish", { ride: ride.id, modifyType: 1 }, (result) => {
-            showError(result, ride);
-            context.executeAction('ridesetstatus', { ride: ride.id, status: 1 }, (result) => {
-              showError(result, ride);
-            });
-          });
-        });
-      });
-    });
-  })
-}
-
 export function main(): void {
   registerActions();
-  // triggerBingo("row_0");
-  
-
-
+  clearMiddle();
+  network.defaultGroup = 3;
   const seed = getSeed();
+
   if (network.mode === "server") {
+    
     // Host sets the initial seed if not set
     setSeed();
     ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
     showConnectDialog();
 
-    context.subscribe("network.join", () => {
-
-    });
-
   } else if (network.mode === "client") {
+    // give building rights
+
     const seed = getSeed();
     console.log(`Seed received from host: ${seed}`);
     const board = configureBoard(seed);
@@ -86,7 +56,7 @@ export function main(): void {
   context.subscribe("interval.day", () => {
     dayCounter++;
     if (dayCounter >= 180) {
-      refurbishRides();
+      renewRides();
       dayCounter = 0; // Reset the counter after refurbishing
     }
   });

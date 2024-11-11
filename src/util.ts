@@ -1,3 +1,4 @@
+import { addCashAction } from "./actions";
 import { config } from "./config";
 
 /**
@@ -292,6 +293,103 @@ export function clearAndSetForSale(
     });
 }
 
+export function clearMiddle(callback?: () => void) {
+    const tileSize = 32;
+
+    // Coordinates matching "BINGO" area
+    const baseX = 53 * tileSize; // Adjusted to center "BINGO"
+    const baseY = 63 * tileSize; // Adjusted to center "BINGO"
+    const width = 24 * tileSize; // Width of "BINGO"
+    const height = 5 * tileSize; // Height of "BINGO"
+
+    // Define boundaries for clearing the same area
+    const x1 = baseX,
+        y1 = baseY,
+        x2 = baseX + width,
+        y2 = baseY + height;
+
+    console.log(`Processing middle section: Coordinates: (${x1}, ${y1}) to (${x2}, ${y2})`);
+
+    // Step 1: Set the middle section to unowned (clear ownership)
+    const clearArgs = {
+        x1,
+        y1,
+        x2,
+        y2,
+        setting: 0, // Set to unowned
+        ownership: 0, // Remove ownership
+    };
+    const setForSaleArgs = {
+        x1,
+        y1,
+        x2,
+        y2,
+        setting: 2, // Set for sale
+        ownership: 0, // No ownership
+    };
+
+    //buy args
+    const buyArgs = {
+        x1,
+        y1,
+        x2,
+        y2,
+        setting: 0, // Set to unowned
+    };
+    debugMode(1, () => {
+        context.executeAction("landsetrights", setForSaleArgs, (purchaseResult) => {
+            if (purchaseResult.error) {
+                console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
+            } else {
+                context.queryAction("landbuyrights", buyArgs, (purchaseResult) => {
+                    if (purchaseResult.error) {
+                        console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
+                    } else {
+                        if (purchaseResult && purchaseResult.cost && purchaseResult.cost > 0) {
+                            console.log(`Cost of purchase: ${purchaseResult.cost}`);
+                            context.executeAction("addCash", { args: {cash: purchaseResult.cost }}, (result) => {
+                                if (result.error) {
+                                    console.log("Failed to add cash:", result.errorMessage);
+                                } else {
+                                    console.log("Cash added successfully.");
+                                }
+                            });
+                        }
+                        context.executeAction("landbuyrights", buyArgs, (purchaseResult) => {
+                            if (purchaseResult.error) {
+                                console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
+                            } else {
+                                context.executeAction("landsetrights", clearArgs, (clearResult) => {
+                                    if (clearResult.error) {
+                                        console.log(`Failed to clear middle section: ${clearResult.errorMessage}`);
+                                    } else {
+                                        console.log(`Successfully cleared middle section.`);
+
+                                        context.executeAction("landsetrights", clearArgs, (saleResult) => {
+                                            if (saleResult.error) {
+                                                console.log(`Failed to set middle section for sale: ${saleResult.errorMessage}`);
+                                            } else {
+                                                console.log(`Successfully set middle section to unowned.`);
+                                            }
+                                            debugMode(0, () => {
+                                                // Execute the callback after completion
+                                                if (callback) {
+                                                    callback();
+                                                }
+                                            });
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+            }
+        });
+
+    });
+}
+
 
 
 
@@ -318,7 +416,7 @@ export function debugMode(bool: 1 | 0, callback?: () => void) {
             console.log("Failed to toggle sandbox mode:", sandboxResult.errorMessage);
         } else {
             console.log(`Sandbox mode ${bool === 1 ? "enabled" : "disabled"}.`);
-            
+
             // Then toggle clearance checks
             context.executeAction("cheatset", clearanceArgs, (clearanceResult) => {
                 if (clearanceResult.error) {
@@ -337,6 +435,29 @@ export function debugMode(bool: 1 | 0, callback?: () => void) {
                     }
                 }
             });
+        }
+    });
+}
+
+export function renewRides(callback?: () => void) {
+    // Define the arguments for renewing rides
+    const renewRidesArgs: CheatSetArgs = {
+        type: 27, // Replace with the CheatType index for RenewRides (check the CheatType enum in OpenRCT2 source code)
+        param1: 0, // Enable the action (if required by the cheat)
+        param2: 0, // No secondary parameter
+    };
+
+    // Execute the renew rides action
+    context.executeAction("cheatset", renewRidesArgs, (result) => {
+        if (result.error) {
+            console.log("Failed to renew rides:", result.errorMessage);
+        } else {
+            console.log("Rides successfully renewed.");
+
+            // Proceed to the callback if provided
+            if (callback) {
+                callback();
+            }
         }
     });
 }

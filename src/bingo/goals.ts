@@ -4,7 +4,6 @@ import { createSeededRandom } from "../util";
 type ThoughtKey = keyof typeof thoughtTypes;
 type AwardKey = keyof typeof awardTypes;
 const thoughtTypes = {
-    "cant_afford_ride": "Thought: Can't afford this ride",
     "spent_money": "Thought: Spent too much money",
     "sick": "Thought: Feeling a bit sick",
     "very_sick": "Thought: Very sick!",
@@ -27,7 +26,6 @@ const thoughtTypes = {
     "bad_litter": "Thought: Too much litter here",
     "cant_find_exit": "Thought: Can't find the exit",
     "get_off": "Thought: I want to get off!",
-    "get_out": "Thought: I need to get out",
     "not_safe": "Thought: Doesn't feel safe",
     "path_disgusting": "Thought: Path is disgusting",
     "crowded": "Thought: Too crowded",
@@ -58,7 +56,6 @@ const awardTypes = {
     "Most Disappointing": "The most disappointing park in the country",
     "Best Water Rides": "The park with the best water rides in the country",
     "Best Custom Rides": "The park with the best custom-designed rides",
-    "Best Colors": "The park with the most dazzling choice of colour schemes",
     "Most Confusing Layout": "The park with the most confusing layout",
     "Best Gentle Rides": "The park with the best gentle rides"
 };
@@ -206,14 +203,14 @@ export const goals = (seed: number) => {
         },
 
         {
-            name: "Long track (5000m+)",
+            name: "Long track (2500m+)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
 
             checkCondition: () => {
 
-                return map.rides.filter(ride => ride.rideLength >= 5000).length >= 1
+                return map.rides.filter(ride => ride.rideLength >= 2500).length >= 1
             }
         },
         {
@@ -231,18 +228,19 @@ export const goals = (seed: number) => {
             checkCondition: function () { return map.rides.filter(function (ride) { return ride.classification !== 'stall'; }).length >= 10; }
         },
         {
-            name: "Airtime (20+ sec)",
+            name: "Airtime (10+ sec)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
-            checkCondition: () => map.rides.filter(ride => ride.totalAirTime >= 20).length >= 1
+            checkCondition: () => map.rides.filter(ride => ride.totalAirTime >= 10).length >= 1
         },
         {
-            name: "Coaster Average Speed (77mph+)",
+            name: "Coaster Average Speed (80km/h+)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
-            checkCondition: () => map.rides.filter(ride => ride.averageSpeed >= 770).length >= 1
+            checkCondition: () => map.rides.filter(ride => ride.averageSpeed >= 80).length >= 1
+            
         },
         {
             name: "Get 1000 guests in the park",
@@ -280,11 +278,15 @@ export const goals = (seed: number) => {
             checkCondition: () => map.rides.reduce((acc, ride) => acc + ride.totalProfit, 0) >= 133370
         },
         {
-            name: "Long Ride Time (5+ min)",
+            name: "Long Ride Time (4~ min)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
-            checkCondition: () => map.rides.filter(ride => ride.rideTime >= 500).length >= 1
+            checkCondition: () => {
+                // const filterName = "Monorail 1";
+                // const ride = map.rides.filter(ride => ride.name === filterName)[0];
+                // console.log(`Ride time for ${filterName}: ${ride.rideTime}`);
+                return map.rides.filter(ride => ride.rideTime >=279).length >= 1}
         },
         {
             name: `Award: ${randomAwardKey}`,

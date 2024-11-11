@@ -1,4 +1,9 @@
-import { clearAndSetForSale, clearMap, debugMode, ownMapSection } from "../../util";
+import { clearAndSetForSale, clearMap, clearMiddle, debugMode, ownMapSection } from "../../util";
+let bingoBeingNotified = false;
+type RandomMapSectionKey = "top-left" | "top-right" | "bottom-left" | "bottom-right";
+
+const mapSections: RandomMapSectionKey[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
+let remainingSections: RandomMapSectionKey[] = [...mapSections];
 
 /**
  * Places a small scenery object at specified coordinates with given parameters.
@@ -48,24 +53,30 @@ export function placeSmallSceneryObject({
 
 export function notifyGroundBingo() {
     console.log("Notifying ground bingo...");
-    park.cash += 100000000;
-
-    debugMode(1, () => {
-        // Once sandbox mode is enabled, perform the actions
-        const pos = 64 * 32;
-        ui.mainViewport.moveTo({ x: pos, y: pos });
-        const centrePos = ui.mainViewport.moveTo({ x: pos, y: pos });
-        console.log(`CENTERPOS:`, centrePos);
-
-
-        notifyBingoHelper();
-        // clearAndSetForSale('bottom-right', () => {
-        //     debugMode(0, () => {
-        //         console.log("Completed ground bingo process.");
-        //     });
-        // });
-
+    context.executeAction("addCash", {args: {cash: 10000000}}, (result) => {
+        if (result.error) {
+            console.log("Failed to add cash:", result.errorMessage);
+        } else {
+            console.log("Successfully added cash.");
+            debugMode(1, () => {
+                console.log("Debug mode enabled.");
+                // Once sandbox mode is enabled, perform the actions
+                const pos = 64 * 32;
+                ui.mainViewport.moveTo({ x: pos, y: pos });
+        
+                if(!bingoBeingNotified && network.mode === "server") {
+                    bingoBeingNotified = true;
+                    notifyBingoHelper();
+                }
+                
+                // clearAndSetForSale('bottom-right', () => {
+                //     
+                // });
+        
+            });
+        }
     });
+    
     // console.log("Notifying ground bingo...");
 
 
@@ -180,18 +191,43 @@ function notifyBingoHelper() {
 
     const width = 21 * 32; // Approximate width of "BINGO"
     const height = 5 * 32; // Approximate height of "BINGO"
-    type RandomMapSectionKey = "top-left" | "top-right" | "bottom-left" | "bottom-right";
-    const mapSections = ["top-left", "top-right", "bottom-left", "bottom-right"] as RandomMapSectionKey[];
-    const randomMapSection = mapSections[Math.floor(Math.random() * mapSections.length)];
+
+    type RandomMapSectionKey = "top-right" | "bottom-left" | "bottom-right";
+    const mapSections = ["top-right", "bottom-left", "bottom-right"] as RandomMapSectionKey[];
+
+    // Use a static variable to track remaining sections across calls
+    if (!notifyBingoHelper.remainingSections) {
+        notifyBingoHelper.remainingSections = [...mapSections];
+    }
+
+    // Ensure there are remaining sections to choose from
+    if (notifyBingoHelper.remainingSections.length === 0) {
+        console.log("All map sections have already been owned.");
+        return;
+    }
+
+    // Select a random remaining section
+    const randomIndex = Math.floor(Math.random() * notifyBingoHelper.remainingSections.length);
+    const randomMapSection = notifyBingoHelper.remainingSections[randomIndex];
+
+    // Remove the selected section from remaining ones
+    notifyBingoHelper.remainingSections.splice(randomIndex, 1);
+
     ownMapSection(randomMapSection, () => {
         raiseLandMultipleTimes(baseX, baseY, width, height, 50, () => {
             writingBingo(baseX, baseY, () => {
                 lowerLandMultpleTimes(baseX, baseY, width, height, 50, () => {
+                    clearMiddle(() => {
+                        console.log("Completed ground bingo notification.");
+                    });
                 });
             });
         });
     });
 }
+
+// Static property to track remaining sections
+notifyBingoHelper.remainingSections = null as RandomMapSectionKey[] | null;
 
 function raiseLand(baseX: number, baseY: number, width: number, height: number, callback?: () => void): void {
     const x1 = Math.min(baseX, baseX + width - 1);

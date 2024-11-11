@@ -124,16 +124,21 @@ export function checkGoals(board: BingoBoard) {
                     updateGoalUI(index, board);
                 }
             } else if (network.mode === "server" || network.mode === "none") {
-                if (goal.status === "incomplete" && goal.checkCondition()) {
-                    const selectGoalAction = JSON.stringify({ action: "selectGoal", slot: goal.slot, color: "red", room: config.room }) + "\n";
-                    if (config.socket) config.socket.write(selectGoalAction);
-                    goal.status = "completed";
-                    setGoalCompletionStatus(goalKey, true, goal.name, () => {
-                        checkForBingo(board);
-                    });
-                    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);
-                    updateGoalUI(index, board);
+                try {
+                    if (goal.status === "incomplete" && goal.checkCondition()) {
+                        const selectGoalAction = JSON.stringify({ action: "selectGoal", slot: goal.slot, color: "red", room: config.room }) + "\n";
+                        if (config.socket) config.socket.write(selectGoalAction);
+                        goal.status = "completed";
+                        setGoalCompletionStatus(goal.name, goalKey, true, () => {
+                            checkForBingo(board);
+                        });
+                        console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);
+                        updateGoalUI(index, board);
+                    }
+                } catch (error) {
+                    console.log(`Error checking goal ${goal.slot || "unslotted"} - ${goal.name}:`, error);
                 }
+                
             }
         });
 
@@ -148,10 +153,10 @@ export function checkGoals(board: BingoBoard) {
  * @param {boolean} completed - The completion status to set (true for completed, false for incomplete).
  * @param {string} goalName - Optional name of the goal for logging purposes.
  */
-export function setGoalCompletionStatus(goalKey: string, completed: boolean, goalName: string, callback?: () => void) {
+export function setGoalCompletionStatus(goalName: string, goalKey: string, completed: boolean, callback?: () => void) {
     context.executeAction(
         "setGoalCompletion",
-        { args: { goalKey, completed, name: goalName } }, // Pass args as an object with explicit keys
+        { args: { goalName, goalKey, completed } }, // Pass args as an object with explicit keys
         (result) => {
             if (result.error) {
                 console.log(`Failed to set completion for ${goalName || goalKey}:`, result.errorMessage);
