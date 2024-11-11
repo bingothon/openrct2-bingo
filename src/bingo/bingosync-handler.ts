@@ -8,7 +8,7 @@ import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui
  * Updates the UI after a successful connection.
  */
 export function updateUIOnConnect(roomUrl: string, roomPassphrase: string) {
-    ui.closeWindows("bingo-sync");
+    ui.closeAllWindows();
     ui.openWindow({
         classification: "bingo-sync",
         title: "BingoSync Connection",
@@ -25,6 +25,7 @@ export function updateUIOnConnect(roomUrl: string, roomPassphrase: string) {
 }
 
 export function bingosyncUI() {
+    ui.closeAllWindows();
     ui.openWindow({
         classification: "bingosync-connection",
         title: "BingoSync Connection",

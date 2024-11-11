@@ -235,7 +235,7 @@ export const goals = (seed: number) => {
             checkCondition: () => map.rides.filter(ride => ride.totalAirTime >= 10).length >= 1
         },
         {
-            name: "Coaster Average Speed (80km/h+)",
+            name: "Coaster Average Speed (80mph/100km/h+)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -278,7 +278,7 @@ export const goals = (seed: number) => {
             checkCondition: () => map.rides.reduce((acc, ride) => acc + ride.totalProfit, 0) >= 133370
         },
         {
-            name: "Long Ride Time (4~ min)",
+            name: "Long Ride Time (4+- min)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",

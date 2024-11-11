@@ -4,7 +4,8 @@ import { registerActions } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
 import { subscribeToGoalChecks, triggerBingo } from "./bingo/main";
 import { clearMiddle, getSeed, renewRides, setSeed } from "./util";
-import { bingosyncUI } from "./bingo/bingosync-handler";
+import { bingosyncUI, connectToServer } from "./bingo/bingosync-handler";
+import { config } from "./config";
 let dayCounter = 0; // Counter for days passed
 
 
@@ -24,11 +25,15 @@ export function main(): void {
   const seed = getSeed();
 
   if (network.mode === "server") {
-    
-    // Host sets the initial seed if not set
-    setSeed();
-    ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
-    showConnectDialog();
+
+    if (!ui) {
+      connectToServer();
+    } else {
+      // Host sets the initial seed if not set
+      setSeed();
+      ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
+      showConnectDialog();
+    }
 
   } else if (network.mode === "client") {
     // give building rights
@@ -43,6 +48,21 @@ export function main(): void {
       console.log("Error opening Bingo board:", error);
     }
     bingosyncUI();
+    context.setInterval(() => {
+      const parkStorage = context.getParkStorage();
+      const roomUrlStored: string | undefined = parkStorage.get("roomUrl");
+      if (roomUrlStored) {
+        const roomIdStored = roomUrlStored.split("/").pop();
+        const roomId = config.room;
+        if (roomIdStored !== roomId) {
+          if (!roomUrlStored) {
+            bingosyncUI();
+          }
+        }
+      }
+    }, 5000);
+
+
     ui.registerShortcut({ id: "bingoSync.connectionDetails", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: bingosyncUI });
 
 
