@@ -28,7 +28,7 @@ export function updateBoardSeedAction() {
       const board = configureBoard(seed);
       subscribeToGoalChecks(board);
 
-      if(typeof ui !== 'undefined') openBingoBoard(board);
+      if (typeof ui !== 'undefined') openBingoBoard(board);
       console.log(`Bingo board updated with new seed: ${seed}`);
       return { error: 0 };
     }
@@ -169,7 +169,7 @@ export function moveToAction() {
 export function connectionDetailsAction() {
   return {
     name: "connectionDetails",
-    query: (event: GameActionEventArgs<{ roomUrl: string; roomPassword:string }>): GameActionResult => {
+    query: (event: GameActionEventArgs<{ roomUrl: string; roomPassword: string }>): GameActionResult => {
       console.log("Querying action with event args:", event.args);
       return { error: 0 };
     },
@@ -181,6 +181,75 @@ export function connectionDetailsAction() {
     }
   };
 }
+
+export function clearAllTilesAction() {
+  return {
+    name: "clearAllTiles",
+    query: (event: GameActionEventArgs): GameActionResult => {
+      console.log("Querying action with event args:", event.args);
+      return { error: 0 };
+    },
+    execute: (event: GameActionEventArgs): GameActionResult => {
+      const mapSize = map.size; // Get the map size in tiles
+      const tilesX = mapSize.x; // Total tiles in the X direction
+      const tilesY = mapSize.y; // Total tiles in the Y direction
+
+      // List of tiles to exclude
+      const excludedTiles = [
+        { x: 1, y: 30 },
+        { x: 2, y: 30 },
+        { x: 3, y: 29 },
+        { x: 3, y: 30 },
+        { x: 3, y: 31 }
+      ];
+
+      console.log(`Clearing map of size ${tilesX}x${tilesY} tiles...`);
+
+      for (let x = 0; x < tilesX; x++) {
+        for (let y = 0; y < tilesY; y++) {
+          // Skip excluded tiles
+          const isExcluded = excludedTiles.some(tile => tile.x === x && tile.y === y);
+          if (isExcluded) {
+            console.log(`Skipping tile at (${x}, ${y}) as it is in the excluded list.`);
+            continue;
+          }
+
+          const tile = map.getTile(x, y);
+          const tileElements = tile.elements;
+
+
+          for (let i = 0; i < tileElements.length; i++) {
+            if (tileElements[i].type !== "surface") {
+              tile.removeElement(i);
+            }
+          }
+
+        }
+      }
+      return { error: 0 };
+    }
+  };
+}
+
+export function setCashAction() {
+  return {
+    name: "setCash",
+    query: (event: GameActionEventArgs<{ cash: number }>): GameActionResult => {
+      console.log("Querying action with event args:", event.args);
+      return { error: 0 };
+    },
+    execute: (event: GameActionEventArgs<{ cash: number }>): GameActionResult => {
+      if (!event.args || event.args.cash === undefined) {
+        return { error: 1, errorMessage: "Cash amount is missing." };
+      }
+
+      park.cash = event.args.cash;
+      console.log(`Set cash to: ${event.args.cash}`);
+      return { error: 0 };
+    }
+  };
+}
+
 
 
 
@@ -213,6 +282,12 @@ export function registerActions() {
 
   const connectionAction = connectionDetailsAction();
   context.registerAction(connectionAction.name, connectionAction.query, connectionAction.execute);
+
+  const clearAllTiles = clearAllTilesAction();
+  context.registerAction(clearAllTiles.name, clearAllTiles.query, clearAllTiles.execute);
+
+  const setCash = setCashAction();
+  context.registerAction(setCash.name, setCash.query, setCash.execute);
 
   console.log("Actions registered.");
 }

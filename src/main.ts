@@ -1,9 +1,9 @@
 
 import { configureBoard } from "./ui-helpers";
-import { registerActions } from "./actions";
+import { registerActions, setCashAction } from "./actions";
 import { openBingoBoard, openBingoBoardDialog, showConnectDialog } from "./ui";
 import { subscribeToGoalChecks, triggerBingo } from "./bingo/main";
-import { clearMiddle, getSeed, renewRides, setSeed } from "./util";
+import { addRandomTrees, clearAllTiles, clearAndSetForSale, clearMiddle, debugMode, getSeed, ownMapSection, renewRides, setSeed } from "./util";
 import { bingosyncUI, connectToServer } from "./bingo/bingosync-handler";
 import { config } from "./config";
 let dayCounter = 0; // Counter for days passed
@@ -21,13 +21,14 @@ function showError(result: GameActionResult, ride: Ride) {
 export function main(): void {
   registerActions();
   clearMiddle();
+  
   network.defaultGroup = 3;
   const seed = getSeed();
-
+  restart();
   if (network.mode === "server") {
 
     if (typeof ui !== 'undefined') {
-      
+
       setSeed();
       ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
       showConnectDialog();
@@ -49,21 +50,6 @@ export function main(): void {
     } catch (error) {
       console.log("Error opening Bingo board:", error);
     }
-    
-    context.setInterval(() => {
-      const parkStorage = context.getParkStorage();
-      const roomUrlStored: string | undefined = parkStorage.get("roomUrl");
-      if (roomUrlStored) {
-        const roomIdStored = roomUrlStored.split("/").pop();
-        const roomId = config.room;
-        if (roomIdStored !== roomId) {
-          if (!roomUrlStored) {
-            bingosyncUI();
-          }
-        }
-      }
-    }, 5000);
-
 
     ui.registerShortcut({ id: "bingoSync.connectionDetails", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: bingosyncUI });
 
@@ -91,4 +77,17 @@ export function main(): void {
 
 
 
+}
+
+const restart = () => {
+  debugMode(1, () => {
+    clearAllTiles(() => {
+      clearAndSetForSale('top-right');
+      clearAndSetForSale('bottom-right');
+      clearAndSetForSale('bottom-left');
+      ownMapSection('top-left')
+    });
+    addRandomTrees();
+    context.executeAction("setCash", { args: { cash: 1000000 } });
+  });
 }
