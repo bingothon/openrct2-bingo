@@ -47,7 +47,7 @@ export function subscribeToInventions() {
         if (dayCounter % 1 === 0) {
             context.executeAction('inventNextItem', { args: {} }, (result) => {
                 if (result.error) {
-                    if(result.errorMessage ==='No uninvented items remaining.') return { error: 0 }
+                    if (result.errorMessage === 'No uninvented items remaining.') return { error: 0 }
                     console.log('Failed to set seed:', result.errorMessage);
                 }
             });
@@ -152,16 +152,8 @@ export function subscribeToServerInitialization() {
             }
             isRestarting = true;
             if (network.mode === 'server') {
-                restart(true, () => {
-                    debugMode(0);
-                    config.started = false;
-                    isRestarting = false;
-                    context.executeAction("setStorage", { args: { key: 'started', value: false } }, () => {
-                        setSeed();
-                        configureBoard(getSeed(), true);
-                        console.log("Game restarted!");
-
-                    });
+                restart(true, true, () => {
+                    // restarting the entire server/openrct2 instance
                 });
             }
 
@@ -213,7 +205,7 @@ export function unsubscribeFromInventions() {
 }
 
 
-export const restart = (isServer = false, callback?: Function) => {
+export const restart = (isServer = false, clientRestart?: boolean, callback?: Function) => {
     debugMode(1, () => {
         context.executeAction("parksetloan", { value: 0 }, () => {
             context.executeAction("setCash", { args: { cash: 1000000 } }, () => {
@@ -233,7 +225,7 @@ export const restart = (isServer = false, callback?: Function) => {
                                                     const staffIds = map.getAllEntities("staff").map((staff) => staff.id);
                                                     if (staffIds.length === 0) {
                                                         console.log("No staff found, proceeding to reset...");
-                                                       
+
                                                         handleReset();
                                                     } else {
                                                         let firedStaffCount = 0;
@@ -255,7 +247,7 @@ export const restart = (isServer = false, callback?: Function) => {
 
                                                         intervalSubscriptionServerReset = context.subscribe("interval.day", () => {
                                                             let guestsHandled = park.guests === 0;
-                                                            
+
                                                             console.log(`Guests handled: ${guestsHandled}`);
 
                                                             if (!guestsHandled) {
@@ -274,12 +266,14 @@ export const restart = (isServer = false, callback?: Function) => {
                                                                 console.log("All guests have been handled.");
                                                             }
 
-                                                        
+
 
                                                             if (guestsHandled) {
                                                                 console.log("Guests handled and land flattened. Finalizing restart...");
-                                                                resetServer();
-                                                                // finalizeRestart();
+                                                                if (clientRestart) {
+                                                                    resetServer();
+                                                                }
+                                                                finalizeRestart();
                                                                 if (intervalSubscriptionServerReset) {
                                                                     intervalSubscriptionServerReset.dispose();
                                                                     intervalSubscriptionServerReset = null;

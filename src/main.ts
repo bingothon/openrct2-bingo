@@ -21,7 +21,7 @@ export function main(): void {
       // // find the tiles that are not just surface tiles
       // context.executeAction('clearAllTiles', { args: {} }, (result) => {
       // });
-      restart(true, () => {
+      restart(true, false, () => {
         console.log("Starting normal server mode.");
       });
       ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
@@ -29,7 +29,7 @@ export function main(): void {
       console.log("Headless mode detected, setting seed and starting server.");
       subscribeToInventions();
       subscribeToRenewRides();
-      restart(true, () => {
+      restart(true, false, () => {
         console.log("No UI detected, starting headless server mode.");
       });
     }
@@ -65,7 +65,7 @@ export function main(): void {
     subscribeToInventions();
     subscribeToRenewRides();
 
-    restart(false, () => {
+    restart(false, false, () => {
       console.log("No network mode detected, starting single-player mode.");
     });
     console.log("Single-player mode detected.");
