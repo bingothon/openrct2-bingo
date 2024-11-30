@@ -4,6 +4,7 @@ export type Goal = {
     colors: string;
     status: "completed" | "incomplete";
     checkCondition: () => boolean;
+    currentCondition?: () => string | number | undefined;
   };
   
 export type BingoSyncBoardData = {

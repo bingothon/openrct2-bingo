@@ -2,8 +2,6 @@
 import { config } from "../config";
 import type { BingoBoard, Goal } from "../types";
 
-let intervalSubscription: IDisposable | null = null; // Store the subscription reference
-
 /**
  * Updates the UI to reflect a completed goal without refreshing the entire Bingo board.
  */
@@ -17,24 +15,6 @@ export function updateGoalUI(index: number, board: BingoBoard) {
             button.text = `✓ ${board[index].name}`;
         }
     }
-}
-
-export function subscribeToGoalChecks(board: BingoBoard) {
-    // Dispose of any existing subscription to prevent duplicates
-    if (intervalSubscription) {
-        intervalSubscription.dispose();
-    }
-
-    let tickCounter = 0;
-
-    // Create a new subscription and store the IDisposable reference
-    intervalSubscription = context.subscribe("interval.tick", () => {
-        tickCounter++;
-        if (tickCounter % 10000 === 0) {
-            checkGoals(board);
-            tickCounter = 0;
-        }
-    });
 }
 
 
@@ -109,7 +89,7 @@ function isLineCompleted(board: BingoBoard, type: 'row' | 'column' | 'diagonal',
  * Triggers a bingo if a line hasn't already triggered one.
  * @param lineKey Unique identifier for the line (e.g., "row_0", "column_2", "diagonal_1").
  */
-export function triggerBingo(lineKey: string) {
+export function triggerBingo(lineKey: string, callback?: Function) {
     if (!completedBingos[lineKey]) {
         completedBingos[lineKey] = true; // Mark the bingo as completed
         console.log(`Bingo! ${lineKey} completed!`);
@@ -122,6 +102,8 @@ export function triggerBingo(lineKey: string) {
         context.executeAction('notifyBingo', { args: { lineKey } }, (result) => {
             if (result.error) {
                 console.log(`Failed to trigger bingo for ${lineKey}:`, result.errorMessage);
+            }else{
+                if (callback) callback();
             }
         });
     }
@@ -136,10 +118,10 @@ export function checkGoals(board: BingoBoard) {
 
     try {
         board.forEach((goal, index) => {
-            const goalKey = `${config.namespace}.goal_${goal.slot}`;
+            const goalKey = `goal_${goal.slot}`;
 
             if (network.mode === "client") {
-                console.log(`Getting goal status for ${goalKey}...`);
+                // console.log(`Getting goal status for ${goalKey}...`);
                 const isCompleted = context.getParkStorage().get(goalKey, false);
                 if (isCompleted && goal.status !== "completed") {
                     goal.status = "completed";

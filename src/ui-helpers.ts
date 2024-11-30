@@ -26,14 +26,14 @@ function assignSlotsWithCompletionStatus(board: BingoBoard, isNewBoard: boolean 
         // Reset all goals to incomplete in parkStorage if in server mode
         board.forEach((goal, index) => {
             const slot = `${index + 1}`;
-            const goalKey = `${config.namespace}.goal_${slot}`;
+            const goalKey = `goal_${slot}`;
             setGoalCompletionStatus(goalKey, false, goal.name); // Reset goal to incomplete
         });
     }
 
     return board.map((goal, index) => {
         const slot = `${index + 1}`;
-        const goalKey = `${config.namespace}.goal_${slot}`;
+        const goalKey = `goal_${slot}`;
         console.log("Goal key:", goalKey);
         // Check if the goal is marked as completed in parkStorage
         const isCompleted = context.getParkStorage().get(goalKey, false);

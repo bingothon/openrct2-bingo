@@ -2,8 +2,27 @@ import { clearAndSetForSale, clearMap, clearMiddle, debugMode, ownMapSection } f
 let bingoBeingNotified = false;
 type RandomMapSectionKey = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
-const mapSections: RandomMapSectionKey[] = ["top-left", "top-right", "bottom-left", "bottom-right"];
-let remainingSections: RandomMapSectionKey[] = [...mapSections];
+const remainingSections = (() => {
+    const mapSections: RandomMapSectionKey[] = ["top-right", "bottom-left", "bottom-right"];
+    return [...mapSections];
+})();
+
+
+function handleMapSectionOwnership(callback: () => void) {
+    if (remainingSections.length === 0) {
+        console.log("All map sections have already been owned.");
+        callback();
+        return;
+    }
+
+    const randomIndex = Math.floor(Math.random() * remainingSections.length);
+    const randomMapSection = remainingSections[randomIndex];
+
+    // Remove the selected section from remaining ones
+    remainingSections.splice(randomIndex, 1);
+
+    ownMapSection(randomMapSection, callback);
+}
 
 /**
  * Places a small scenery object at specified coordinates with given parameters.
@@ -61,25 +80,24 @@ export function notifyGroundBingo() {
             debugMode(1, () => {
                 console.log("Debug mode enabled.");
 
-                if (!bingoBeingNotified && network.mode === "server") {
-                    bingoBeingNotified = true;
-                    notifyBingoHelper();
+                // Handle map section ownership here
+                if (network.mode === "server") {
+                    handleMapSectionOwnership(() => {
+                        if (!bingoBeingNotified) {
+                            bingoBeingNotified = true;
+                            notifyBingoHelper(() => {
+                                debugMode(0, () => {
+                                    bingoBeingNotified = false;
+                                    console.log('bingo ground notified')
+                                    console.log("Debug mode disabled.");
+                                });
+                            });
+                        }
+                    });
                 }
-
-                // clearAndSetForSale('bottom-right', () => {
-                //     
-                // });
-
             });
         }
     });
-
-    // console.log("Notifying ground bingo...");
-
-
-
-
-
 }
 
 function writingBingo(baseX: number, baseY: number, callback?: () => void) {
@@ -182,43 +200,18 @@ function writingBingo(baseX: number, baseY: number, callback?: () => void) {
 }
 
 
-function notifyBingoHelper() {
+function notifyBingoHelper(callback?: Function) {
     const baseX = 53 * 32; // Adjust these coordinates to center "BINGO"
     const baseY = 63 * 32; // Adjust these coordinates to center "BINGO"
 
     const width = 21 * 32; // Approximate width of "BINGO"
     const height = 5 * 32; // Approximate height of "BINGO"
 
-    type RandomMapSectionKey = "top-right" | "bottom-left" | "bottom-right";
-    const mapSections = ["top-right", "bottom-left", "bottom-right"] as RandomMapSectionKey[];
-
-    // Use a static variable to track remaining sections across calls
-    if (!notifyBingoHelper.remainingSections) {
-        notifyBingoHelper.remainingSections = [...mapSections];
-    }
-
-    // Ensure there are remaining sections to choose from
-    if (notifyBingoHelper.remainingSections.length === 0) {
-        console.log("All map sections have already been owned.");
-        return;
-    }
-
-    // Select a random remaining section
-    const randomIndex = Math.floor(Math.random() * notifyBingoHelper.remainingSections.length);
-    const randomMapSection = notifyBingoHelper.remainingSections[randomIndex];
-
-    // Remove the selected section from remaining ones
-    notifyBingoHelper.remainingSections.splice(randomIndex, 1);
-
-    ownMapSection(randomMapSection, () => {
-        raiseLandMultipleTimes(baseX, baseY, width, height, 50, () => {
-            writingBingo(baseX, baseY, () => {
-                lowerLandMultpleTimes(baseX, baseY, width, height, 50, () => {
-                    clearMiddle(() => {
-                        bingoBeingNotified = false;
-                        console.log("Completed ground bingo notification.");
-                    });
-                });
+    raiseLandMultipleTimes(baseX, baseY, width, height, 50, () => {
+        writingBingo(baseX, baseY, () => {
+            lowerLandMultpleTimes(baseX, baseY, width, height, 50, () => {
+                
+                if (callback) callback();
             });
         });
     });

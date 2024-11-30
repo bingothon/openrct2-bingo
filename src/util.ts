@@ -1,5 +1,7 @@
 import { addCashAction } from "./actions";
 import { config } from "./config";
+import { FOOT_PATH_LOCATIONS } from "./constants";
+import { configureBoard } from "./ui-helpers";
 
 /**
 * Shuffles an array using the Fisher-Yates algorithm with a seeded RNG
@@ -26,7 +28,7 @@ export function createSeededRandom(seed: number): () => number {
 
 export const getSeed = (): number => {
     const parkStorage = context.getParkStorage();
-    return parkStorage.get(`${config.namespace}.bingoSeed`, config.defaultSeed); // Default seed if not found
+    return parkStorage.get(`bingoSeed`, config.defaultSeed); // Default seed if not found
 };
 
 export const setSeed = () => {
@@ -270,26 +272,32 @@ export function clearAndSetForSale(
         setting: 0, // Set to unowned
         ownership: 0, // Remove ownership
     };
+    // Step 2: Mark the section for sale if clearing succeeded
+    const forSaleArgs = {
+        x1,
+        y1,
+        x2,
+        y2,
+        setting: 2, // Set for sale
+        ownership: 0, // No ownership
+    };
 
     context.executeAction("landsetrights", clearArgs, (clearResult) => {
         if (clearResult.error) {
             console.log(`Failed to clear section ${section}: ${clearResult.errorMessage}`);
+            if (clearResult.errorMessage === 'Land not for sale!')
+                console.log('Land not for sale!, skipping')
+                if (callback) {
+                    callback();
+                }
         } else {
             console.log(`Successfully cleared section: ${section}`);
-
-            // Step 2: Mark the section for sale if clearing succeeded
-            const forSaleArgs = {
-                x1,
-                y1,
-                x2,
-                y2,
-                setting: 2, // Set for sale
-                ownership: 0, // No ownership
-            };
-
             context.executeAction("landsetrights", forSaleArgs, (saleResult) => {
                 if (saleResult.error) {
                     console.log(`Failed to set section ${section} for sale: ${saleResult.errorMessage}`);
+                    if (callback) {
+                        callback();
+                    }
                 } else {
                     console.log(`Successfully set section ${section} for sale.`);
                 }
@@ -346,58 +354,63 @@ export function clearMiddle(callback?: () => void) {
         y2,
         setting: 0, // Set to unowned
     };
-    debugMode(1, () => {
-        context.executeAction("landsetrights", setForSaleArgs, (purchaseResult) => {
-            if (purchaseResult.error) {
-                console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
-            } else {
-                context.queryAction("landbuyrights", buyArgs, (purchaseResult) => {
-                    if (purchaseResult.error) {
-                        console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
-                    } else {
-                        if (purchaseResult && purchaseResult.cost && purchaseResult.cost > 0) {
-                            console.log(`Cost of purchase: ${purchaseResult.cost}`);
-                            context.executeAction("addCash", { args: { cash: purchaseResult.cost } }, (result) => {
-                                if (result.error) {
-                                    console.log("Failed to add cash:", result.errorMessage);
-                                } else {
-                                    console.log("Cash added successfully.");
-                                }
-                            });
-                        }
-                        context.executeAction("landbuyrights", buyArgs, (purchaseResult) => {
-                            if (purchaseResult.error) {
-                                console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
-                            } else {
-                                context.executeAction("landsetrights", clearArgs, (clearResult) => {
-                                    if (clearResult.error) {
-                                        console.log(`Failed to clear middle section: ${clearResult.errorMessage}`);
-                                    } else {
-                                        console.log(`Successfully cleared middle section.`);
 
-                                        context.executeAction("landsetrights", clearArgs, (saleResult) => {
-                                            if (saleResult.error) {
-                                                console.log(`Failed to set middle section for sale: ${saleResult.errorMessage}`);
-                                            } else {
-                                                console.log(`Successfully set middle section to unowned.`);
-                                            }
-                                            debugMode(0, () => {
-                                                // Execute the callback after completion
-                                                if (callback) {
-                                                    callback();
-                                                }
-                                            });
-                                        });
-                                    }
-                                });
+    context.executeAction("landsetrights", setForSaleArgs, (purchaseResult) => {
+        if (purchaseResult.error) {
+            console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
+            return { error: 0 } // ignored for now, its probably not needed after this once initialized
+        } else {
+            context.queryAction("landbuyrights", buyArgs, (purchaseResult) => {
+                if (purchaseResult.error) {
+                    console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
+                    return { error: 0 } // ignored for now, its probably not needed after this once initialized
+                } else {
+                    if (purchaseResult && purchaseResult.cost && purchaseResult.cost > 0) {
+                        console.log(`Cost of purchase: ${purchaseResult.cost}`);
+                        context.executeAction("addCash", { args: { cash: purchaseResult.cost } }, (result) => {
+                            if (result.error) {
+                                console.log("Failed to add cash:", result.errorMessage);
+                            } else {
+                                console.log("Cash added successfully.");
                             }
                         });
                     }
-                });
-            }
-        });
+                    context.executeAction("landbuyrights", buyArgs, (purchaseResult) => {
+                        if (purchaseResult.error) {
+                            console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
+                            return { error: 0 } // ignored for now, its probably not needed after this once initialized
+                        } else {
+                            context.executeAction("landsetrights", clearArgs, (clearResult) => {
+                                if (clearResult.error) {
+                                    console.log(`Failed to clear middle section: ${clearResult.errorMessage}`);
+                                    return { error: 0 } // ignored for now, its probably not needed after this once initialized
+                                } else {
+                                    console.log(`Successfully cleared middle section.`);
 
+                                    context.executeAction("landsetrights", clearArgs, (saleResult) => {
+                                        if (saleResult.error) {
+                                            console.log(`Failed to set middle section for sale: ${saleResult.errorMessage}`);
+                                            return { error: 0 } // ignored for now, its probably not needed after this once initialized
+                                        } else {
+                                            console.log(`Successfully set middle section to unowned.`);
+                                        }
+
+                                        // Execute the callback after completion
+
+
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
     });
+    if (callback) {
+        callback();
+    }
+
 }
 
 
@@ -472,9 +485,7 @@ export function renewRides(callback?: () => void) {
     });
 }
 
-/// <reference path="/path/to/openrct2.d.ts" />
-
-export function addRandomTrees() {
+export function addRandomTrees(callback: Function) {
     const mapSize = map.size;
     const excludedTiles = [
         { x: 1, y: 30 },
@@ -491,8 +502,8 @@ export function addRandomTrees() {
         return;
     }
 
-    for (let x = 1; x < mapSize.x-1; x++) {
-        for (let y = 1; y < mapSize.y-1; y++) {
+    for (let x = 1; x < mapSize.x - 1; x++) {
+        for (let y = 1; y < mapSize.y - 1; y++) {
             // Randomly decide whether to place a tree
             if (Math.random() < 0.05) { // Adjust the probability as needed
                 const randomTree = treeObjects[Math.floor(Math.random() * treeObjects.length)];
@@ -518,7 +529,7 @@ export function addRandomTrees() {
                     if (result.error) {
                         console.log(`Failed to place tree at (${x}, ${y}): ${result.errorMessage}`);
                     } else {
-                        if(result.cost && result.cost > 0) {
+                        if (result.cost && result.cost > 0) {
                             context.executeAction('addCash', { args: { cash: result.cost } }, (result) => {
                                 if (result.error) {
                                     console.log('Failed to add cash:', result.errorMessage);
@@ -535,7 +546,7 @@ export function addRandomTrees() {
                             primaryColour: 0,
                             secondaryColour: 0,
                             tertiaryColour: 0,
-        
+
                         }, (result) => {
                             if (result.error) {
                                 console.log(`Failed to place tree at (${x}, ${y}): ${result.errorMessage}`);
@@ -545,9 +556,12 @@ export function addRandomTrees() {
                         });
                     }
                 });
-                
+
             }
         }
+    }
+    if (callback) {
+        callback();
     }
 }
 
@@ -555,6 +569,9 @@ export function clearAllTiles(callback?: () => void) {
     context.executeAction('clearAllTiles', {}, (result) => {
         if (result.error) {
             console.log('Failed to clear all tiles:', result.errorMessage);
+            if (callback) {
+                callback();
+            }
         } else {
             if (callback) {
                 callback();
@@ -564,3 +581,184 @@ export function clearAllTiles(callback?: () => void) {
     });
 
 }
+
+export function clearAllRides(callback?: () => void) {
+    context.executeAction('clearAllRides', {}, (result) => {
+        if (result.error) {
+            console.log('Failed to clear all rides:', result.errorMessage);
+        } else {
+            if (callback) {
+                callback();
+            }
+            console.log('All rides cleared.');
+        }
+    });
+}
+
+export function flatAllLand(callback?: () => void) {
+    context.executeAction('flatAllLand', {}, (result) => {
+        if (result.error) {
+            console.log('Failed to flatten all land:', result.errorMessage);
+        } else {
+            if (callback) {
+                callback();
+            }
+            console.log('All land flattened.');
+        }
+    });
+}
+
+
+export function adjustWaterHeight(targetZ: number, callback: () => void) {
+    
+
+    console.log("Starting to adjust water height in steps of 16...");
+
+    const tiles = waterTiles();
+    console.log(`Found ${tiles.length} water tiles.`);
+    for (const tile of tiles) {
+        const x = tile.x * 32;
+        const y = tile.y * 32;
+
+
+        // Check each element of the tile
+        for (const element of tile.elements) {
+            if (element.type === "surface") {
+                const surfaceElement = element as SurfaceElement;
+                const currentWaterHeight = surfaceElement.waterHeight;
+                const offset = targetZ - currentWaterHeight;
+
+                if (offset !== 0) {
+                    // Calculate number of steps needed
+                    const steps = Math.abs(Math.floor(offset / 16));
+                    const action = offset > 0 ? "waterraise" : "waterlower";
+
+                    for (let i = 0; i < steps; i++) {
+                        context.queryAction(action, { x1: x, y1: y, x2: x, y2: y }, (result) => {
+                            if (result.error) {
+                                console.log(`Failed to adjust water height at (${x}, ${y}), step ${i + 1}/${steps}: ${result.errorMessage}`);
+                            }
+                            if (result.cost && result.cost > 0) {
+                                context.executeAction('addCash', { args: { cash: result.cost } }, (result) => {
+                                    context.executeAction(action, { x1: x, y1: y, x2: x, y2: y }, (result) => {
+                                    });
+                                });
+                            }
+                        });
+                    }
+                }
+            }
+        }
+    }
+    console.log("Water height adjustment complete.");
+    if (callback) {
+        callback();
+    }
+}
+
+export function setFootPaths(callback: () => void) {
+    FOOT_PATH_LOCATIONS.forEach((location) => {
+        const footpathAction = {
+            x: location.x * 32,
+            y: location.y * 32,
+            z: 112, // Fixed Z-coordinate
+            direction: 0xFF, // Auto direction
+            object: 0, // Default footpath object
+            railingsObject: 0, // No railings
+            slope: 0, // Flat footpath
+            constructFlags: 0 // No special flags
+        };
+        context.queryAction("footpathplace", footpathAction, (result) => {
+            if (result.cost && result.cost > 0) {
+                context.executeAction('addCash', { args: { cash: result.cost } }, (result) => {
+                    if (result.error) {
+                        console.log('Failed to add cash:', result.errorMessage);
+                    }
+                    context.executeAction("footpathplace", footpathAction, (result) => {
+                        if (result.error) {
+                            console.log(`Failed to place footpath at (${footpathAction.x}, ${footpathAction.y}):`, result.error);
+                        } else {
+                            console.log(`Footpath placed at (${footpathAction.x}, ${footpathAction.y})`);
+                        }
+                    });
+                });
+            }
+
+            
+        });
+    });
+    if (callback) {
+        callback();
+    }
+}
+
+
+
+
+
+export function waterTiles(): Tile[] {
+    let tiles = [];
+    for (let x = 1; x < map.size.x - 1; x++) {
+        for (let y = 1; y < map.size.y - 1; y++) {
+            const tile = map.getTile(x, y);
+            for (const element of tile.elements) {
+                if (element.type === "surface" && (element as SurfaceElement).waterHeight !== 0) {
+                    tiles.push(tile);
+                }
+            }
+        }
+    }
+    tiles.forEach(tile => {
+        console.log(`Water tile at (${tile.x}, ${tile.y}), height: ${(tile.elements[0] as SurfaceElement).waterHeight}`);
+    });
+    return tiles;
+}
+
+
+export function checkIfStarted(): boolean {
+    const parkStorage = context.getParkStorage();
+    const started = parkStorage.get('started', false);
+    return started;
+}
+
+export function startGame(n: number): void {
+    context.executeAction('setStorage', { args: { key: 'started', value: true } });
+    context.executeAction('setStorage', { args: { key: 'duration', value: n } });
+}
+
+
+export function getRandomItemsByRideType(items: ResearchItem[]): ResearchItem[] {
+    const rideTypeMap: { [key: number]: RideResearchItem[] } = {}; // Group RideResearchItems by rideType
+    const uniqueItems: ResearchItem[] = [];
+
+    // Separate and group RideResearchItems by rideType
+    items.forEach((item) => {
+        if (item.type === "ride" && item.category === "shop") {
+            // Add all items in the "shop" category directly
+            uniqueItems.push(item);
+        } else if (item.type === "ride" && item.rideType !== undefined) {
+            // Group RideResearchItems by rideType
+            if (!rideTypeMap[item.rideType]) {
+                rideTypeMap[item.rideType] = [];
+            }
+            rideTypeMap[item.rideType].push(item);
+        } else if (item.type === "scenery") {
+            // Add all SceneryResearchItems directly
+            uniqueItems.push(item);
+        }
+    });
+
+    // Randomly select one RideResearchItem per rideType
+    for (const rideType in rideTypeMap) {
+        const itemsForType = rideTypeMap[rideType];
+        const randomIndex = Math.floor(Math.random() * itemsForType.length);
+        uniqueItems.push(itemsForType[randomIndex]);
+    }
+
+    return uniqueItems;
+}
+
+
+
+
+

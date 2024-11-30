@@ -1,9 +1,12 @@
 import { goals } from "./goals";
-import { getSeed, setSeed } from "../util";
+import { debugMode, getSeed, setSeed } from "../util";
 import { BingoBoard, BingoSyncBoardData } from "../types";
 import { config } from "../config";
 import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui-helpers";
-
+// import { restart } from "src/subscriptions";
+config.socket = network.createSocket();
+const socket = config.socket;
+let isSocketConnected = false; // Track connection state globally
 /**
  * Updates the UI after a successful connection.
  */
@@ -25,7 +28,6 @@ export function updateUIOnConnect(roomUrl: string, roomPassphrase: string) {
 }
 
 export function bingosyncUI() {
-    ui.closeAllWindows();
     ui.openWindow({
         classification: "bingosync-connection",
         title: "BingoSync Connection",
@@ -53,11 +55,11 @@ export function connectToServer() {
     console.log("seed after", seed);
     const board = configureBoard(seed);
     const bingoSyncFormat = convertForBingoSync(board);
-    config.socket = network.createSocket();
-    const socket = config.socket;
+
 
     try {
-        socket.connect(3000, "localhost", () => {
+        socket.connect(12414, "127.0.0.1", () => {
+            isSocketConnected = true;
             console.log("Connected to server");
             const creationRequest = JSON.stringify({
                 action: "connectOrCreate",
@@ -69,7 +71,7 @@ export function connectToServer() {
             }) + "\n";
             socket.write(creationRequest);
         });
-        
+
     } catch (connectError) {
         console.log("Error during connection:", connectError);
     }
@@ -127,13 +129,61 @@ export function processMessage(message: string) {
             }
 
             configureBoard(getSeed(), true);
-            if(typeof ui !== 'undefined') updateUIOnConnect(response.roomUrl, response.passphrase);
             context.executeAction("connectionDetails", { args: { roomUrl: response.roomUrl, roomPassword: response.passphrase } });
-            updateBoardWithSeed(getSeed());
+            if (typeof ui !== 'undefined') {
+                updateUIOnConnect(response.roomUrl, response.passphrase);
+            }
 
+            updateBoardWithSeed(getSeed());
             return
         }
     } catch (error) {
         console.log("error processing bingosync:", error);
+    }
+}
+
+/**
+ * Sends a reset message to the server.
+ */
+export function resetServer() {
+    if (!isSocketConnected) {
+        console.log("Socket is not connected. Reconnecting...");
+        socket.connect(12414, "127.0.0.1", () => {
+            isSocketConnected = true;
+            console.log("Reconnected to server");
+
+            // Send the reset message after reconnection
+            const resetMessage = JSON.stringify({
+                action: "restart",
+            }) + "\n";
+
+            try {
+                socket.write(resetMessage);
+                console.log("Sent reset message to the server");
+            } catch (error) {
+                console.log("Error while sending reset message:", error);
+            }
+        });
+
+        socket.on("error", (error) => {
+            isSocketConnected = false;
+            console.log("Socket error:", error);
+        });
+
+        socket.on("close", () => {
+            isSocketConnected = false;
+            console.log("Socket connection closed");
+        });
+    } else {
+        const resetMessage = JSON.stringify({
+            action: "reset",
+        }) + "\n";
+
+        try {
+            socket.write(resetMessage);
+            console.log("Sent reset message to the server");
+        } catch (error) {
+            console.log("Error while sending reset message:", error);
+        }
     }
 }

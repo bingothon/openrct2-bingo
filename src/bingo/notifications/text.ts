@@ -1,5 +1,5 @@
 export function notifyTextGoal(name: string): void {
-    const message = `Goal completed: ${name}`;
+    const message = `Goal: ${name}`;
     park.postMessage(message);
     if(network.mode === "server" || network.mode === "client") network.sendMessage(message);
 }
