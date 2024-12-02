@@ -258,7 +258,7 @@ export const goals = (seed: number) => {
             },
             checkCondition: () => {
 
-                return map.rides.filter(ride => ride.rideLength >= 2500  && ride.totalProfit > 0).length >= 1
+                return map.rides.filter(ride => ride.rideLength >= 2500 && ride.totalProfit > 0).length >= 1
             }
         },
         {
@@ -306,7 +306,7 @@ export const goals = (seed: number) => {
             colors: "blank",
             status: "incomplete",
             currentCondition: () => map.rides.filter(ride => ride.classification !== 'stall' && ride.classification !== 'facility').length,
-            checkCondition: function () { return map.rides.filter(function (ride) { return ride.classification !== 'stall' && ride.classification !== 'facility'  && ride.totalProfit > 0; }).length >= 10; }
+            checkCondition: function () { return map.rides.filter(function (ride) { return ride.classification !== 'stall' && ride.classification !== 'facility' && ride.totalProfit > 0; }).length >= 10; }
         },
         {
             name: "Airtime (10+ sec)",
@@ -321,7 +321,7 @@ export const goals = (seed: number) => {
                 }
                 return 0;
             },
-            checkCondition: () => map.rides.filter(ride => ride.totalAirTime >= 10  && ride.totalProfit > 0).length >= 1
+            checkCondition: () => map.rides.filter(ride => ride.totalAirTime >= 10 && ride.totalProfit > 0).length >= 1
         },
         {
             name: "Get 1000 guests in the park",
@@ -386,7 +386,7 @@ export const goals = (seed: number) => {
                 // const filterName = "Monorail 1";
                 // const ride = map.rides.filter(ride => ride.name === filterName)[0];
                 // console.log(`Ride time for ${filterName}: ${ride.rideTime}`);
-                return map.rides.filter(ride => ride.rideTime >= 279  && ride.totalProfit > 0).length >= 1
+                return map.rides.filter(ride => ride.rideTime >= 60 * 4 && ride.totalProfit > 0).length >= 1
             }
         },
         {
