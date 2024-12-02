@@ -166,12 +166,18 @@ export function subscribeToServerInitialization() {
             debugMode(1, () => {
                 addRandomTrees(() => {
                     context.executeAction("resetResearch", { args: {} }, () => {
-                        context.executeAction("parksetloan", { value: 0 }, () => {
-                            context.executeAction("setCash", { args: { cash: 1000000 } }, () => {
-                                context.executeAction("parksetdate", { day: 0, month: 0, year: 0 }, () => {
-                                    debugMode(0, () => {
-                                        setFootPaths(() => {
-                                            console.log('game started')
+                        context.executeAction('parksetresearchfunding', { priorities: 31, fundingAmount: 3 }, () => {
+                            context.executeAction('parksetparameter', { parameter: 1, value: 1 }, () => {
+                                context.executeAction('parksetentrancefee', { value: 0 }, () => {
+                                    context.executeAction("parksetloan", { value: 0 }, () => {
+                                        context.executeAction("setCash", { args: { cash: 1000000 } }, () => {
+                                            context.executeAction("parksetdate", { day: 0, month: 0, year: 0 }, () => {
+                                                debugMode(0, () => {
+                                                    setFootPaths(() => {
+                                                        console.log('game started')
+                                                    });
+                                                });
+                                            });
                                         });
                                     });
                                 });
@@ -208,100 +214,102 @@ export const restart = (isServer = false, clientRestart?: boolean, callback?: Fu
     debugMode(1, () => {
         context.executeAction("parksetloan", { value: 0 }, () => {
             context.executeAction("setCash", { args: { cash: 1000000 } }, () => {
-                clearAllRides(() => {
-                    clearMiddle(() => {
-                        context.executeAction("parksetdate", { day: 0, month: 0, year: 0 }, () => {
+                context.executeAction('parksetresearchfunding', { priorities: 31, fundingAmount: 0 }, () => {
+                    clearAllRides(() => {
+                        clearMiddle(() => {
+                            context.executeAction("parksetdate", { day: 0, month: 0, year: 0 }, () => {
 
-                            isRestarting = false;
+                                isRestarting = false;
 
-                            // Handle staff
-                            const staffIds = map.getAllEntities("staff").map((staff) => staff.id);
-                            if (staffIds.length === 0) {
-                                console.log("No staff found, proceeding to reset...");
+                                // Handle staff
+                                const staffIds = map.getAllEntities("staff").map((staff) => staff.id);
+                                if (staffIds.length === 0) {
+                                    console.log("No staff found, proceeding to reset...");
 
-                                handleReset();
-                            } else {
-                                let firedStaffCount = 0;
-                                console.log(`Firing ${staffIds.length} staff members...`);
-                                staffIds.forEach((id) => {
-                                    context.executeAction("stafffire", { id }, () => {
-                                        firedStaffCount++;
-                                        console.log(`Fired staff with ID: ${id}`);
-                                        if (firedStaffCount === staffIds.length) {
-                                            console.log("All staff fired, proceeding to reset...");
-                                            handleReset();
+                                    handleReset();
+                                } else {
+                                    let firedStaffCount = 0;
+                                    console.log(`Firing ${staffIds.length} staff members...`);
+                                    staffIds.forEach((id) => {
+                                        context.executeAction("stafffire", { id }, () => {
+                                            firedStaffCount++;
+                                            console.log(`Fired staff with ID: ${id}`);
+                                            if (firedStaffCount === staffIds.length) {
+                                                console.log("All staff fired, proceeding to reset...");
+                                                handleReset();
+                                            }
+                                        });
+                                    });
+                                }
+
+                                function handleReset() {
+                                    console.log("Starting reset process...");
+
+                                    intervalSubscriptionServerReset = context.subscribe("interval.day", () => {
+                                        let guestsHandled = park.guests === 0;
+
+                                        console.log(`Guests handled: ${guestsHandled}`);
+
+                                        if (!guestsHandled) {
+                                            const guestIds = map.getAllEntities("guest").map((guest) => guest.id);
+
+                                            if (guestIds.length > 0) {
+                                                console.log(`Found ${guestIds.length} guests. Exploding guests...`);
+                                                context.executeAction("parkMessage", { args: { message: `Restarting, exploding ${guestIds.length} guests...` } });
+                                                guestIds.forEach((id) => {
+                                                    context.executeAction("guestsetflags", { peep: id, guestFlags: 262144 }, () => {
+                                                        console.log(`Exploded guest with ID: ${id}`);
+                                                    });
+                                                });
+                                            }
+                                        } else {
+                                            console.log("All guests have been handled.");
+                                        }
+
+
+
+                                        if (guestsHandled) {
+                                            console.log("Guests handled and land flattened. Finalizing restart...");
+                                            if (clientRestart) {
+                                                resetServer();
+                                            }
+                                            finalizeRestart();
+                                            if (intervalSubscriptionServerReset) {
+                                                intervalSubscriptionServerReset.dispose();
+                                                intervalSubscriptionServerReset = null;
+                                            }
                                         }
                                     });
-                                });
-                            }
+                                }
 
-                            function handleReset() {
-                                console.log("Starting reset process...");
+                                function finalizeRestart() {
+                                    // Final game setup
 
-                                intervalSubscriptionServerReset = context.subscribe("interval.day", () => {
-                                    let guestsHandled = park.guests === 0;
+                                    adjustWaterHeight(112, () => {
 
-                                    console.log(`Guests handled: ${guestsHandled}`);
+                                        context.executeAction('removeAllLitter', { args: {} }, () => {
 
-                                    if (!guestsHandled) {
-                                        const guestIds = map.getAllEntities("guest").map((guest) => guest.id);
+                                            context.executeAction("gamesetspeed", { speed: 1 }, () => {
+                                                context.executeAction('setStorage', { args: { key: 'started', value: false } }, () => {
+                                                    config.started = false;
+                                                    console.log("Game restarted!");
+                                                    if (isServer) {
+                                                        console.log("Subscribing to server initialization...");
+                                                        subscribeToServerInitialization();
+                                                        connectToServer();
 
-                                        if (guestIds.length > 0) {
-                                            console.log(`Found ${guestIds.length} guests. Exploding guests...`);
-                                            context.executeAction("parkMessage", { args: { message: `Restarting, exploding ${guestIds.length} guests...` } });
-                                            guestIds.forEach((id) => {
-                                                context.executeAction("guestsetflags", { peep: id, guestFlags: 262144 }, () => {
-                                                    console.log(`Exploded guest with ID: ${id}`);
+                                                        debugMode(0)
+                                                    }
+                                                    if (callback) {
+                                                        callback();
+                                                    }
                                                 });
-                                            });
-                                        }
-                                    } else {
-                                        console.log("All guests have been handled.");
-                                    }
-
-
-
-                                    if (guestsHandled) {
-                                        console.log("Guests handled and land flattened. Finalizing restart...");
-                                        if (clientRestart) {
-                                            resetServer();
-                                        }
-                                        finalizeRestart();
-                                        if (intervalSubscriptionServerReset) {
-                                            intervalSubscriptionServerReset.dispose();
-                                            intervalSubscriptionServerReset = null;
-                                        }
-                                    }
-                                });
-                            }
-
-                            function finalizeRestart() {
-                                // Final game setup
-
-                                adjustWaterHeight(112, () => {
-
-                                    context.executeAction('removeAllLitter', { args: {} }, () => {
-
-                                        context.executeAction("gamesetspeed", { speed: 1 }, () => {
-                                            context.executeAction('setStorage', { args: { key: 'started', value: false } }, () => {
-                                                config.started = false;
-                                                console.log("Game restarted!");
-                                                if (isServer) {
-                                                    console.log("Subscribing to server initialization...");
-                                                    subscribeToServerInitialization();
-                                                    connectToServer();
-
-                                                    debugMode(0)
-                                                }
-                                                if (callback) {
-                                                    callback();
-                                                }
                                             });
                                         });
                                     });
-                                });
-                            }
+                                }
 
+                            });
                         });
                     });
                 });
