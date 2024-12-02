@@ -119,7 +119,7 @@ export function subscribeToServerInitialization() {
 
             context.executeAction("parkMessage", { args: { message: `Game started, remaining years: ${remainingYears - 1}` } });
             if (network.mode === 'server') {
-                network.sendMessage(`Game started, remaining years: ${remainingYears - 1}`);
+                network.sendMessage(`Game started, remaining years: ${remainingYears}`);
             }
         }
 
