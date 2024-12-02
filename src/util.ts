@@ -586,6 +586,9 @@ export function clearAllRides(callback?: () => void) {
     context.executeAction('clearAllRides', {}, (result) => {
         if (result.error) {
             console.log('Failed to clear all rides:', result.errorMessage);
+            if (callback) {
+                callback();
+            }
         } else {
             if (callback) {
                 callback();

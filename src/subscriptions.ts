@@ -105,22 +105,21 @@ export function subscribeToServerInitialization() {
         config.daysElapsed++
         console.log(`Day ${dayCounter} passed`);
         console.log(`Months elapsed.... ${date.monthsElapsed}`);
-        let yearsRemaining = config.gameTime.year - date.yearsElapsed;
         // Notify when a year has passed
         if (date.yearsElapsed % 1 === 0 && date.month === 0 && date.day === 0) {
             for (let i = 0; i < 3; i++) {
-                context.executeAction("parkMessage", { args: { message: `A year has passed. You have ${yearsRemaining} years to finish!` } });
+                context.executeAction("parkMessage", { args: { message: `A year has passed. You have ${remainingYears} years to finish!` } });
                 if (network.mode === 'server') {
-                    context.executeAction("networkMessage", { args: { message: `A year has passed. You have ${yearsRemaining} years to finish!` } });
+                    network.sendMessage(`A year has passed. You have ${remainingYears} years to finish!`);
                 }
             }
         }
 
         if (dayCounter % 15 === 0 && config.started) {
 
-            context.executeAction("parkMessage", { args: { message: `Game started, remaining years: ${yearsRemaining - 1}` } });
+            context.executeAction("parkMessage", { args: { message: `Game started, remaining years: ${remainingYears - 1}` } });
             if (network.mode === 'server') {
-                context.executeAction("networkMessage", { args: { message: `Game started, remaining years: ${yearsRemaining - 1}` } });
+                network.sendMessage(`Game started, remaining years: ${remainingYears - 1}`);
             }
         }
 
@@ -210,115 +209,102 @@ export const restart = (isServer = false, clientRestart?: boolean, callback?: Fu
         context.executeAction("parksetloan", { value: 0 }, () => {
             context.executeAction("setCash", { args: { cash: 1000000 } }, () => {
                 clearAllRides(() => {
-                    clearAllTiles(() => {
-                        clearAllTiles(() => {
-                            clearAllTiles(() => {
-                                clearAndSetForSale('top-right', () => {
-                                    clearAndSetForSale('bottom-right', () => {
-                                        clearAndSetForSale('bottom-left', () => {
-                                            clearMiddle(() => {
-                                                context.executeAction("parksetdate", { day: 0, month: 0, year: 0 }, () => {
+                    context.executeAction("parksetdate", { day: 0, month: 0, year: 0 }, () => {
 
-                                                    isRestarting = false;
+                        isRestarting = false;
 
-                                                    // Handle staff
-                                                    const staffIds = map.getAllEntities("staff").map((staff) => staff.id);
-                                                    if (staffIds.length === 0) {
-                                                        console.log("No staff found, proceeding to reset...");
+                        // Handle staff
+                        const staffIds = map.getAllEntities("staff").map((staff) => staff.id);
+                        if (staffIds.length === 0) {
+                            console.log("No staff found, proceeding to reset...");
 
-                                                        handleReset();
-                                                    } else {
-                                                        let firedStaffCount = 0;
-                                                        console.log(`Firing ${staffIds.length} staff members...`);
-                                                        staffIds.forEach((id) => {
-                                                            context.executeAction("stafffire", { id }, () => {
-                                                                firedStaffCount++;
-                                                                console.log(`Fired staff with ID: ${id}`);
-                                                                if (firedStaffCount === staffIds.length) {
-                                                                    console.log("All staff fired, proceeding to reset...");
-                                                                    handleReset();
-                                                                }
-                                                            });
-                                                        });
-                                                    }
+                            handleReset();
+                        } else {
+                            let firedStaffCount = 0;
+                            console.log(`Firing ${staffIds.length} staff members...`);
+                            staffIds.forEach((id) => {
+                                context.executeAction("stafffire", { id }, () => {
+                                    firedStaffCount++;
+                                    console.log(`Fired staff with ID: ${id}`);
+                                    if (firedStaffCount === staffIds.length) {
+                                        console.log("All staff fired, proceeding to reset...");
+                                        handleReset();
+                                    }
+                                });
+                            });
+                        }
 
-                                                    function handleReset() {
-                                                        console.log("Starting reset process...");
+                        function handleReset() {
+                            console.log("Starting reset process...");
 
-                                                        intervalSubscriptionServerReset = context.subscribe("interval.day", () => {
-                                                            let guestsHandled = park.guests === 0;
+                            intervalSubscriptionServerReset = context.subscribe("interval.day", () => {
+                                let guestsHandled = park.guests === 0;
 
-                                                            console.log(`Guests handled: ${guestsHandled}`);
+                                console.log(`Guests handled: ${guestsHandled}`);
 
-                                                            if (!guestsHandled) {
-                                                                const guestIds = map.getAllEntities("guest").map((guest) => guest.id);
+                                if (!guestsHandled) {
+                                    const guestIds = map.getAllEntities("guest").map((guest) => guest.id);
 
-                                                                if (guestIds.length > 0) {
-                                                                    console.log(`Found ${guestIds.length} guests. Exploding guests...`);
-                                                                    context.executeAction("parkMessage", { args: { message: `Restarting, exploding ${guestIds.length} guests...` } });
-                                                                    guestIds.forEach((id) => {
-                                                                        context.executeAction("guestsetflags", { peep: id, guestFlags: 262144 }, () => {
-                                                                            console.log(`Exploded guest with ID: ${id}`);
-                                                                        });
-                                                                    });
-                                                                }
-                                                            } else {
-                                                                console.log("All guests have been handled.");
-                                                            }
-
-
-
-                                                            if (guestsHandled) {
-                                                                console.log("Guests handled and land flattened. Finalizing restart...");
-                                                                if (clientRestart) {
-                                                                    resetServer();
-                                                                }
-                                                                finalizeRestart();
-                                                                if (intervalSubscriptionServerReset) {
-                                                                    intervalSubscriptionServerReset.dispose();
-                                                                    intervalSubscriptionServerReset = null;
-                                                                }
-                                                            }
-                                                        });
-                                                    }
-
-                                                    function finalizeRestart() {
-                                                        // Final game setup
-
-                                                        adjustWaterHeight(112, () => {
-
-                                                            context.executeAction('removeAllLitter', { args: {} }, () => {
-
-                                                                context.executeAction("gamesetspeed", { speed: 1 }, () => {
-                                                                    context.executeAction('setStorage', { args: { key: 'started', value: false } }, () => {
-                                                                        config.started = false;
-                                                                        console.log("Game restarted!");
-                                                                        if (isServer) {
-                                                                            console.log("Subscribing to server initialization...");
-                                                                            subscribeToServerInitialization();
-                                                                            connectToServer();
-
-                                                                            debugMode(0)
-                                                                        }
-                                                                        if (callback) {
-                                                                            callback();
-                                                                        }
-                                                                    });
-                                                                });
-                                                            });
-                                                        });
-                                                    }
-
-                                                });
+                                    if (guestIds.length > 0) {
+                                        console.log(`Found ${guestIds.length} guests. Exploding guests...`);
+                                        context.executeAction("parkMessage", { args: { message: `Restarting, exploding ${guestIds.length} guests...` } });
+                                        guestIds.forEach((id) => {
+                                            context.executeAction("guestsetflags", { peep: id, guestFlags: 262144 }, () => {
+                                                console.log(`Exploded guest with ID: ${id}`);
                                             });
+                                        });
+                                    }
+                                } else {
+                                    console.log("All guests have been handled.");
+                                }
+
+
+
+                                if (guestsHandled) {
+                                    console.log("Guests handled and land flattened. Finalizing restart...");
+                                    if (clientRestart) {
+                                        resetServer();
+                                    }
+                                    finalizeRestart();
+                                    if (intervalSubscriptionServerReset) {
+                                        intervalSubscriptionServerReset.dispose();
+                                        intervalSubscriptionServerReset = null;
+                                    }
+                                }
+                            });
+                        }
+
+                        function finalizeRestart() {
+                            // Final game setup
+
+                            adjustWaterHeight(112, () => {
+
+                                context.executeAction('removeAllLitter', { args: {} }, () => {
+
+                                    context.executeAction("gamesetspeed", { speed: 1 }, () => {
+                                        context.executeAction('setStorage', { args: { key: 'started', value: false } }, () => {
+                                            config.started = false;
+                                            console.log("Game restarted!");
+                                            if (isServer) {
+                                                console.log("Subscribing to server initialization...");
+                                                subscribeToServerInitialization();
+                                                connectToServer();
+
+                                                debugMode(0)
+                                            }
+                                            if (callback) {
+                                                callback();
+                                            }
                                         });
                                     });
                                 });
                             });
-                        });
+                        }
+
                     });
                 });
             });
         });
     });
-};
+}
+                        

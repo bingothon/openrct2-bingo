@@ -176,7 +176,7 @@ export function resetServer() {
         });
     } else {
         const resetMessage = JSON.stringify({
-            action: "reset",
+            action: "restart",
         }) + "\n";
 
         try {
