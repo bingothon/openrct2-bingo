@@ -370,7 +370,7 @@ export const goals = (seed: number) => {
                     .reduce((acc, ride) => acc + ride.totalProfit, 0) >= 1000 * 10
         },
         {
-            name: "Long Ride Time (4+- min)",
+            name: "Long Ride Time (4+S min)",
             slot: undefined,
             colors: "blank",
             status: "incomplete",
