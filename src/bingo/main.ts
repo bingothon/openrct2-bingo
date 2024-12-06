@@ -131,8 +131,18 @@ export function checkGoals(board: BingoBoard) {
             } else if (network.mode === "server" || network.mode === "none") {
                 try {
                     if (goal.status === "incomplete" && goal.checkCondition()) {
-                        const selectGoalAction = JSON.stringify({ action: "selectGoal", slot: goal.slot, color: "red", room: config.room }) + "\n";
-                        if (config.socket) config.socket.write(selectGoalAction);
+                        const selectGoalAction = JSON.stringify({
+                            action: "selectGoal",
+                            slot: goal.slot,
+                            color: "red",
+                            room: config.room
+                        }) + "\n";
+                        if (config.socket) {
+                            console.log(`Sending selectGoal action: ${selectGoalAction}`);
+                            config.socket.write(selectGoalAction);
+                        } else {
+                            console.log("Socket is not defined in config.");
+                        }
                         goal.status = "completed";
                         setGoalCompletionStatus(goalKey, true, goal.name, () => {
                             checkForBingo(board);

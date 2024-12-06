@@ -473,20 +473,38 @@ export const goals = (seed: number) => {
                     }
                 });
 
-                // Count how many unique rideTypes are built manually
+                // Count how many unique rideTypes are built and profitable
                 let builtCount = 0;
-                categoryRideTypes.forEach((rideType) => {
-                    if (
-                        map.rides.some((builtRide) => builtRide.type === rideType && builtRide.totalProfit > 0)
-                    ) {
+                let builtProfitableCount = 0;
+                for (let i = 0; i < categoryRideTypes.length; i++) {
+                    const rideType = categoryRideTypes[i];
+                    let isBuilt = false;
+                    let isProfitable = false;
+                    for (let j = 0; j < map.rides.length; j++) {
+                        const builtRide = map.rides[j];
+                        if (builtRide.type === rideType) {
+                            isBuilt = true;
+                            if (builtRide.totalProfit > 0) {
+                                isProfitable = true;
+                            }
+                        }
+                    }
+                    if (isBuilt) {
                         builtCount++;
                     }
-                });
+                    if (isProfitable) {
+                        builtProfitableCount++;
+                    }
+                }
 
-                // Return progress in the format `current/max`
-                return `${builtCount}/${categoryRideTypes.length}`;
+                const requiredProfitableCount =
+                    loweredRandomCategory === "gentle" || loweredRandomCategory === "thrill"
+                        ? Math.ceil(categoryRideTypes.length / 2)
+                        : categoryRideTypes.length;
+
+                // Return progress in the format `built/current (profitable/requiredProfitable)`
+                return `${builtCount}/${categoryRideTypes.length} (required profitable ${builtProfitableCount}/${requiredProfitableCount})`;
             },
-
             checkCondition: () => {
                 const loweredRandomCategory = randomCategory.toLowerCase();
 
@@ -511,14 +529,42 @@ export const goals = (seed: number) => {
                     }
                 });
 
-                // Verify all unique rideTypes are built
+                // Ensure all rides are built
+                let allBuilt = true;
                 for (let i = 0; i < categoryRideTypes.length; i++) {
                     const rideType = categoryRideTypes[i];
-                    if (!map.rides.some((builtRide) => builtRide.type === rideType && builtRide.totalProfit > 0)) {
-                        return false;
+                    let isBuilt = false;
+                    for (let j = 0; j < map.rides.length; j++) {
+                        if (map.rides[j].type === rideType) {
+                            isBuilt = true;
+                            break;
+                        }
+                    }
+                    if (!isBuilt) {
+                        allBuilt = false;
+                        break;
                     }
                 }
-                return true;
+
+                // Count how many rides are profitable
+                let profitableCount = 0;
+                for (let i = 0; i < categoryRideTypes.length; i++) {
+                    const rideType = categoryRideTypes[i];
+                    for (let j = 0; j < map.rides.length; j++) {
+                        if (map.rides[j].type === rideType && map.rides[j].totalProfit > 0) {
+                            profitableCount++;
+                            break;
+                        }
+                    }
+                }
+
+                const requiredProfitableCount =
+                    loweredRandomCategory === "gentle" || loweredRandomCategory === "thrill"
+                        ? Math.ceil(categoryRideTypes.length / 2)
+                        : categoryRideTypes.length;
+
+                // Return true if all rides are built and profit condition is met
+                return allBuilt && profitableCount >= requiredProfitableCount;
             },
         }
 

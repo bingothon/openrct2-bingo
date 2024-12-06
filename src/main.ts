@@ -34,7 +34,7 @@ export function main(): void {
       });
     }
   } else if (network.mode === "client") {
-    network.defaultGroup = 3;
+    network.defaultGroup = 2; // TODO: Set this to 1 during bingothon
     console.log("Client mode detected.");
     const seed = getSeed();
     console.log(`Seed received from host: ${seed}`);
