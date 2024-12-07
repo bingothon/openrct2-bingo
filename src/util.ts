@@ -287,9 +287,9 @@ export function clearAndSetForSale(
             console.log(`Failed to clear section ${section}: ${clearResult.errorMessage}`);
             if (clearResult.errorMessage === 'Land not for sale!')
                 console.log('Land not for sale!, skipping')
-                if (callback) {
-                    callback();
-                }
+            if (callback) {
+                callback();
+            }
         } else {
             console.log(`Successfully cleared section: ${section}`);
             context.executeAction("landsetrights", forSaleArgs, (saleResult) => {
@@ -314,104 +314,36 @@ export function clearAndSetForSale(
 export function clearMiddle(callback?: () => void) {
     const tileSize = 32;
 
-    // Coordinates matching "BINGO" area
-    const baseX = 53 * tileSize; // Adjusted to center "BINGO"
-    const baseY = 63 * tileSize; // Adjusted to center "BINGO"
-    const width = 24 * tileSize; // Width of "BINGO"
-    const height = 5 * tileSize; // Height of "BINGO"
+    // Coordinates for the "BINGO" area
+    const baseX = 53 * tileSize;
+    const baseY = 63 * tileSize;
+    const width = 24 * tileSize;
+    const height = 5 * tileSize;
 
-    // Define boundaries for clearing the same area
-    const x1 = baseX,
-        y1 = baseY,
-        x2 = baseX + width,
-        y2 = baseY + height;
+    // Define boundaries for clearing the area
+    const x1 = baseX, y1 = baseY, x2 = baseX + width, y2 = baseY + height;
 
-    console.log(`Processing middle section: Coordinates: (${x1}, ${y1}) to (${x2}, ${y2})`);
+    console.log(`Clearing middle section: Coordinates (${x1}, ${y1}) to (${x2}, ${y2})`);
 
-    // Step 1: Set the middle section to unowned (clear ownership)
-    const clearArgs = {
-        x1,
-        y1,
-        x2,
-        y2,
-        setting: 0, // Set to unowned
-        ownership: 0, // Remove ownership
-    };
-    const setForSaleArgs = {
-        x1,
-        y1,
-        x2,
-        y2,
-        setting: 2, // Set for sale
-        ownership: 0, // No ownership
-    };
+    // Action arguments to set the land to unowned
+    const clearArgs = { x1, y1, x2, y2, setting: 0, ownership: 0 }; // Unown land
 
-    //buy args
-    const buyArgs = {
-        x1,
-        y1,
-        x2,
-        y2,
-        setting: 0, // Set to unowned
-    };
-
-    context.executeAction("landsetrights", setForSaleArgs, (purchaseResult) => {
-        if (purchaseResult.error) {
-            console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
-            return { error: 0 } // ignored for now, its probably not needed after this once initialized
-        } else {
-            context.queryAction("landbuyrights", buyArgs, (purchaseResult) => {
-                if (purchaseResult.error) {
-                    console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
-                    return { error: 0 } // ignored for now, its probably not needed after this once initialized
-                } else {
-                    if (purchaseResult && purchaseResult.cost && purchaseResult.cost > 0) {
-                        console.log(`Cost of purchase: ${purchaseResult.cost}`);
-                        context.executeAction("addCash", { args: { cash: purchaseResult.cost } }, (result) => {
-                            if (result.error) {
-                                console.log("Failed to add cash:", result.errorMessage);
-                            } else {
-                                console.log("Cash added successfully.");
-                            }
-                        });
-                    }
-                    context.executeAction("landbuyrights", buyArgs, (purchaseResult) => {
-                        if (purchaseResult.error) {
-                            console.log(`Failed to purchase middle section: ${purchaseResult.errorMessage}`);
-                            return { error: 0 } // ignored for now, its probably not needed after this once initialized
-                        } else {
-                            context.executeAction("landsetrights", clearArgs, (clearResult) => {
-                                if (clearResult.error) {
-                                    console.log(`Failed to clear middle section: ${clearResult.errorMessage}`);
-                                    return { error: 0 } // ignored for now, its probably not needed after this once initialized
-                                } else {
-                                    console.log(`Successfully cleared middle section.`);
-
-                                    context.executeAction("landsetrights", clearArgs, (saleResult) => {
-                                        if (saleResult.error) {
-                                            console.log(`Failed to set middle section for sale: ${saleResult.errorMessage}`);
-                                            return { error: 0 } // ignored for now, its probably not needed after this once initialized
-                                        } else {
-                                            console.log(`Successfully set middle section to unowned.`);
-                                        }
-
-                                        // Execute the callback after completion
-
-
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
-            });
+    // Execute the land clearing action
+    context.executeAction("landsetrights", clearArgs, (clearResult) => {
+        if (clearResult.error) {
+            console.log(`Failed to clear middle section: ${clearResult.errorMessage}`);
+            return;
         }
-    });
-    if (callback) {
-        callback();
-    }
 
+        console.log("Middle section successfully cleared and set to unowned.");
+
+        // Execute the callback if provided
+        if (callback) callback();
+    });
 }
+
+
+
 
 
 
@@ -613,7 +545,7 @@ export function flatAllLand(callback?: () => void) {
 
 
 export function adjustWaterHeight(targetZ: number, callback: () => void) {
-    
+
 
     console.log("Starting to adjust water height in steps of 16...");
 
@@ -687,7 +619,7 @@ export function setFootPaths(callback: () => void) {
                 });
             }
 
-            
+
         });
     });
     if (callback) {

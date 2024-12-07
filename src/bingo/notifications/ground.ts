@@ -2,27 +2,35 @@ import { clearAndSetForSale, clearMap, clearMiddle, debugMode, ownMapSection } f
 let bingoBeingNotified = false;
 type RandomMapSectionKey = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
-const remainingSections = (() => {
-    const mapSections: RandomMapSectionKey[] = ["top-right", "bottom-left", "bottom-right"];
-    return [...mapSections];
-})();
+const predeterminedSections: RandomMapSectionKey[] = [
+    "top-right", 
+    "bottom-left", 
+    "bottom-right"
+];
 
+// Copy of the predetermined sections to track what’s left
+const remainingSections = [...predeterminedSections];
 
 function handleMapSectionOwnership(callback: () => void) {
+    // If no sections are left, log and call the callback
     if (remainingSections.length === 0) {
         console.log("All map sections have already been owned.");
         callback();
         return;
     }
 
-    const randomIndex = Math.floor(Math.random() * remainingSections.length);
-    const randomMapSection = remainingSections[randomIndex];
+    // Get the first section in the predetermined order
+    const nextSection = remainingSections.shift(); // Removes the first item
 
-    // Remove the selected section from remaining ones
-    remainingSections.splice(randomIndex, 1);
-
-    ownMapSection(randomMapSection, callback);
+    if (nextSection) {
+        console.log(`Awarding map section: ${nextSection}`);
+        ownMapSection(nextSection, callback); // Award the section
+    } else {
+        console.log("No sections left to award.");
+        callback();
+    }
 }
+
 
 /**
  * Places a small scenery object at specified coordinates with given parameters.

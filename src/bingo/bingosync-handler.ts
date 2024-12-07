@@ -104,15 +104,30 @@ export function setupSocketDataHandler(socket: Socket) {
 export function processMessage(message: string) {
     try {
         const response = JSON.parse(message);
+
+        // Check if an action is present in the response
+        if (response.action === "addCash") {
+            if (typeof response.amount !== "number" || response.amount <= 0) {
+                console.log("Invalid or missing amount in addCash action.");
+                return;
+            }
+            console.log(`Adding ${response.amount} cash to the park.`);
+            // Example action: Update park cash
+            context.executeAction("addCash", { args: { amount: response.amount } });
+            return;
+        }
+
+        // Retain existing logic for handling `roomUrl`
         if (response.roomUrl) {
-            // https://bingosync.com/room/1hwupb2WSea4ZL2yJ1I0hA parse the last bit of the url
+            // Extract room ID from the URL
             const roomId = response.roomUrl.split("/").pop();
             config.room = roomId;
-            // // Check if `boardData` exists and has exactly 25 items
+
+            // Check and process board data if it exists
             if (response.boardData) {
                 const boardData: BingoSyncBoardData[] = response.boardData || [];
                 const convertedBoardData: BingoBoard = boardData.map((goal: BingoSyncBoardData) => {
-                    const matchedGoal = goals(config.defaultSeed).filter((g) => g.name === goal.name)[0]; //TODO: this does not work due to it having nothing to do with the seed
+                    const matchedGoal = goals(config.defaultSeed).filter((g) => g.name === goal.name)[0]; // No changes here
 
                     // Extract the numeric part of the slot
                     const slotNumber = goal.slot.replace(/^slot/, "");
@@ -130,17 +145,19 @@ export function processMessage(message: string) {
 
             configureBoard(getSeed(), true);
             context.executeAction("connectionDetails", { args: { roomUrl: response.roomUrl, roomPassword: response.passphrase } });
-            if (typeof ui !== 'undefined') {
+            if (typeof ui !== "undefined") {
                 updateUIOnConnect(response.roomUrl, response.passphrase);
             }
 
             updateBoardWithSeed(getSeed());
-            return
+            return;
         }
     } catch (error) {
         console.log("error processing bingosync:", error);
     }
 }
+
+
 
 /**
  * Sends a reset message to the server.
