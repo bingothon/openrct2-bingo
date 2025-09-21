@@ -661,6 +661,11 @@ export function startGame(n: number): void {
     context.executeAction('setStorage', { args: { key: 'duration', value: n } });
 }
 
+export function resetGame(): void {
+    context.executeAction('setStorage', { args: { key: 'started', value: false } });
+    context.executeAction('setStorage', { args: { key: 'duration', value: 0 } });
+}
+
 
 export function getRandomItemsByRideType(items: ResearchItem[]): ResearchItem[] {
     const rideTypeMap: { [key: number]: RideResearchItem[] } = {}; // Group RideResearchItems by rideType

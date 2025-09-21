@@ -16,6 +16,7 @@
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-terser": "^0.4.0",
     "@rollup/plugin-typescript": "^11.1.6",
+    "@types/openrct2": "^0.4.0",
     "@types/uuid": "^9.0.8",
     "nodemon": "^2.0.22",
     "release-it": "^17.10.0",

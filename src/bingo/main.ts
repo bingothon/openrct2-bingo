@@ -93,19 +93,27 @@ export function triggerBingo(lineKey: string, callback?: Function) {
     if (!completedBingos[lineKey]) {
         completedBingos[lineKey] = true; // Mark the bingo as completed
         console.log(`Bingo! ${lineKey} completed!`);
-        const pos = 64 * 32;
-        context.executeAction('moveTo', { args: { x: pos, y: pos } }, (result) => {
-            if (result.error) {
-                console.log(`Failed to move camera to 0,0:`, result.errorMessage);
-            }
-        });
-        context.executeAction('notifyBingo', { args: { lineKey } }, (result) => {
-            if (result.error) {
-                console.log(`Failed to trigger bingo for ${lineKey}:`, result.errorMessage);
-            }else{
-                if (callback) callback();
-            }
-        });
+        
+        // Only show ground notifications for COOP mode
+        if (config.gameMode === "coop") {
+            const pos = 64 * 32;
+            context.executeAction('moveTo', { args: { x: pos, y: pos } }, (result) => {
+                if (result.error) {
+                    console.log(`Failed to move camera to 0,0:`, result.errorMessage);
+                }
+            });
+            context.executeAction('notifyBingo', { args: { lineKey } }, (result) => {
+                if (result.error) {
+                    console.log(`Failed to trigger bingo for ${lineKey}:`, result.errorMessage);
+                } else {
+                    if (callback) callback();
+                }
+            });
+        } else {
+            // PVP mode - just log the bingo without ground animation
+            console.log(`PVP Bingo completed: ${lineKey} - no ground animation in lockout mode`);
+            if (callback) callback();
+        }
     }
 }
 

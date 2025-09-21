@@ -1,14 +1,16 @@
 // Billboard system for displaying PvP scores
+import { config } from "../../config";
+
 
 // Billboard configuration - SQUARE LAYOUT (standing up like a real billboard)
 const PADDING = 2; // 2 tiles padding on all sides
-const BILLBOARD_SIZE = 25; // 16x16 tiles (square billboard)
+const BILLBOARD_SIZE = 36; // 36x36 tiles (square billboard) - increased for larger regions
 const BILLBOARD_OFFSET_X = 50; // Distance from map edge
 const BILLBOARD_OFFSET_Y = 126; // Distance from map edge
-const BORDER_COLOR = 6;
+const BORDER_COLOR = 0;
 
 // Player region configuration (2x2 grid within the square)
-const REGION_SIZE = 8; // 6x6 tiles per player region (square regions)
+const REGION_SIZE = 16; // 16x16 tiles per player region (square regions) - increased for larger borders
 const REGION_SPACING = 2; // 2 tiles spacing between regions
 
 // Scenery object for building the billboard
@@ -108,28 +110,112 @@ const NUMBER_PATTERNS = {
     ]
 };
 
-// Player colors for the billboard
-const PLAYER_COLORS = [1, 2, 3, 4]; // Different colors for each player
+// Player colors for the billboard - imported from config
+const PLAYER_COLORS = [
+    config.playerColors.player1, // Player 1: Bright Red
+    config.playerColors.player2, // Player 2: Light Blue
+    config.playerColors.player3, // Player 3: Bright Green
+    config.playerColors.player4  // Player 4: Yellow
+];
+
+// Player color names for reference - imported from config
+const PLAYER_COLOR_NAMES = [
+    config.playerColorNames.player1, // Player 1
+    config.playerColorNames.player2, // Player 2
+    config.playerColorNames.player3, // Player 3
+    config.playerColorNames.player4  // Player 4
+];
+
+/**
+ * Creates a colored border around a player region
+ */
+function createPlayerRegionBorder(centerX: number, centerZ: number, objectId: number, color: number, scale: number, baseY: number, billboardZ: number) {
+    // Create a border around the player region (REGION_SIZE x REGION_SIZE)
+    const borderSize = REGION_SIZE;
+    const halfSize = borderSize / 2;
+    const borderThickness = 2; // Make borders thicker to better accommodate numbers
+    
+    // Calculate the border area
+    const startX = centerX - (halfSize * scale);
+    const startZ = centerZ - (halfSize * 16 * 2);
+    
+    // Create border outline with thickness (only the edges, not filled)
+    for (let i = 0; i < borderSize; i++) {
+        // Top edge (thick border)
+        for (let t = 0; t < borderThickness; t++) {
+            const topX = startX + (i * scale);
+            const topZ = startZ + (borderSize - 1 - t) * 16 * 2;
+            placeSceneryObject(topX, baseY, topZ, objectId, color);
+            placeSceneryObject(topX, baseY, topZ + 16, objectId, color);
+        }
+        
+        // Bottom edge (thick border)
+        for (let t = 0; t < borderThickness; t++) {
+            const bottomX = startX + (i * scale);
+            const bottomZ = startZ + t * 16 * 2;
+            placeSceneryObject(bottomX, baseY, bottomZ, objectId, color);
+            placeSceneryObject(bottomX, baseY, bottomZ + 16, objectId, color);
+        }
+        
+        // Left edge (thick border)
+        for (let t = 0; t < borderThickness; t++) {
+            const leftX = startX + t * scale;
+            const leftZ = startZ + (i * 16 * 2);
+            placeSceneryObject(leftX, baseY, leftZ, objectId, color);
+            placeSceneryObject(leftX, baseY, leftZ + 16, objectId, color);
+        }
+        
+        // Right edge (thick border)
+        for (let t = 0; t < borderThickness; t++) {
+            const rightX = startX + ((borderSize - 1 - t) * scale);
+            const rightZ = startZ + (i * 16 * 2);
+            placeSceneryObject(rightX, baseY, rightZ, objectId, color);
+            placeSceneryObject(rightX, baseY, rightZ + 16, objectId, color);
+        }
+    }
+}
+
+/**
+ * Splits a number into individual digits
+ */
+function getDigits(number: number): number[] {
+    if (number < 0) return [0];
+    if (number === 0) return [0];
+    
+    const digits: number[] = [];
+    while (number > 0) {
+        digits.unshift(number % 10);
+        number = Math.floor(number / 10);
+    }
+    return digits;
+}
 
 /**
  * Creates a horizontal billboard divided into 4 player regions (side by side)
  */
-export function createScoreboard() {
+export function createScoreboard(): boolean {
     console.log("Creating scoreboard billboard...");
     
-    const mapSize = map.size;
-    // Position vertical billboard on the right side, well within map bounds
-    const billboardX = (mapSize.x - BILLBOARD_SIZE - BILLBOARD_OFFSET_X) * 32;
-    const billboardY = BILLBOARD_OFFSET_Y * 32;
-    
-    // Load the scenery object
-    const identifier = BILLBOARD_OBJECT;
-    const loadedObject = objectManager.load(identifier);
-    
-    if (!loadedObject) {
-        console.log("Failed to load billboard object:", identifier);
-        return;
-    }
+    try {
+        console.log("Step 1: Getting map size...");
+        const mapSize = map.size;
+        console.log("Map size:", mapSize);
+        
+        // Position vertical billboard on the right side, well within map bounds
+        const billboardX = (mapSize.x - BILLBOARD_SIZE - BILLBOARD_OFFSET_X) * 32;
+        const billboardY = BILLBOARD_OFFSET_Y * 32;
+        console.log("Billboard position:", { billboardX, billboardY });
+        
+        // Load the scenery object
+        console.log("Step 2: Loading scenery object...");
+        const identifier = BILLBOARD_OBJECT;
+        const loadedObject = objectManager.load(identifier);
+        
+        if (!loadedObject) {
+            console.log("Failed to load billboard object:", identifier);
+            return false;
+        }
+        console.log("Scenery object loaded successfully, index:", loadedObject.index);
     
     const objectId = loadedObject.index;
     const baseZ = 0;
@@ -138,7 +224,11 @@ export function createScoreboard() {
     // Create a REAL vertical billboard wall (standing up like a wall)
     const billboardZ = baseZ + (8 * 16); // 8 levels up in the air
     
+    // Skip terrain clearing - let the game handle object placement naturally
+    console.log("Step 3: Skipping terrain clearing to avoid land ownership issues");
+    
     // Build a square vertical wall by stacking Z levels to create height (2x stacking like numbers)
+    console.log("Step 5: Building billboard wall...");
     for (let zLevel = 0; zLevel < BILLBOARD_SIZE; zLevel++) {
         for (let x = 0; x < BILLBOARD_SIZE; x++) {
             // Build the wall by stacking Z levels - this creates a vertical surface
@@ -151,18 +241,33 @@ export function createScoreboard() {
             placeSceneryObject(wallX, wallY, wallZ + 16, objectId, BORDER_COLOR);
         }
     }
+    console.log("Step 6: Wall creation completed");
     
     // Add black background behind the numbers
+    console.log("Step 7: Creating black background...");
     createBlackBackground(billboardX, billboardY, objectId, billboardZ, scale);
+    console.log("Step 8: Black background completed");
     
     // Add the player regions on the vertical wall
+    console.log("Step 9: Creating player regions...");
     createPlayerRegionsVertical(billboardX, billboardY, objectId, billboardZ, scale);
+    console.log("Step 10: Player regions completed");
     
     // Create mirrored billboard one tile behind (at Y=127)
+    console.log("Step 11: Creating mirrored billboard...");
     const mirroredY = 127 * 32; // One tile behind
     createMirroredBillboard(billboardX, mirroredY, objectId, billboardZ, scale);
-    
+    console.log("Step 12: Mirrored billboard completed");
+        
     console.log("Scoreboard created successfully!");
+    return true;
+    } catch (error) {
+        console.log("Error creating scoreboard:", error);
+        console.log("Error type:", typeof error);
+        console.log("Error message:", error?.message);
+        console.log("Error stack:", error?.stack);
+        return false;
+    }
 }
 
 
@@ -248,19 +353,22 @@ function createPlayerRegionsVertical(baseX: number, baseY: number, objectId: num
     const regionOffset = (REGION_SIZE + REGION_SPACING) / 2; // Half the region size + spacing
     
     const regions = [
-        // Top-left
-        { name: "Player 1", x: centerX - regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[0], score: 1 },
-        // Top-right
-        { name: "Player 2", x: centerX + regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[1], score: 2 },
-        // Bottom-left
-        { name: "Player 3", x: centerX - regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[2], score: 3 },
-        // Bottom-right
-        { name: "Player 4", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[3], score: 5 }
+        // Top-left - GREEN (Player 1) - switched from RED
+        { name: "Player 1", x: centerX - regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[2], score: 1 },
+        // Top-right - YELLOW (Player 2) - keep YELLOW
+        { name: "Player 2", x: centerX + regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[3], score: 2 },
+        // Bottom-left - RED (Player 3) - switched from GREEN
+        { name: "Player 3", x: centerX - regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[0], score: 3 },
+        // Bottom-right - BLUE (Player 4) - keep BLUE
+        { name: "Player 4", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[1], score: 5 }
     ];
     
-    regions.forEach(region => {
-        // Center the number within each region
-        const numberX = region.x - (2 * scale); // Center horizontally (number is ~4 tiles wide)
+    regions.forEach((region, index) => {
+        // Create colored border around each player region
+        createPlayerRegionBorder(region.x, region.z, objectId, region.color, scale, baseY, billboardZ);
+        
+        // Center the number within each region - will be handled in placeNumberOnWall
+        const numberX = region.x; // Center horizontally (will be handled in placeNumberOnWall)
         const numberY = baseY; // Keep Y constant for vertical wall
         const numberZ = region.z - (3 * 16 * 2); // Center vertically (number is ~6 tiles tall with 2x stacking)
         
@@ -281,19 +389,22 @@ function createMirroredPlayerRegions(baseX: number, baseY: number, objectId: num
     const regionOffset = (REGION_SIZE + REGION_SPACING) / 2; // Half the region size + spacing
     
     const regions = [
-        // SWAPPED: Bottom-left becomes top-left (3)
-        { name: "Player 3", x: centerX - regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[2], score: 3 },
-        // SWAPPED: Bottom-right becomes top-right (5)
-        { name: "Player 4", x: centerX + regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[3], score: 5 },
-        // SWAPPED: Top-left becomes bottom-left (1)
-        { name: "Player 1", x: centerX - regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[0], score: 1 },
-        // SWAPPED: Top-right becomes bottom-right (2)
-        { name: "Player 2", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[1], score: 2 }
+        // SWAPPED: Bottom-left becomes top-left (Player 3 -> 5) - RED
+        { name: "Player 3", x: centerX - regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[0], score: 5 },
+        // SWAPPED: Bottom-right becomes top-right (Player 4 -> 7) - BLUE
+        { name: "Player 4", x: centerX + regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[1], score: 7 },
+        // SWAPPED: Top-left becomes bottom-left (Player 1 -> 1) - GREEN
+        { name: "Player 1", x: centerX - regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[2], score: 1 },
+        // SWAPPED: Top-right becomes bottom-right (Player 2 -> 3) - YELLOW
+        { name: "Player 2", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[3], score: 3 }
     ];
     
-    regions.forEach(region => {
-        // Center the number within each region
-        const numberX = region.x - (2 * scale); // Center horizontally (number is ~4 tiles wide)
+    regions.forEach((region, index) => {
+        // Create colored border around each player region (mirrored)
+        createPlayerRegionBorder(region.x, region.z, objectId, region.color, scale, baseY, billboardZ);
+        
+        // Center the number within each region - will be handled in placeMirroredNumberOnWall
+        const numberX = region.x; // Center horizontally (will be handled in placeMirroredNumberOnWall)
         const numberY = baseY; // Keep Y constant for vertical wall
         const numberZ = region.z - (3 * 16 * 2); // Center vertically (number is ~6 tiles tall with 2x stacking)
         
@@ -305,66 +416,93 @@ function createMirroredPlayerRegions(baseX: number, baseY: number, objectId: num
 /**
  * Places a number using scenery objects ON A VERTICAL WALL
  * Uses 2 brbase objects stacked vertically to create square "pixels"
+ * Handles both single and two-digit numbers
  */
 function placeNumberOnWall(number: number, baseX: number, baseY: number, billboardZ: number, objectId: number, color: number, scale: number) {
-    const pattern = NUMBER_PATTERNS[number as keyof typeof NUMBER_PATTERNS];
+    const digits = getDigits(number);
     
-    if (!pattern) {
-        console.log(`No pattern found for number: ${number}`);
-        return;
-    }
+    // Center the digits within the region
+    const digitSpacing = 0.5; // Half a tile spacing between digits
+    const totalWidth = digits.length * 5 + (digits.length - 1) * digitSpacing; // Each digit is 5 tiles wide + spacing
+    const startX = baseX - (totalWidth * scale) / 2; // Center the digits
     
-    // Place the number pattern on the vertical wall using 2 stacked objects for each pixel
-    // This creates square pixels by stacking 2 brbase objects vertically
-    pattern.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-            if (cell === 1) {
-                // Create a square pixel by stacking 2 brbase objects vertically
-                const pixelX = baseX + colIndex * scale; // Normal width
-                const pixelY = baseY; // Keep Y constant for vertical wall
-                // Invert the row index to fix the upside-down numbers
-                const invertedRowIndex = pattern.length - 1 - rowIndex;
-                const pixelZ = billboardZ + (invertedRowIndex * 16 * 2); // 2x stacking for height
-                
-                // Place 2 objects stacked vertically
-                placeSceneryObject(pixelX, pixelY, pixelZ, objectId, color);
-                placeSceneryObject(pixelX, pixelY, pixelZ + 16, objectId, color);
-            }
+    digits.forEach((digit, digitIndex) => {
+        const pattern = NUMBER_PATTERNS[digit as keyof typeof NUMBER_PATTERNS];
+        
+        if (!pattern) {
+            console.log(`No pattern found for digit: ${digit}`);
+            return;
+        }
+        
+        // Calculate X offset for this digit with spacing between digits
+        const digitSpacing = 0.5; // Half a tile spacing between digits
+        const digitX = startX + (digitIndex * (5 + digitSpacing) * scale);
+        
+        // Place the digit pattern on the vertical wall using 2 stacked objects for each pixel
+        pattern.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                if (cell === 1) {
+                    // Create a square pixel by stacking 2 brbase objects vertically
+                    const pixelX = digitX + colIndex * scale; // Normal width
+                    const pixelY = baseY; // Keep Y constant for vertical wall
+                    // Invert the row index to fix the upside-down numbers
+                    const invertedRowIndex = pattern.length - 1 - rowIndex;
+                    const pixelZ = billboardZ + (invertedRowIndex * 16 * 2); // 2x stacking for height
+                    
+                    // Place 2 objects stacked vertically
+                    placeSceneryObject(pixelX, pixelY, pixelZ, objectId, color);
+                    placeSceneryObject(pixelX, pixelY, pixelZ + 16, objectId, color);
+                }
+            });
         });
     });
 }
 
 /**
- * Places a horizontally mirrored number using scenery objects ON A VERTICAL WALL
+ * Places a number using scenery objects ON A VERTICAL WALL (mirrored view - identical to original)
  * Uses 2 brbase objects stacked vertically to create square "pixels"
+ * Handles both single and two-digit numbers
  */
 function placeMirroredNumberOnWall(number: number, baseX: number, baseY: number, billboardZ: number, objectId: number, color: number, scale: number) {
-    const pattern = NUMBER_PATTERNS[number as keyof typeof NUMBER_PATTERNS];
+    const digits = getDigits(number);
     
-    if (!pattern) {
-        console.log(`No pattern found for number: ${number}`);
-        return;
-    }
+    // Center the digits within the region
+    const digitSpacing = 0.5; // Half a tile spacing between digits
+    const totalWidth = digits.length * 5 + (digits.length - 1) * digitSpacing; // Each digit is 5 tiles wide + spacing
+    const startX = baseX - (totalWidth * scale) / 2; // Center the digits
     
-    // Place the number pattern on the vertical wall using 2 stacked objects for each pixel
-    // This creates square pixels by stacking 2 brbase objects vertically
-    // HORIZONTALLY FLIP the pattern by reversing the column order
-    pattern.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-            if (cell === 1) {
-                // Create a square pixel by stacking 2 brbase objects vertically
-                // HORIZONTALLY FLIP: reverse the column index
-                const flippedColIndex = row.length - 1 - colIndex;
-                const pixelX = baseX + flippedColIndex * scale; // Flipped X position
-                const pixelY = baseY; // Keep Y constant for vertical wall
-                // Invert the row index to fix the upside-down numbers
-                const invertedRowIndex = pattern.length - 1 - rowIndex;
-                const pixelZ = billboardZ + (invertedRowIndex * 16 * 2); // 2x stacking for height
-                
-                // Place 2 objects stacked vertically
-                placeSceneryObject(pixelX, pixelY, pixelZ, objectId, color);
-                placeSceneryObject(pixelX, pixelY, pixelZ + 16, objectId, color);
-            }
+    // Reverse the digit order for mirrored view (10 becomes 01)
+    digits.reverse().forEach((digit, digitIndex) => {
+        const pattern = NUMBER_PATTERNS[digit as keyof typeof NUMBER_PATTERNS];
+        
+        if (!pattern) {
+            console.log(`No pattern found for digit: ${digit}`);
+            return;
+        }
+        
+        // Calculate X offset for this digit with spacing between digits
+        const digitSpacing = 0.5; // Half a tile spacing between digits
+        const digitX = startX + (digitIndex * (5 + digitSpacing) * scale);
+        
+        // Place the digit pattern on the vertical wall using 2 stacked objects for each pixel
+        // HORIZONTALLY FLIP each digit for proper mirroring
+        pattern.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                if (cell === 1) {
+                    // Create a square pixel by stacking 2 brbase objects vertically
+                    // HORIZONTALLY FLIP: reverse the column index
+                    const flippedColIndex = row.length - 1 - colIndex;
+                    const pixelX = digitX + flippedColIndex * scale; // Flipped X position
+                    const pixelY = baseY; // Keep Y constant for vertical wall
+                    // Invert the row index to fix the upside-down numbers
+                    const invertedRowIndex = pattern.length - 1 - rowIndex;
+                    const pixelZ = billboardZ + (invertedRowIndex * 16 * 2); // 2x stacking for height
+                    
+                    // Place 2 objects stacked vertically
+                    placeSceneryObject(pixelX, pixelY, pixelZ, objectId, color);
+                    placeSceneryObject(pixelX, pixelY, pixelZ + 16, objectId, color);
+                }
+            });
         });
     });
 }
@@ -392,23 +530,59 @@ function placeNumber(number: number, baseX: number, baseY: number, z: number, ob
 }
 
 /**
- * Places a single scenery object
+ * Places a single scenery object with cost handling
  */
 function placeSceneryObject(x: number, y: number, z: number, objectId: number, color: number) {
-    context.executeAction("smallsceneryplace", {
+    // First, try to remove any existing scenery at this location
+    const removeAction = {
         x: x,
         y: y,
         z: z,
-        direction: 0,
-        quadrant: 0,
         object: objectId,
-        primaryColour: color,
-        secondaryColour: 0,
-        tertiaryColour: 0
-    }, (result) => {
-        if (result.error) {
-            // Silently ignore placement errors for cleaner output
-        }
+        quadrant: 0
+    };
+    
+    context.executeAction("smallsceneryremove", removeAction, (removeResult) => {
+        // Ignore remove errors - there might not be anything to remove
+        
+        // Now place the new scenery - use correct parameter order from @types/openrct2
+        const sceneryArgs = {
+            x: x,
+            y: y,
+            z: z,
+            direction: 0,
+            object: objectId,
+            quadrant: 0,
+            primaryColour: color,
+            secondaryColour: 0,
+            tertiaryColour: 0
+        };
+        
+        // Query the action to check cost
+        context.queryAction("smallsceneryplace", sceneryArgs, (queryResult) => {
+            if (queryResult.cost && queryResult.cost > 0) {
+                // Add cash to cover the cost
+                context.executeAction('addCash', { args: { cash: queryResult.cost } }, (cashResult) => {
+                    if (cashResult.error) {
+                        console.log("Failed to add cash for scenery placement:", cashResult.errorMessage);
+                    } else {
+                        // Execute the scenery placement
+                        context.executeAction("smallsceneryplace", sceneryArgs, (result) => {
+                            if (result.error) {
+                                console.log(`Failed to place scenery at (${x}, ${y}, ${z}): ${result.errorMessage}`);
+                            }
+                        });
+                    }
+                });
+            } else {
+                // No cost, execute directly
+                context.executeAction("smallsceneryplace", sceneryArgs, (result) => {
+                    if (result.error) {
+                        console.log(`Failed to place scenery at (${x}, ${y}, ${z}): ${result.errorMessage}`);
+                    }
+                });
+            }
+        });
     });
 }
 
@@ -477,3 +651,167 @@ export function clearScoreboard() {
     
     console.log("Scoreboard cleared!");
 }
+
+/**
+ * Updates a single player's score on both billboards
+ */
+export function updateScore(playerNumber: number, newScore: number) {
+    console.log(`Updating Player ${playerNumber} score to: ${newScore}`);
+    
+    const mapSize = map.size;
+    const billboardX = (mapSize.x - BILLBOARD_SIZE - BILLBOARD_OFFSET_X) * 32;
+    const billboardY = BILLBOARD_OFFSET_Y * 32;
+    const mirroredY = 127 * 32; // One tile behind
+    
+    const identifier = BILLBOARD_OBJECT;
+    const loadedObject = objectManager.load(identifier);
+    
+    if (!loadedObject) {
+        console.log("Failed to load billboard object:", identifier);
+        return;
+    }
+    
+    const objectId = loadedObject.index;
+    const scale = 32;
+    const billboardZ = 8 * 16; // Same height as creation
+    
+    // Clear and redraw the player's region on both billboards
+    updatePlayerRegion(billboardX, billboardY, objectId, billboardZ, scale, playerNumber, newScore, false);
+    updatePlayerRegion(billboardX, mirroredY, objectId, billboardZ, scale, playerNumber, newScore, true);
+    
+    console.log(`Player ${playerNumber} score updated to ${newScore}!`);
+}
+
+/**
+ * Updates a single player's region on a billboard
+ */
+function updatePlayerRegion(baseX: number, baseY: number, objectId: number, billboardZ: number, scale: number, playerNumber: number, newScore: number, isMirrored: boolean) {
+    // Calculate the center of the billboard for proper 2x2 grid positioning
+    const centerX = baseX + (BILLBOARD_SIZE / 2) * scale;
+    const centerZ = billboardZ + (BILLBOARD_SIZE / 2) * 16 * 2; // 2x stacking
+    
+    // Calculate region positions within the square billboard
+    const regionOffset = (REGION_SIZE + REGION_SPACING) / 2; // Half the region size + spacing
+    
+    // Get the player's region position based on whether it's mirrored or not
+    let regionX: number, regionZ: number;
+    
+    if (isMirrored) {
+        // Mirrored layout: bottom becomes top, top becomes bottom
+        switch (playerNumber) {
+            case 0: // Player 1 -> top-left becomes bottom-left
+                regionX = centerX - regionOffset * scale;
+                regionZ = centerZ - regionOffset * 16 * 2;
+                break;
+            case 1: // Player 2 -> top-right becomes bottom-right
+                regionX = centerX + regionOffset * scale;
+                regionZ = centerZ - regionOffset * 16 * 2;
+                break;
+            case 2: // Player 3 -> bottom-left becomes top-left
+                regionX = centerX - regionOffset * scale;
+                regionZ = centerZ + regionOffset * 16 * 2;
+                break;
+            case 3: // Player 4 -> bottom-right becomes top-right
+                regionX = centerX + regionOffset * scale;
+                regionZ = centerZ + regionOffset * 16 * 2;
+                break;
+            default:
+                console.log(`Invalid player number: ${playerNumber}`);
+                return;
+        }
+    } else {
+        // Original layout
+        switch (playerNumber) {
+            case 0: // Player 1 -> top-left
+                regionX = centerX - regionOffset * scale;
+                regionZ = centerZ + regionOffset * 16 * 2;
+                break;
+            case 1: // Player 2 -> top-right
+                regionX = centerX + regionOffset * scale;
+                regionZ = centerZ + regionOffset * 16 * 2;
+                break;
+            case 2: // Player 3 -> bottom-left
+                regionX = centerX - regionOffset * scale;
+                regionZ = centerZ - regionOffset * 16 * 2;
+                break;
+            case 3: // Player 4 -> bottom-right
+                regionX = centerX + regionOffset * scale;
+                regionZ = centerZ - regionOffset * 16 * 2;
+                break;
+            default:
+                console.log(`Invalid player number: ${playerNumber}`);
+                return;
+        }
+    }
+    
+    // Validate coordinates before proceeding
+    const mapSize = map.size;
+    const tileX = Math.floor(regionX / 32);
+    const tileY = Math.floor(regionZ / 32);
+    
+    console.log(`Updating player ${playerNumber} at coordinates:`, {
+        regionX, regionZ, tileX, tileY, 
+        mapBounds: { x: mapSize.x, y: mapSize.y },
+        isMirrored
+    });
+    
+    // Check if coordinates are within map bounds
+    if (tileX < 0 || tileX >= mapSize.x || tileY < 0 || tileY >= mapSize.y) {
+        console.log(`Coordinates out of bounds: tileX=${tileX}, tileY=${tileY}, mapSize=${mapSize.x}x${mapSize.y}`);
+        return;
+    }
+    
+    // Clear the player's region by redrawing the black background
+    clearPlayerRegion(baseX, baseY, regionX, regionZ, objectId, billboardZ, scale, newScore);
+    
+    // Recreate the colored border around the player region
+    const color = PLAYER_COLORS[playerNumber];
+    createPlayerRegionBorder(regionX, regionZ, objectId, color, scale, baseY, billboardZ);
+    
+    // Place the new score number - center based on number of digits
+    const digits = getDigits(newScore);
+    const totalWidth = digits.length * 5; // Each digit is 5 tiles wide
+    const numberX = regionX; // Center horizontally (will be handled in placeNumberOnWall)
+    const numberY = baseY; // Keep Y constant for vertical wall
+    const numberZ = regionZ - (3 * 16 * 2); // Center vertically (number is ~6 tiles tall with 2x stacking)
+    
+    if (isMirrored) {
+        placeMirroredNumberOnWall(newScore, numberX, numberY, numberZ, objectId, color, scale);
+    } else {
+        placeNumberOnWall(newScore, numberX, numberY, numberZ, objectId, color, scale);
+    }
+}
+
+/**
+ * Clears a player's region by redrawing the black background
+ * Always uses two-digit clearing area for consistency
+ */
+function clearPlayerRegion(baseX: number, baseY: number, regionX: number, regionZ: number, objectId: number, billboardZ: number, scale: number, score: number) {
+    // Always use two-digit clearing area (10 tiles + 0.5 spacing + 4 padding = 14.5 tiles wide)
+    const digitSpacing = 0.5; // Half a tile spacing between digits
+    const twoDigitWidth = 10 + digitSpacing; // 2 digits * 5 tiles each + 1 spacing
+    const regionStartX = regionX - (twoDigitWidth * scale) / 2; // Center the clearing area
+    const regionStartZ = regionZ - (3 * 16 * 2); // Center vertically
+    
+    // Add extra padding to ensure complete clearing (2 tiles on each side + border thickness)
+    const padding = 2;
+    const borderThickness = 2; // Account for thicker borders
+    const clearWidth = twoDigitWidth + (padding * 2) + (borderThickness * 2); // 14.5 + 4 = 18.5 tiles total
+    const clearStartX = regionStartX - (padding * scale) - (borderThickness * scale);
+    const clearStartZ = regionStartZ - (padding * 16 * 2) - (borderThickness * 16 * 2);
+    const clearHeight = 7 + (padding * 2) + (borderThickness * 2);
+    
+    // Clear the area by redrawing black background
+    for (let x = 0; x < clearWidth; x++) {
+        for (let z = 0; z < clearHeight; z++) {
+            const clearX = clearStartX + (x * scale);
+            const clearY = baseY;
+            const clearZ = clearStartZ + (z * 16 * 2);
+            
+            // Place 2 black objects stacked vertically to clear the area
+            placeSceneryObject(clearX, clearY, clearZ, objectId, 0); // Black color (0)
+            placeSceneryObject(clearX, clearY, clearZ + 16, objectId, 0);
+        }
+    }
+}
+

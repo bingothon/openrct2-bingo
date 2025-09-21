@@ -1,15 +1,15 @@
 
 import { configureBoard } from "./ui-helpers";
 import { registerActions } from "./actions";
-import { openBingoBoard, openBingoBoardDialog, showConnectDialog, showGameDurationDialog, showWelcomeDialog } from "./ui";
-import { checkIfStarted, getSeed, setSeed } from "./util";
+import { openBingoBoard, openBingoBoardDialog, showConnectDialog, showGameDurationDialog, showGameModeDialog, showWelcomeDialog } from "./ui";
+import { checkIfStarted, getSeed, resetGame, setSeed } from "./util";
 import { bingosyncUI, } from "./bingo/bingosync-handler";
 import { restart, subscribeIfStarted, subscribeToGoalChecks, subscribeToInventions, subscribeToRenewRides } from "./subscriptions";
+
 
 export function main(): void {
   registerActions();
   network.defaultGroup = 3;
-  const seed = getSeed();
 
   if (network.mode === "server") {
     if (typeof ui !== 'undefined') {
@@ -62,26 +62,24 @@ export function main(): void {
       ui.registerShortcut({ id: "bingoSync.connectionDetails", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: bingosyncUI });
     }
   } else if (network.mode === "none") {
-    subscribeToInventions();
-    subscribeToRenewRides();
-
-    restart(false, false, () => {
-      console.log("No network mode detected, starting single-player mode.");
-    });
     console.log("Single-player mode detected.");
     setSeed();
     if (typeof ui !== 'undefined') {
       ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
 
-      showConnectDialog();
-      const board = configureBoard(seed);
-      subscribeToGoalChecks(board);
-      openBingoBoard(board);
+      // Always show game mode selection dialog for local testing
+      console.log("Local testing mode - showing game mode dialog.");
+      showGameModeDialog();
     }
   }
 
   if (typeof ui !== 'undefined') {
     ui.registerShortcut({ id: "bingoSync.openBingoBoardDialog", text: "Open Bingo Board", bindings: ["B"], callback: openBingoBoardDialog });
+    ui.registerShortcut({ id: "bingoSync.openGameModeDialog", text: "Open Game Mode Dialog", bindings: ["CTRL+SHIFT+M"], callback: showGameModeDialog });
+    ui.registerShortcut({ id: "bingoSync.resetGame", text: "Reset Game State", bindings: ["CTRL+SHIFT+R"], callback: () => {
+      resetGame();
+      console.log("Game state reset! Restart the plugin to see the game mode dialog again.");
+    }});
     ui.registerShortcut({ id: "bingoSync.createScoreboard", text: "Create Scoreboard", bindings: ["CTRL+SHIFT+S"], callback: () => {
       context.executeAction("createScoreboard", { args: {} }, (result) => {
         if (result.error) {
@@ -91,14 +89,59 @@ export function main(): void {
         }
       });
     }});
-    ui.registerShortcut({ id: "bingoSync.clearScoreboard", text: "Clear Scoreboard", bindings: ["CTRL+SHIFT+X"], callback: () => {
-      context.executeAction("clearScoreboard", { args: {} }, (result) => {
-        if (result.error) {
-          console.log("Failed to clear scoreboard:", result.errorMessage);
-        } else {
-          console.log("Scoreboard cleared!");
-        }
-      });
-    }});
+      ui.registerShortcut({ id: "bingoSync.clearScoreboard", text: "Clear Scoreboard", bindings: ["CTRL+SHIFT+X"], callback: () => {
+        context.executeAction("clearScoreboard", { args: {} }, (result) => {
+          if (result.error) {
+            console.log("Failed to clear scoreboard:", result.errorMessage);
+          } else {
+            console.log("Scoreboard cleared!");
+          }
+        });
+      }});
+      
+      // Test shortcuts for updating individual player scores
+      ui.registerShortcut({ id: "bingoSync.updatePlayer1", text: "Update Player 1 Score", bindings: ["CTRL+1"], callback: () => {
+        const newScore = Math.floor(Math.random() * 26); // Random score 0-25
+        context.executeAction("updateScore", { args: { playerNumber: 0, newScore } }, (result) => {
+          if (result.error) {
+            console.log("Failed to update player 1 score:", result.errorMessage);
+          } else {
+            console.log(`Player 1 score updated to ${newScore}!`);
+          }
+        });
+      }});
+      
+      ui.registerShortcut({ id: "bingoSync.updatePlayer2", text: "Update Player 2 Score", bindings: ["CTRL+2"], callback: () => {
+        const newScore = Math.floor(Math.random() * 26); // Random score 0-25
+        context.executeAction("updateScore", { args: { playerNumber: 1, newScore } }, (result) => {
+          if (result.error) {
+            console.log("Failed to update player 2 score:", result.errorMessage);
+          } else {
+            console.log(`Player 2 score updated to ${newScore}!`);
+          }
+        });
+      }});
+      
+      ui.registerShortcut({ id: "bingoSync.updatePlayer3", text: "Update Player 3 Score", bindings: ["CTRL+3"], callback: () => {
+        const newScore = Math.floor(Math.random() * 26); // Random score 0-25
+        context.executeAction("updateScore", { args: { playerNumber: 2, newScore } }, (result) => {
+          if (result.error) {
+            console.log("Failed to update player 3 score:", result.errorMessage);
+          } else {
+            console.log(`Player 3 score updated to ${newScore}!`);
+          }
+        });
+      }});
+      
+      ui.registerShortcut({ id: "bingoSync.updatePlayer4", text: "Update Player 4 Score", bindings: ["CTRL+4"], callback: () => {
+        const newScore = Math.floor(Math.random() * 26); // Random score 0-25
+        context.executeAction("updateScore", { args: { playerNumber: 3, newScore } }, (result) => {
+          if (result.error) {
+            console.log("Failed to update player 4 score:", result.errorMessage);
+          } else {
+            console.log(`Player 4 score updated to ${newScore}!`);
+          }
+        });
+      }});
   }
 }

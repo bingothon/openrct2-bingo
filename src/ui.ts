@@ -5,11 +5,53 @@ import { bingosyncUI, connectToServer } from "./bingo/bingosync-handler";
 import { BingoBoard, Goal } from "./types";
 import { addLineBreak, configureBoard } from "./ui-helpers";
 import { getSeed, startGame } from "./util";
+import { subscribeToGoalChecks, subscribeToInventions, subscribeToRenewRides, subscribeToServerInitialization } from "./subscriptions";
 
 
 const colorRed = "\x1b[31m";
 const colorBlue = "\x1b[34m";
 const colorReset = "\x1b[0m";
+
+/**
+ * Handles game mode selection
+ */
+function selectGameMode(mode: "coop" | "pvp") {
+    config.gameMode = mode;
+    console.log(`Selected ${mode.toUpperCase()} mode`);
+    ui.getWindow("game-mode")?.close();
+    showGameDurationDialog();
+}
+
+/**
+ * Handles game duration selection
+ */
+function selectGameDuration(years: number) {
+    config.gameTime.year = years;
+    startGame(years);
+    ui.getWindow("game-duration")?.close();
+    initializeLocalGame();
+}
+
+/**
+ * Initializes the game after mode and duration selection
+ */
+function initializeLocalGame() {
+  console.log("Initializing local game...");
+  
+  // Set up game systems
+  subscribeToInventions();
+  subscribeToRenewRides();
+  subscribeToServerInitialization(); // Handles map initialization (trees, paths, etc.)
+
+  // Initialize game board and UI
+  const seed = getSeed();
+  const board = configureBoard(seed);
+  subscribeToGoalChecks(board);
+  openBingoBoard(board);
+  showConnectDialog();
+  
+  console.log("Local game initialized successfully.");
+}
 
 /**
  * Displays the Connect dialog with a button to trigger server connection
@@ -232,6 +274,71 @@ export function showWelcomeDialog() {
 }
 
 /**
+ * Displays a dialog to select the game mode (Singleplayer/COOP vs PVP/LOCKOUT).
+ */
+export function showGameModeDialog() {
+    if (!ui.getWindow("game-mode")) {
+        ui.openWindow({
+            classification: "game-mode",
+            title: "Select Game Mode",
+            width: 300,
+            height: 200,
+            widgets: [
+                // Instructions label
+                {
+                    type: "label",
+                    text: "Choose your game mode:",
+                    x: 10,
+                    y: 20,
+                    width: 280,
+                    height: 20,
+                },
+
+                // COOP Mode button
+                {
+                    type: "button",
+                    text: "Singleplayer/COOP",
+                    x: 25,
+                    y: 50,
+                    width: 250,
+                    height: 40,
+                    onClick: () => selectGameMode("coop"),
+                },
+
+                // PVP Mode button
+                {
+                    type: "button",
+                    text: "PVP/LOCKOUT",
+                    x: 25,
+                    y: 100,
+                    width: 250,
+                    height: 40,
+                    onClick: () => selectGameMode("pvp"),
+                },
+
+                // Mode descriptions
+                {
+                    type: "label",
+                    text: "COOP: All players work together to complete goals",
+                    x: 10,
+                    y: 150,
+                    width: 280,
+                    height: 15,
+                },
+                {
+                    type: "label",
+                    text: "PVP: Players compete for goals (lockout bingo)",
+                    x: 10,
+                    y: 165,
+                    width: 280,
+                    height: 15,
+                },
+            ],
+        });
+    }
+}
+
+/**
  * Displays a dialog with buttons to select the game duration (2 years, 5 years, or 10 years).
  */
 export function showGameDurationDialog() {
@@ -260,11 +367,7 @@ export function showGameDurationDialog() {
                     y: 50,
                     width: 200,
                     height: 30,
-                    onClick: () => {
-                        config.gameTime.year = 2;
-                        startGame(2);
-                        ui.getWindow("game-duration")?.close();
-                    },
+                    onClick: () => selectGameDuration(2),
                 },
 
                 // Button for 5-year game
@@ -275,11 +378,7 @@ export function showGameDurationDialog() {
                     y: 90,
                     width: 200,
                     height: 30,
-                    onClick: () => {
-                        config.gameTime.year = 5;
-                        startGame(5);
-                        ui.getWindow("game-duration")?.close();
-                    },
+                    onClick: () => selectGameDuration(5),
                 },
 
                 // Button for 10-year game
@@ -290,11 +389,7 @@ export function showGameDurationDialog() {
                     y: 130,
                     width: 200,
                     height: 30,
-                    onClick: () => {
-                        config.gameTime.year = 10;
-                        startGame(10);
-                        ui.getWindow("game-duration")?.close();
-                    },
+                    onClick: () => selectGameDuration(10),
                 },
             ],
         });

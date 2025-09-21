@@ -4,7 +4,8 @@ import { configureBoard } from "./ui-helpers";
 import { openBingoBoard, showGameDurationDialog } from "./ui";
 import { notifyTextBingo, notifyTextGoal } from "./bingo/notifications/text";
 import { notifyGroundBingo } from "./bingo/notifications/ground";
-import { createScoreboard, clearScoreboard } from "./bingo/notifications/billboard";
+import { createScoreboard, clearScoreboard, updateScore } from "./bingo/notifications/billboard";
+import { createPlayerSections } from "./bingo/notifications/playerSections";
 import { bingosyncUI } from "./bingo/bingosync-handler";
 import { subscribeToGoalChecks } from "./subscriptions";
 import { FOOT_PATH_LOCATIONS, INVENTION_ITEMS } from "./constants";
@@ -645,9 +646,14 @@ export function createScoreboardAction() {
     },
     execute: (event: GameActionEventArgs): GameActionResult => {
       try {
-        createScoreboard();
-        console.log("Scoreboard created successfully");
-        return { error: 0 };
+        const success = createScoreboard();
+        if (success) {
+          console.log("Scoreboard created successfully");
+          return { error: 0 };
+        } else {
+          console.log("Failed to create scoreboard");
+          return { error: 1, errorMessage: "Failed to create scoreboard" };
+        }
       } catch (error) {
         console.log("Failed to create scoreboard:", error);
         return { error: 1, errorMessage: "Failed to create scoreboard" };
@@ -657,23 +663,69 @@ export function createScoreboardAction() {
 }
 
 export function clearScoreboardAction() {
-  return {
-    name: "clearScoreboard",
-    query: (event: GameActionEventArgs): GameActionResult => {
-      console.log("Querying clearScoreboard action");
-      return { error: 0 };
-    },
-    execute: (event: GameActionEventArgs): GameActionResult => {
-      try {
-        clearScoreboard();
-        console.log("Scoreboard cleared successfully");
-        return { error: 0 };
-      } catch (error) {
-        console.log("Failed to clear scoreboard:", error);
-        return { error: 1, errorMessage: "Failed to clear scoreboard" };
-      }
-    }
-  };
+    return {
+        name: "clearScoreboard",
+        query: (event: GameActionEventArgs): GameActionResult => {
+            console.log("Querying clearScoreboard action");
+            return { error: 0 };
+        },
+        execute: (event: GameActionEventArgs): GameActionResult => {
+            try {
+                clearScoreboard();
+                console.log("Scoreboard cleared successfully");
+                return { error: 0 };
+            } catch (error) {
+                console.log("Failed to clear scoreboard:", error);
+                return { error: 1, errorMessage: "Failed to clear scoreboard" };
+            }
+        }
+    };
+}
+
+export function updateScoreAction() {
+    return {
+        name: "updateScore",
+        query: (event: GameActionEventArgs<{ playerNumber: number; newScore: number }>): GameActionResult => {
+            console.log("Querying updateScore action");
+            return { error: 0 };
+        },
+        execute: (event: GameActionEventArgs<{ playerNumber: number; newScore: number }>): GameActionResult => {
+            try {
+                const { playerNumber, newScore } = event.args;
+                updateScore(playerNumber, newScore);
+                console.log(`Player ${playerNumber} score updated to ${newScore} successfully`);
+                return { error: 0 };
+            } catch (error) {
+                console.log("Failed to update score:", error);
+                return { error: 1, errorMessage: "Failed to update score" };
+            }
+        }
+    };
+}
+
+export function createPlayerSectionsAction() {
+    return {
+        name: "createPlayerSections",
+        query: (event: GameActionEventArgs): GameActionResult => {
+            console.log("Querying createPlayerSections action");
+            return { error: 0 };
+        },
+        execute: (event: GameActionEventArgs): GameActionResult => {
+            try {
+                const success = createPlayerSections();
+                if (success) {
+                    console.log("Player sections created successfully");
+                    return { error: 0 };
+                } else {
+                    console.log("Failed to create player sections");
+                    return { error: 1, errorMessage: "Failed to create player sections" };
+                }
+            } catch (error) {
+                console.log("Failed to create player sections:", error);
+                return { error: 1, errorMessage: "Failed to create player sections" };
+            }
+        }
+    };
 }
 
 /**
@@ -739,6 +791,12 @@ export function registerActions() {
 
   const clearScoreboard = clearScoreboardAction();
   context.registerAction(clearScoreboard.name, clearScoreboard.query, clearScoreboard.execute);
+
+  const updateScore = updateScoreAction();
+  context.registerAction(updateScore.name, updateScore.query, updateScore.execute);
+
+  const createPlayerSections = createPlayerSectionsAction();
+  context.registerAction(createPlayerSections.name, createPlayerSections.query, createPlayerSections.execute);
 
   console.log("Actions registered.");
 }
