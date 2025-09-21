@@ -4,6 +4,7 @@ import { configureBoard } from "./ui-helpers";
 import { openBingoBoard, showGameDurationDialog } from "./ui";
 import { notifyTextBingo, notifyTextGoal } from "./bingo/notifications/text";
 import { notifyGroundBingo } from "./bingo/notifications/ground";
+import { createScoreboard, clearScoreboard } from "./bingo/notifications/billboard";
 import { bingosyncUI } from "./bingo/bingosync-handler";
 import { subscribeToGoalChecks } from "./subscriptions";
 import { FOOT_PATH_LOCATIONS, INVENTION_ITEMS } from "./constants";
@@ -635,6 +636,46 @@ export function setStorageAction() {
   };
 }
 
+export function createScoreboardAction() {
+  return {
+    name: "createScoreboard",
+    query: (event: GameActionEventArgs): GameActionResult => {
+      console.log("Querying createScoreboard action");
+      return { error: 0 };
+    },
+    execute: (event: GameActionEventArgs): GameActionResult => {
+      try {
+        createScoreboard();
+        console.log("Scoreboard created successfully");
+        return { error: 0 };
+      } catch (error) {
+        console.log("Failed to create scoreboard:", error);
+        return { error: 1, errorMessage: "Failed to create scoreboard" };
+      }
+    }
+  };
+}
+
+export function clearScoreboardAction() {
+  return {
+    name: "clearScoreboard",
+    query: (event: GameActionEventArgs): GameActionResult => {
+      console.log("Querying clearScoreboard action");
+      return { error: 0 };
+    },
+    execute: (event: GameActionEventArgs): GameActionResult => {
+      try {
+        clearScoreboard();
+        console.log("Scoreboard cleared successfully");
+        return { error: 0 };
+      } catch (error) {
+        console.log("Failed to clear scoreboard:", error);
+        return { error: 1, errorMessage: "Failed to clear scoreboard" };
+      }
+    }
+  };
+}
+
 /**
  * Registers all actions individually
  */
@@ -692,6 +733,12 @@ export function registerActions() {
 
   const setStorage = setStorageAction();
   context.registerAction(setStorage.name, setStorage.query, setStorage.execute);
+
+  const createScoreboard = createScoreboardAction();
+  context.registerAction(createScoreboard.name, createScoreboard.query, createScoreboard.execute);
+
+  const clearScoreboard = clearScoreboardAction();
+  context.registerAction(clearScoreboard.name, clearScoreboard.query, clearScoreboard.execute);
 
   console.log("Actions registered.");
 }

@@ -82,5 +82,23 @@ export function main(): void {
 
   if (typeof ui !== 'undefined') {
     ui.registerShortcut({ id: "bingoSync.openBingoBoardDialog", text: "Open Bingo Board", bindings: ["B"], callback: openBingoBoardDialog });
+    ui.registerShortcut({ id: "bingoSync.createScoreboard", text: "Create Scoreboard", bindings: ["CTRL+SHIFT+S"], callback: () => {
+      context.executeAction("createScoreboard", { args: {} }, (result) => {
+        if (result.error) {
+          console.log("Failed to create scoreboard:", result.errorMessage);
+        } else {
+          console.log("Scoreboard created!");
+        }
+      });
+    }});
+    ui.registerShortcut({ id: "bingoSync.clearScoreboard", text: "Clear Scoreboard", bindings: ["CTRL+SHIFT+X"], callback: () => {
+      context.executeAction("clearScoreboard", { args: {} }, (result) => {
+        if (result.error) {
+          console.log("Failed to clear scoreboard:", result.errorMessage);
+        } else {
+          console.log("Scoreboard cleared!");
+        }
+      });
+    }});
   }
 }
