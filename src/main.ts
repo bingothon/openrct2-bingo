@@ -5,6 +5,8 @@ import { openBingoBoard, openBingoBoardDialog, showConnectDialog, showGameDurati
 import { checkIfStarted, getSeed, resetGame, setSeed } from "./util";
 import { bingosyncUI, } from "./bingo/bingosync-handler";
 import { restart, subscribeIfStarted, subscribeToGoalChecks, subscribeToInventions, subscribeToRenewRides } from "./subscriptions";
+import { debugTile } from "./debug-tile-tool";
+import { tileAnalyzer } from "./tile-analyzer";
 
 
 export function main(): void {
@@ -79,6 +81,17 @@ export function main(): void {
     ui.registerShortcut({ id: "bingoSync.resetGame", text: "Reset Game State", bindings: ["CTRL+SHIFT+R"], callback: () => {
       resetGame();
       console.log("Game state reset! Restart the plugin to see the game mode dialog again.");
+    }});
+    
+    // Simple debug tool shortcuts
+    ui.registerShortcut({ id: "debug.start", text: "Start Debug Tool", bindings: ["CTRL+SHIFT+D"], callback: () => {
+      debugTile.activate();
+    }});
+    ui.registerShortcut({ id: "debug.stop", text: "Stop Debug Tool", bindings: ["CTRL+SHIFT+E"], callback: () => {
+      debugTile.deactivate();
+    }});
+    ui.registerShortcut({ id: "debug.viewport", text: "Show Viewport Info", bindings: ["CTRL+SHIFT+V"], callback: () => {
+      debugTile.showViewportInfo();
     }});
     ui.registerShortcut({ id: "bingoSync.createScoreboard", text: "Create Scoreboard", bindings: ["CTRL+SHIFT+S"], callback: () => {
       context.executeAction("createScoreboard", { args: {} }, (result) => {
