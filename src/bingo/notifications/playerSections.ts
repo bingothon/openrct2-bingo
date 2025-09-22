@@ -325,22 +325,42 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
     // Static tiles to unown
     const tilesToUnown = [
         // Entrance 1 area
-        {x: 1, y: 99}, {x: 2, y: 99}, {x: 2, y: 100}, {x: 2, y: 98}, {x: 3, y: 98}, {x: 3, y: 99}, {x: 3, y: 100},
+        {x: 1, y: 99}, 
+        {x: 2, y: 99}, 
+        {x: 2, y: 100}, 
+        {x: 2, y: 98}, 
+        {x: 3, y: 98}, 
+        {x: 3, y: 99}, 
+        {x: 3, y: 100},
+
         // Entrance 2 area  
-        {x: 128, y: 99}, {x: 127, y: 99}, {x: 127, y: 98}, {x: 127, y: 100}, {x: 126, y: 100}, {x: 126, y: 99}, {x: 126, y: 98},
+        {x: 128, y: 99}, 
+        {x: 127, y: 99}, 
+        {x: 127, y: 98}, 
+        {x: 127, y: 100}, 
+        {x: 126, y: 100}, 
+        {x: 126, y: 99}, 
+        {x: 126, y: 98},
+
         // Entrance 3 area
-        {x: 128, y: 29}, {x: 127, y: 29}, {x: 127, y: 30}, {x: 127, y: 28}, {x: 126, y: 30}, {x: 126, y: 29}, {x: 126, y: 28}
+        {x: 128, y: 30}, 
+        {x: 127, y: 30}, 
+        {x: 127, y: 31}, 
+        {x: 127, y: 29}, 
+        {x: 126, y: 31}, 
+        {x: 126, y: 30}, 
+        {x: 126, y: 29}
     ];
     
     // Static footpath tiles (ONLY leading footpaths - NO entrance tile footpaths)
     const footpathTiles = [
         // Leading footpaths only - let entrance handle its own footpath surfaces
-        {x: 128, y: 29}, {x: 127, y: 29}, // Entrance 3 leading footpaths
+        {x: 128, y: 30}, {x: 127, y: 30}, // Entrance 3 leading footpaths
         {x: 128, y: 99}, {x: 127, y: 99}, // Entrance 2 leading footpaths  
         {x: 1, y: 99}, {x: 2, y: 99},      // Entrance 1 leading footpaths
         {x: 3, y: 99}, // Entrance 1 center tile
         {x: 126, y: 99}, // Entrance 2 center tile
-        {x: 126, y: 29}, // Entrance 3 center tile
+        {x: 126, y: 30}, // Entrance 3 center tile
     ];
     
     // Static entrance definitions
@@ -359,7 +379,7 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
         },
         {
             name: "Entrance 3",
-            tiles: [{x: 126, y: 28}, {x: 126, y: 29}, {x: 126, y: 30}],
+            tiles: [{x: 126, y: 29}, {x: 126, y: 30}, {x: 126, y: 31}],
             rotation: 0,
             z: 112
         }
@@ -482,7 +502,7 @@ function createGuestSpawners(mapSize: any, scale: number, callback: () => void) 
         {
             name: "Player 3 Spawner (YELLOW)", 
             x: 128,
-            y: 29,
+            y: 30,
             z: 112,
             direction: 1 // Facing west
         },

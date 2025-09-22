@@ -7,6 +7,7 @@ import { bingosyncUI, } from "./bingo/bingosync-handler";
 import { restart, subscribeIfStarted, subscribeToGoalChecks, subscribeToInventions, subscribeToRenewRides } from "./subscriptions";
 import { debugTile } from "./debug-tile-tool";
 import { tileAnalyzer } from "./tile-analyzer";
+import { footpathExtractor } from "./footpath-extractor";
 
 
 export function main(): void {
@@ -93,6 +94,7 @@ export function main(): void {
     ui.registerShortcut({ id: "debug.viewport", text: "Show Viewport Info", bindings: ["CTRL+SHIFT+V"], callback: () => {
       debugTile.showViewportInfo();
     }});
+    
     ui.registerShortcut({ id: "bingoSync.createScoreboard", text: "Create Scoreboard", bindings: ["CTRL+SHIFT+S"], callback: () => {
       context.executeAction("createScoreboard", { args: {} }, (result) => {
         if (result.error) {
@@ -155,6 +157,45 @@ export function main(): void {
             console.log(`Player 4 score updated to ${newScore}!`);
           }
         });
+      }});
+      
+      // List footpath surface objects shortcut
+      ui.registerShortcut({ id: "bingoSync.listFootpathObjects", text: "List Footpath Surface Objects", bindings: ["CTRL+SHIFT+L"], callback: () => {
+        footpathExtractor.listFootpathSurfaceObjects();
+      }});
+      
+      // Inspect specific tiles for footpaths shortcut
+      ui.registerShortcut({ id: "bingoSync.inspectTiles", text: "Inspect Tiles (4,30) to (5,30) for Footpaths", bindings: ["CTRL+SHIFT+I"], callback: () => {
+        footpathExtractor.inspectTilesForFootpaths(4, 30, 5, 30);
+      }});
+      
+      // Tarmac footpath locations shortcut
+      ui.registerShortcut({ id: "bingoSync.getTarmacLocations", text: "Get Tarmac Footpath Locations", bindings: ["CTRL+SHIFT+T"], callback: () => {
+        try {
+          console.log("Scanning for Tarmac footpaths...");
+          const tarmacFootpaths = footpathExtractor.extractFootpathsBySurfaceObjectIdentifier("rct2.footpath_surface.tarmac");
+          const locations = footpathExtractor.generateFootpathLocationsBySurfaceObjectIdentifier("rct2.footpath_surface.tarmac", 1);
+          
+          console.log(`\n=== TARMAC FOOTPATH LOCATIONS ===`);
+          console.log(`Found ${tarmacFootpaths.length} Tarmac footpath tiles`);
+          console.log(`\nX,Y Coordinates:`);
+          
+          locations.forEach((location, index) => {
+            console.log(`${index + 1}: (${location.x}, ${location.y})`);
+          });
+          
+          console.log(`\nfootpath_locations = [`);
+          locations.forEach((location, index) => {
+            console.log(`  {`);
+            console.log(`    "x": ${location.x},`);
+            console.log(`    "y": ${location.y}`);
+            console.log(`  }${index < locations.length - 1 ? ',' : ''}`);
+          });
+          console.log(`]`);
+          console.log(`\n=== COPY THE ABOVE ARRAY TO YOUR CONSTANTS FILE ===\n`);
+        } catch (error) {
+          console.log("Error getting Tarmac footpath locations:", error);
+        }
       }});
   }
 }

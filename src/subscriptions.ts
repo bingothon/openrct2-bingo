@@ -4,7 +4,7 @@ import { config } from "./config";
 import { BingoBoard } from "./types";
 import { showGameDurationDialog } from "./ui";
 import { configureBoard, updateBoardWithSeed } from "./ui-helpers";
-import { addRandomTrees, adjustWaterHeight, checkIfStarted, clearAllRides, clearAllTiles, clearAndSetForSale, clearMiddle, debugMode, flatAllLand, getSeed, ownMapSection, renewRides, setFootPaths, setSeed } from "./util";
+import { addRandomTrees, adjustWaterHeight, checkIfStarted, clearAllRides, clearAllTiles, clearAndSetForSale, clearMiddle, debugMode, flatAllLand, getSeed, ownMapSection, renewRides, setFootPaths, setPVPFootPaths, setSeed } from "./util";
 let intervalSubscriptionGuestExplode: IDisposable | null = null;
 
 let intervalSubscriptionBoard: IDisposable | null = null;
@@ -372,7 +372,7 @@ function initializePvpGame(): void {
                                             // Step 11: Disable debug mode
                                             debugMode(0, () => {
                                                 // Step 12: Set foot paths
-                                                setFootPaths(() => {
+                                                setPVPFootPaths(() => {
                                                     // Step 13: Create player sections on the ground
                                                     initializePlayerSections(() => {
                                                         // Step 14: Initialize scoreboard with 0 0 / 0 0

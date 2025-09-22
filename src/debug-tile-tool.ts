@@ -95,6 +95,25 @@ export class SimpleDebugTileTool {
     }
 
     /**
+     * Gets object information for better debugging
+     */
+    private getObjectInfo(objectType: ObjectType, objectIndex: number): string {
+        try {
+            if (typeof objectManager === 'undefined') {
+                return `Object ${objectIndex}`;
+            }
+            
+            const object = objectManager.getObject(objectType, objectIndex);
+            if (object) {
+                return `${object.name} (${objectIndex})`;
+            }
+            return `Unknown ${objectType} (${objectIndex})`;
+        } catch (error) {
+            return `${objectType} (${objectIndex})`;
+        }
+    }
+
+    /**
      * Logs detailed information about a tile
      */
     logTileInfo(x: number, y: number) {
@@ -108,55 +127,95 @@ export class SimpleDebugTileTool {
             console.log(`\nTILE INSPECTION: (${x}, ${y})`);
             console.log(`Coordinates: (${x}, ${y})`);
             console.log(`Elements: ${tile.elements.length}`);
-            console.log(`Ownership: ${(tile as any).ownership ? 'Owned' : 'Unowned'}`);
-            console.log(`Construction Rights: ${(tile as any).constructionRights ? 'Yes' : 'No'}`);
-            console.log(`Park Entrance: ${(tile as any).parkEntrance ? 'Yes' : 'No'}`);
+            console.log(`Raw Data Length: ${tile.data.length} bytes`);
             
             console.log(`\nELEMENTS:`);
             tile.elements.forEach((element, index) => {
-                console.log(`  ${index}: ${element.type} (z: ${element.baseZ})`);
+                console.log(`  ${index}: ${element.type} (baseZ: ${element.baseZ}, clearanceZ: ${element.clearanceZ})`);
+                console.log(`    - Base Height: ${element.baseHeight}`);
+                console.log(`    - Clearance Height: ${element.clearanceHeight}`);
+                console.log(`    - Occupied Quadrants: ${element.occupiedQuadrants}`);
+                console.log(`    - Is Ghost: ${element.isGhost}`);
+                console.log(`    - Is Hidden: ${element.isHidden}`);
                 
-                // Add specific element details
+                // Add specific element details based on actual OpenRCT2 types
                 switch (element.type) {
                     case 'surface':
-                        const surface = element as any;
+                        const surface = element as SurfaceElement;
                         console.log(`    - Slope: ${surface.slope}`);
                         console.log(`    - Water Height: ${surface.waterHeight}`);
                         console.log(`    - Surface Style: ${surface.surfaceStyle}`);
                         console.log(`    - Edge Style: ${surface.edgeStyle}`);
+                        console.log(`    - Grass Length: ${surface.grassLength}`);
+                        console.log(`    - Ownership: ${surface.ownership}`);
+                        console.log(`    - Park Fences: ${surface.parkFences}`);
                         break;
                     case 'footpath':
-                        const path = element as any;
-                        console.log(`    - Path Type: ${path.pathType}`);
-                        console.log(`    - Direction: ${path.direction}`);
-                        console.log(`    - Addition: ${path.addition}`);
+                        const path = element as FootpathElement;
+                        console.log(`    - Object (Legacy): ${path.object !== null ? this.getObjectInfo('footpath', path.object) : 'null'}`);
+                        console.log(`    - Surface Object: ${path.surfaceObject !== null ? this.getObjectInfo('footpath_surface', path.surfaceObject) : 'null'}`);
+                        console.log(`    - Railings Object: ${path.railingsObject !== null ? this.getObjectInfo('footpath_addition', path.railingsObject) : 'null'}`);
+                        console.log(`    - Edges: ${path.edges}`);
+                        console.log(`    - Corners: ${path.corners}`);
+                        console.log(`    - Slope Direction: ${path.slopeDirection}`);
+                        console.log(`    - Is Blocked by Vehicle: ${path.isBlockedByVehicle}`);
                         break;
                     case 'track':
-                        const track = element as any;
+                        const track = element as TrackElement;
+                        console.log(`    - Direction: ${track.direction}`);
                         console.log(`    - Track Type: ${track.trackType}`);
+                        console.log(`    - Ride Type: ${track.rideType}`);
                         console.log(`    - Sequence: ${track.sequence}`);
-                        console.log(`    - Ride: ${track.ride}`);
+                        console.log(`    - Maze Entry: ${track.mazeEntry}`);
+                        console.log(`    - Colour Scheme: ${track.colourScheme}`);
+                        console.log(`    - Seat Rotation: ${track.seatRotation}`);
                         break;
                     case 'small_scenery':
-                        const smallScenery = element as any;
-                        console.log(`    - Object: ${smallScenery.object}`);
+                        const smallScenery = element as SmallSceneryElement;
+                        console.log(`    - Direction: ${smallScenery.direction}`);
+                        console.log(`    - Object: ${this.getObjectInfo('small_scenery', smallScenery.object)}`);
+                        console.log(`    - Primary Colour: ${smallScenery.primaryColour}`);
+                        console.log(`    - Secondary Colour: ${smallScenery.secondaryColour}`);
+                        console.log(`    - Tertiary Colour: ${smallScenery.tertiaryColour}`);
                         console.log(`    - Quadrant: ${smallScenery.quadrant}`);
+                        console.log(`    - Age: ${smallScenery.age}`);
                         break;
                     case 'large_scenery':
-                        const largeScenery = element as any;
-                        console.log(`    - Object: ${largeScenery.object}`);
+                        const largeScenery = element as LargeSceneryElement;
+                        console.log(`    - Direction: ${largeScenery.direction}`);
+                        console.log(`    - Object: ${this.getObjectInfo('large_scenery', largeScenery.object)}`);
+                        console.log(`    - Primary Colour: ${largeScenery.primaryColour}`);
+                        console.log(`    - Secondary Colour: ${largeScenery.secondaryColour}`);
+                        console.log(`    - Tertiary Colour: ${largeScenery.tertiaryColour}`);
                         console.log(`    - Sequence: ${largeScenery.sequence}`);
                         break;
                     case 'wall':
-                        const wall = element as any;
-                        console.log(`    - Object: ${wall.object}`);
+                        const wall = element as WallElement;
                         console.log(`    - Direction: ${wall.direction}`);
+                        console.log(`    - Object: ${this.getObjectInfo('wall', wall.object)}`);
+                        console.log(`    - Primary Colour: ${wall.primaryColour}`);
+                        console.log(`    - Secondary Colour: ${wall.secondaryColour}`);
+                        console.log(`    - Tertiary Colour: ${wall.tertiaryColour}`);
+                        console.log(`    - Slope: ${wall.slope}`);
                         break;
                     case 'entrance':
-                        const entrance = element as any;
-                        console.log(`    - Object: ${entrance.object}`);
+                        const entrance = element as EntranceElement;
                         console.log(`    - Direction: ${entrance.direction}`);
+                        console.log(`    - Object: ${this.getObjectInfo('park_entrance', entrance.object)}`);
                         console.log(`    - Ride: ${entrance.ride}`);
+                        console.log(`    - Station: ${entrance.station}`);
+                        console.log(`    - Sequence: ${entrance.sequence}`);
+                        console.log(`    - Footpath Object: ${entrance.footpathObject !== null ? this.getObjectInfo('footpath', entrance.footpathObject) : 'null'}`);
+                        console.log(`    - Footpath Surface Object: ${entrance.footpathSurfaceObject !== null ? this.getObjectInfo('footpath_surface', entrance.footpathSurfaceObject) : 'null'}`);
+                        break;
+                    case 'banner':
+                        const banner = element as BannerElement;
+                        console.log(`    - Direction: ${banner.direction}`);
+                        console.log(`    - Object: ${this.getObjectInfo('banner', banner.object)}`);
+                        console.log(`    - Primary Colour: ${banner.primaryColour}`);
+                        console.log(`    - Secondary Colour: ${banner.secondaryColour}`);
+                        console.log(`    - Banner Index: ${banner.bannerIndex}`);
+                        console.log(`    - Banner Text: "${banner.bannerText}"`);
                         break;
                 }
             });
