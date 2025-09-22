@@ -354,13 +354,13 @@ function createPlayerRegionsVertical(baseX: number, baseY: number, objectId: num
     
     const regions = [
         // Top-left - GREEN (Player 1) - switched from RED
-        { name: "Player 1", x: centerX - regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[2], score: 1 },
+        { name: "Player 1", x: centerX - regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[2], score: 0 },
         // Top-right - YELLOW (Player 2) - keep YELLOW
-        { name: "Player 2", x: centerX + regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[3], score: 2 },
+        { name: "Player 2", x: centerX + regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[3], score: 0 },
         // Bottom-left - RED (Player 3) - switched from GREEN
-        { name: "Player 3", x: centerX - regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[0], score: 3 },
+        { name: "Player 3", x: centerX - regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[0], score: 0 },
         // Bottom-right - BLUE (Player 4) - keep BLUE
-        { name: "Player 4", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[1], score: 5 }
+        { name: "Player 4", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[1], score: 0 }
     ];
     
     regions.forEach((region, index) => {
@@ -389,14 +389,14 @@ function createMirroredPlayerRegions(baseX: number, baseY: number, objectId: num
     const regionOffset = (REGION_SIZE + REGION_SPACING) / 2; // Half the region size + spacing
     
     const regions = [
-        // SWAPPED: Bottom-left becomes top-left (Player 3 -> 5) - RED
-        { name: "Player 3", x: centerX - regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[0], score: 5 },
-        // SWAPPED: Bottom-right becomes top-right (Player 4 -> 7) - BLUE
-        { name: "Player 4", x: centerX + regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[1], score: 7 },
-        // SWAPPED: Top-left becomes bottom-left (Player 1 -> 1) - GREEN
-        { name: "Player 1", x: centerX - regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[2], score: 1 },
-        // SWAPPED: Top-right becomes bottom-right (Player 2 -> 3) - YELLOW
-        { name: "Player 2", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[3], score: 3 }
+        // SWAPPED: Bottom-left becomes top-left (Player 3 -> 0) - RED
+        { name: "Player 3", x: centerX - regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[0], score: 0 },
+        // SWAPPED: Bottom-right becomes top-right (Player 4 -> 0) - BLUE
+        { name: "Player 4", x: centerX + regionOffset * scale, z: centerZ + regionOffset * 16 * 2, color: PLAYER_COLORS[1], score: 0 },
+        // SWAPPED: Top-left becomes bottom-left (Player 1 -> 0) - GREEN
+        { name: "Player 1", x: centerX - regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[2], score: 0 },
+        // SWAPPED: Top-right becomes bottom-right (Player 2 -> 0) - YELLOW
+        { name: "Player 2", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[3], score: 0 }
     ];
     
     regions.forEach((region, index) => {
@@ -533,23 +533,29 @@ function placeNumber(number: number, baseX: number, baseY: number, z: number, ob
  * Places a single scenery object with cost handling
  */
 function placeSceneryObject(x: number, y: number, z: number, objectId: number, color: number) {
-    // First, try to remove any existing scenery at this location
-    const removeAction = {
-        x: x,
-        y: y,
-        z: z,
-        object: objectId,
-        quadrant: 0
-    };
-    
-    context.executeAction("smallsceneryremove", removeAction, (removeResult) => {
-        // Ignore remove errors - there might not be anything to remove
-        
-        // Now place the new scenery - use correct parameter order from @types/openrct2
+    // Detect if a matching small scenery element exists at the exact location
+    const tileX = Math.floor(x / 32);
+    const tileY = Math.floor(y / 32);
+
+    const inBounds = tileX >= 0 && tileX < map.size.x && tileY >= 0 && tileY < map.size.y;
+    let hasMatchingScenery = false;
+
+    if (inBounds) {
+        const tile = map.getTile(tileX, tileY);
+        for (const element of tile.elements) {
+            if (element.type === "small_scenery" &&
+                element.baseZ === z &&
+                (element as SmallSceneryElement).object === objectId) {
+                hasMatchingScenery = true;
+                break;
+            }
+        }
+    }
+
+    // Only attempt to remove if there is actually a matching element
+    const tryPlace = () => {
         const sceneryArgs = {
-            x: x,
-            y: y,
-            z: z,
+            x, y, z,
             direction: 0,
             object: objectId,
             quadrant: 0,
@@ -557,33 +563,44 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
             secondaryColour: 0,
             tertiaryColour: 0
         };
-        
-        // Query the action to check cost
+
         context.queryAction("smallsceneryplace", sceneryArgs, (queryResult) => {
+            if (queryResult.error) {
+                console.log(`Failed to query scenery placement at (${x}, ${y}), z: ${z} - ${queryResult.errorMessage}`);
+                return;
+            }
             if (queryResult.cost && queryResult.cost > 0) {
-                // Add cash to cover the cost
                 context.executeAction('addCash', { args: { cash: queryResult.cost } }, (cashResult) => {
                     if (cashResult.error) {
                         console.log("Failed to add cash for scenery placement:", cashResult.errorMessage);
-                    } else {
-                        // Execute the scenery placement
-                        context.executeAction("smallsceneryplace", sceneryArgs, (result) => {
-                            if (result.error) {
-                                console.log(`Failed to place scenery at (${x}, ${y}, ${z}): ${result.errorMessage}`);
-                            }
-                        });
+                        return;
                     }
+                    context.executeAction("smallsceneryplace", sceneryArgs, (placeResult) => {
+                        if (placeResult.error) {
+                            console.log(`Failed to place scenery at (${x}, ${y}), z: ${z} - ${placeResult.errorMessage}`);
+                        }
+                    });
                 });
             } else {
-                // No cost, execute directly
-                context.executeAction("smallsceneryplace", sceneryArgs, (result) => {
-                    if (result.error) {
-                        console.log(`Failed to place scenery at (${x}, ${y}, ${z}): ${result.errorMessage}`);
+                context.executeAction("smallsceneryplace", sceneryArgs, (placeResult) => {
+                    if (placeResult.error) {
+                        console.log(`Failed to place scenery at (${x}, ${y}), z: ${z} - ${placeResult.errorMessage}`);
                     }
                 });
             }
         });
-    });
+    };
+
+    if (hasMatchingScenery) {
+        const removeAction = { x, y, z, object: objectId, quadrant: 0 };
+        context.executeAction("smallsceneryremove", removeAction, () => {
+            // Ignore remove errors; we verified presence already to avoid spam logs
+            tryPlace();
+        });
+    } else {
+        // Nothing to remove → avoid triggering engine "not found" logs
+        tryPlace();
+    }
 }
 
 /**
@@ -765,7 +782,25 @@ function updatePlayerRegion(baseX: number, baseY: number, objectId: number, bill
     clearPlayerRegion(baseX, baseY, regionX, regionZ, objectId, billboardZ, scale, newScore);
     
     // Recreate the colored border around the player region
-    const color = PLAYER_COLORS[playerNumber];
+    let color: number;
+    switch (playerNumber) {
+        case 0: // Player 1 -> Green (same as initial creation)
+            color = PLAYER_COLORS[2];
+            break;
+        case 1: // Player 2 -> Yellow (same as initial creation)
+            color = PLAYER_COLORS[3];
+            break;
+        case 2: // Player 3 -> Red (same as initial creation)
+            color = PLAYER_COLORS[0];
+            break;
+        case 3: // Player 4 -> Blue (same as initial creation)
+            color = PLAYER_COLORS[1];
+            break;
+        default:
+            console.log(`Invalid player number: ${playerNumber}`);
+            return;
+    }
+
     createPlayerRegionBorder(regionX, regionZ, objectId, color, scale, baseY, billboardZ);
     
     // Place the new score number - center based on number of digits
