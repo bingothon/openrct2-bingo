@@ -230,7 +230,7 @@ export function createPlayerSections(): boolean {
             // Unown the land in each player section
             unownPlayerSections(mapSize, scale, () => {
             // Create entrances for each player section (except RED) - still in debug mode
-            createPlayerEntrances(mapSize, scale, () => {
+            createPlayerEntrancesAndFootpaths(mapSize, scale, () => {
                 // Create guest spawners for each player section - still in debug mode
                 createGuestSpawners(mapSize, scale, () => {
                     // Disable debug mode after everything is done
@@ -295,9 +295,10 @@ function findExistingEntrance(mapSize: any, scale: number) {
 /**
  * Creates park entrances for each player section (except RED)
  */
-function createPlayerEntrances(mapSize: any, scale: number, callback: () => void) {
+function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback: () => void) {
     console.log("=== ENTRANCE CREATION STARTED ===");
     console.log("Creating park entrances for player sections...");
+    console.log("Function called with mapSize:", mapSize, "scale:", scale);
     
     // Load the park entrance object using the traditional entrance
     console.log("Loading traditional park entrance object...");
@@ -309,8 +310,8 @@ function createPlayerEntrances(mapSize: any, scale: number, callback: () => void
     }
     
     // Load footpath surface object for the entrance
-    console.log("Loading tarmac footpath surface object...");
-    const footpathObject = objectManager.load("rct2.footpath_surface.tarmac");
+    console.log("Loading ashphalt footpath surface object...");
+    const footpathObject = objectManager.load("rct2.footpath_surface.ash");
     if (!footpathObject) {
         console.log("Failed to load tarmac footpath surface object");
         callback();
@@ -319,6 +320,7 @@ function createPlayerEntrances(mapSize: any, scale: number, callback: () => void
     
     console.log(`Loaded entrance object at index: ${entranceObject.index}`);
     console.log(`Loaded footpath object at index: ${footpathObject.index}`);
+    console.log("Objects loaded successfully, proceeding with entrance creation...");
     
     // Static tiles to unown
     const tilesToUnown = [
@@ -330,16 +332,15 @@ function createPlayerEntrances(mapSize: any, scale: number, callback: () => void
         {x: 128, y: 29}, {x: 127, y: 29}, {x: 127, y: 30}, {x: 127, y: 28}, {x: 126, y: 30}, {x: 126, y: 29}, {x: 126, y: 28}
     ];
     
-    // Static footpath tiles (leading footpaths + entrance footpaths)
+    // Static footpath tiles (ONLY leading footpaths - NO entrance tile footpaths)
     const footpathTiles = [
-        // Leading footpaths
+        // Leading footpaths only - let entrance handle its own footpath surfaces
         {x: 128, y: 29}, {x: 127, y: 29}, // Entrance 3 leading footpaths
         {x: 128, y: 99}, {x: 127, y: 99}, // Entrance 2 leading footpaths  
-        {x: 1, y: 99}, {x: 2, y: 99},     // Entrance 1 leading footpaths
-        // Entrance footpaths (at entrance locations)
-        {x: 126, y: 29},  // Entrance 3 entrance footpaths
-        {x: 126, y: 99}, // Entrance 2 entrance footpaths
-        {x: 3, y: 99}      // Entrance 1 entrance footpaths
+        {x: 1, y: 99}, {x: 2, y: 99},      // Entrance 1 leading footpaths
+        {x: 3, y: 99}, // Entrance 1 center tile
+        {x: 126, y: 99}, // Entrance 2 center tile
+        {x: 126, y: 29}, // Entrance 3 center tile
     ];
     
     // Static entrance definitions
@@ -369,7 +370,8 @@ function createPlayerEntrances(mapSize: any, scale: number, callback: () => void
     const totalTiles = tilesToUnown.length;
     
     if (totalTiles === 0) {
-        placeFootpaths();
+        console.log("No tiles to unown, proceeding directly to entrance and footpath placement...");
+        placeEntrancesAndFootpaths();
     } else {
         tilesToUnown.forEach((tile) => {
             context.executeAction("landsetrights", {
@@ -388,53 +390,24 @@ function createPlayerEntrances(mapSize: any, scale: number, callback: () => void
                 }
                 
                 if (unownCompleted === totalTiles) {
-                    console.log("All tiles unowned, proceeding to footpath placement...");
-                    placeFootpaths();
+                    console.log("All tiles unowned, proceeding to entrance and footpath placement...");
+                    placeEntrancesAndFootpaths();
                 }
             });
         });
     }
     
-    function placeFootpaths() {
-        console.log("Placing footpaths...");
-        let footpathCompleted = 0;
-        const totalFootpaths = footpathTiles.length;
-        
-        footpathTiles.forEach((tile) => {
-            context.executeAction("footpathplace", {
-                x: tile.x * scale,
-                y: tile.y * scale,
-                z: 112, // Default Z level
-                direction: 0, // Default direction
-                object: footpathObject!.index,
-                railingsObject: 0,
-                slope: 0,
-                constructFlags: 0,
-                flags: 0
-            }, (footpathResult) => {
-                footpathCompleted++;
-                if (footpathResult.error) {
-                    console.log(`❌ FAILED to place footpath at (${tile.x}, ${tile.y}): ${footpathResult.errorMessage}`);
-                } else {
-                    console.log(`✅ Successfully placed footpath at (${tile.x}, ${tile.y})`);
-                }
-                
-                if (footpathCompleted === totalFootpaths) {
-                    console.log("All footpaths placed, now placing entrances...");
-                    placeEntrances();
-                }
-            });
-        });
-    }
-    
-    function placeEntrances() {
-        console.log("Placing entrances...");
+    function placeEntrancesAndFootpaths() {
+        console.log("Placing entrances FIRST...");
         let entranceCompleted = 0;
         const totalEntrances = entrances.length;
         
         entrances.forEach((entrance) => {
             // Place entrance at the center tile (middle of the 3-tile line)
             const centerTile = entrance.tiles[1]; // Middle tile
+            
+            console.log(`🔍 About to place ${entrance.name} at (${centerTile.x}, ${centerTile.y})`);
+            // console.log(`🔍 Sandbox mode should be enabled: ${context.cheats.sandboxMode}`);
             
             context.executeAction("parkentranceplace", {
                 x: centerTile.x * scale,
@@ -443,7 +416,7 @@ function createPlayerEntrances(mapSize: any, scale: number, callback: () => void
                 direction: entrance.rotation,
                 footpathSurfaceObject: footpathObject!.index,
                 entranceObject: entranceObject!.index,
-                pathTypeIsLegacy: false
+                footpathTypeIsLegacy: false
             }, (entranceResult) => {
                 entranceCompleted++;
                 if (entranceResult.error) {
@@ -453,12 +426,41 @@ function createPlayerEntrances(mapSize: any, scale: number, callback: () => void
                 }
                 
                 if (entranceCompleted === totalEntrances) {
-                    console.log("All player entrances created successfully!");
-                    callback();
+                    console.log("All entrances placed, now placing footpaths...");
+                    // Place footpaths AFTER entrances
+                    let footpathCompleted = 0;
+                    const totalFootpaths = footpathTiles.length;
+                    
+                    footpathTiles.forEach((tile) => {
+                        context.executeAction("footpathplace", {
+                            x: tile.x * scale,
+                            y: tile.y * scale,
+                            z: 112, // Default Z level
+                            direction: 0, // Default direction
+                            object: footpathObject!.index,
+                            railingsObject: 0,
+                            slope: 0,
+                            constructFlags: 0,
+                            flags: 0
+                        }, (footpathResult) => {
+                            footpathCompleted++;
+                            if (footpathResult.error) {
+                                console.log(`❌ FAILED to place footpath at (${tile.x}, ${tile.y}): ${footpathResult.errorMessage}`);
+                            } else {
+                                console.log(`✅ Successfully placed footpath at (${tile.x}, ${tile.y})`);
+                            }
+                            
+                            if (footpathCompleted === totalFootpaths) {
+                                console.log("All footpaths placed successfully!");
+                                callback();
+                            }
+                        });
+                    });
                 }
             });
         });
     }
+    
 }
 
 /**
@@ -475,21 +477,21 @@ function createGuestSpawners(mapSize: any, scale: number, callback: () => void) 
             x: 1,
             y: 99,
             z: 112,
-            direction: 2 // Facing east
+            direction: 3 // Facing east
         },
         {
             name: "Player 3 Spawner (YELLOW)", 
             x: 128,
             y: 29,
             z: 112,
-            direction: 0 // Facing west
+            direction: 1 // Facing west
         },
         {
             name: "Player 4 Spawner (BLUE)",
             x: 128,
             y: 99,
             z: 112,
-            direction: 0 // Facing west
+            direction: 1 // Facing west
         }
     ];
     
