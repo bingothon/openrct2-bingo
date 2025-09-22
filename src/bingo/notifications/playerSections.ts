@@ -229,15 +229,18 @@ export function createPlayerSections(): boolean {
             
             // Unown the land in each player section
             unownPlayerSections(mapSize, scale, () => {
-                // Create entrances for each player section (except RED) - still in debug mode
-                createPlayerEntrances(mapSize, scale, () => {
+            // Create entrances for each player section (except RED) - still in debug mode
+            createPlayerEntrances(mapSize, scale, () => {
+                // Create guest spawners for each player section - still in debug mode
+                createGuestSpawners(mapSize, scale, () => {
                     // Disable debug mode after everything is done
                     console.log("Disabling debug mode...");
                     debugMode(0, () => {
                         console.log("Debug mode disabled successfully");
-                        console.log("Player sections and entrances created successfully!");
+                        console.log("Player sections, entrances, and guest spawners created successfully!");
                     });
                 });
+            });
             });
         });
         
@@ -456,4 +459,64 @@ function createPlayerEntrances(mapSize: any, scale: number, callback: () => void
             });
         });
     }
+}
+
+/**
+ * Creates guest spawners for each player section
+ */
+function createGuestSpawners(mapSize: any, scale: number, callback: () => void) {
+    console.log("=== GUEST SPAWNER CREATION STARTED ===");
+    console.log("Creating guest spawners for player sections...");
+    
+    // Define spawner positions for each player section
+    const spawners = [
+        {
+            name: "Player 2 Spawner (GREEN)",
+            x: 1,
+            y: 99,
+            z: 112,
+            direction: 2 // Facing east
+        },
+        {
+            name: "Player 3 Spawner (YELLOW)", 
+            x: 128,
+            y: 29,
+            z: 112,
+            direction: 0 // Facing west
+        },
+        {
+            name: "Player 4 Spawner (BLUE)",
+            x: 128,
+            y: 99,
+            z: 112,
+            direction: 0 // Facing west
+        }
+    ];
+    
+    console.log("Placing guest spawners...");
+    let spawnerCompleted = 0;
+    const totalSpawners = spawners.length;
+    
+    spawners.forEach((spawner) => {
+        console.log(`Placing ${spawner.name} at (${spawner.x}, ${spawner.y}, ${spawner.z})`);
+        
+        context.executeAction("peepspawnplace", {
+            x: spawner.x * scale,
+            y: spawner.y * scale,
+            z: spawner.z,
+            direction: spawner.direction
+        }, (spawnerResult) => {
+            spawnerCompleted++;
+            if (spawnerResult.error) {
+                console.log(`❌ FAILED to place ${spawner.name}: ${spawnerResult.errorMessage}`);
+            } else {
+                console.log(`✅ Successfully placed ${spawner.name}`);
+            }
+            
+            if (spawnerCompleted === totalSpawners) {
+                console.log("All guest spawners created successfully!");
+                callback();
+            }
+        });
+    });
 }
