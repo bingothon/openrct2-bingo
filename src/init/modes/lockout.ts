@@ -2,7 +2,8 @@ import { clearAllTiles, debugMode, setPVPFootPaths } from "src/util";
 import { unlockEntireMap } from "./shared";
 
 
-export function initializePvpGame(): void {
+
+export function initializeLockoutGame(): void {
     console.log("Initializing PVP/LOCKOUT game mode...");
     
     // Step 1: Enable debug mode

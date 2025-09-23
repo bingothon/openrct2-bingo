@@ -17,7 +17,7 @@ const colorReset = "\x1b[0m";
 /**
  * Handles game mode selection
  */
-function selectGameMode(mode: "coop" | "pvp") {
+function selectGameMode(mode: "coop" | "pvp" | "lockout") {
     config.gameMode = mode;
     console.log(`Selected ${mode.toUpperCase()} mode`);
     ui.getWindow("game-mode")?.close();
@@ -326,7 +326,7 @@ export function showWelcomeDialog() {
 }
 
 /**
- * Displays a dialog to select the game mode (Singleplayer/COOP vs PVP/LOCKOUT).
+ * Displays a dialog to select the game mode (Singleplayer/COOP, PVP, or Lockout).
  */
 export function showGameModeDialog() {
     if (!ui.getWindow("game-mode")) {
@@ -334,7 +334,7 @@ export function showGameModeDialog() {
             classification: "game-mode",
             title: "Select Game Mode",
             width: 300,
-            height: 200,
+            height: 250,
             widgets: [
                 // Instructions label
                 {
@@ -346,26 +346,37 @@ export function showGameModeDialog() {
                     height: 20,
                 },
 
-                // COOP Mode button
+                // Singleplayer/COOP Mode button
                 {
                     type: "button",
                     text: "Singleplayer/COOP",
                     x: 25,
                     y: 50,
                     width: 250,
-                    height: 40,
+                    height: 35,
                     onClick: () => selectGameMode("coop"),
                 },
 
                 // PVP Mode button
                 {
                     type: "button",
-                    text: "PVP/LOCKOUT",
+                    text: "PVP",
                     x: 25,
-                    y: 100,
+                    y: 95,
                     width: 250,
-                    height: 40,
+                    height: 35,
                     onClick: () => selectGameMode("pvp"),
+                },
+
+                // Lockout Mode button
+                {
+                    type: "button",
+                    text: "Lockout",
+                    x: 25,
+                    y: 140,
+                    width: 250,
+                    height: 35,
+                    onClick: () => selectGameMode("lockout"),
                 },
 
                 // Mode descriptions
@@ -373,7 +384,7 @@ export function showGameModeDialog() {
                     type: "label",
                     text: "COOP: All players work together to complete goals",
                     x: 10,
-                    y: 150,
+                    y: 185,
                     width: 280,
                     height: 15,
                 },
@@ -381,7 +392,15 @@ export function showGameModeDialog() {
                     type: "label",
                     text: "PVP: Players compete for goals (lockout bingo)",
                     x: 10,
-                    y: 165,
+                    y: 200,
+                    width: 280,
+                    height: 15,
+                },
+                {
+                    type: "label",
+                    text: "Lockout: Players compete for goals (lockout bingo)",
+                    x: 10,
+                    y: 215,
                     width: 280,
                     height: 15,
                 },

@@ -48,7 +48,7 @@ export interface Config {
   daysElapsed: number;
   started: boolean;
   socket: Socket | undefined;
-  gameMode: "coop" | "pvp";
+  gameMode: "coop" | "pvp" | "lockout";
   playerColors: PlayerColors;
   playerColorNames: PlayerColorNames;
   debug: boolean;
