@@ -1,6 +1,9 @@
 import terser from "@rollup/plugin-terser";
 import typescript from "@rollup/plugin-typescript";
 import dts from "rollup-plugin-dts";
+import { exec } from "child_process";
+import { promisify } from "util";
+import { homedir } from "os";
 
 const build = process.env.BUILD || "development";
 const isDev = build === "development";
@@ -56,7 +59,10 @@ const config = [
       compact: true,
     },
     plugins: [
-      typescript(),
+      typescript({
+        target: "es5",
+        lib: ["es5"]
+      }),
       terser({
         compress: {
           passes: 5,

@@ -1,4 +1,7 @@
-const config = {
+import { Config } from './types';
+
+const config: Config = {
+  debug: true,
   pluginVersion: "1.0.1",
   defaultSeed: 12345,
   userNameInput: "openrct2",
@@ -31,36 +34,6 @@ const config = {
     player3: "Bright Green",
     player4: "Yellow"
   }
-} as {
-  readonly pluginVersion: string;
-  readonly defaultSeed: number;
-  userNameInput: string;
-  roomNameInput: string;
-  roomIdInput: string;
-  room: string;
-  roomPasswordInput: string;
-  connected:boolean;
-  daysElapsed: number;
-  gameTime: {
-    day: number;
-    month: number;
-    year: number;
-  };
-  started: boolean;
-  socket: Socket | undefined;
-  gameMode: "coop" | "pvp";
-  playerColors: {
-    player1: number;
-    player2: number;
-    player3: number;
-    player4: number;
-  };
-  playerColorNames: {
-    player1: string;
-    player2: string;
-    player3: string;
-    player4: string;
-  };
 };
 
 export { config };

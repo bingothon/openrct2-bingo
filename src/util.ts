@@ -1,7 +1,5 @@
-import { addCashAction } from "./actions";
 import { config } from "./config";
 import { FOOT_PATH_LOCATIONS, PVP_FOOT_PATH_LOCATIONS } from "./constants";
-import { configureBoard } from "./ui-helpers";
 
 /**
 * Shuffles an array using the Fisher-Yates algorithm with a seeded RNG
@@ -544,52 +542,7 @@ export function flatAllLand(callback?: () => void) {
 }
 
 
-export function adjustWaterHeight(targetZ: number, callback: () => void) {
 
-
-    console.log("Starting to adjust water height in steps of 16...");
-
-    const tiles = waterTiles();
-    console.log(`Found ${tiles.length} water tiles.`);
-    for (const tile of tiles) {
-        const x = tile.x * 32;
-        const y = tile.y * 32;
-
-
-        // Check each element of the tile
-        for (const element of tile.elements) {
-            if (element.type === "surface") {
-                const surfaceElement = element as SurfaceElement;
-                const currentWaterHeight = surfaceElement.waterHeight;
-                const offset = targetZ - currentWaterHeight;
-
-                if (offset !== 0) {
-                    // Calculate number of steps needed
-                    const steps = Math.abs(Math.floor(offset / 16));
-                    const action = offset > 0 ? "waterraise" : "waterlower";
-
-                    for (let i = 0; i < steps; i++) {
-                        context.queryAction(action, { x1: x, y1: y, x2: x, y2: y }, (result) => {
-                            if (result.error) {
-                                console.log(`Failed to adjust water height at (${x}, ${y}), step ${i + 1}/${steps}: ${result.errorMessage}`);
-                            }
-                            if (result.cost && result.cost > 0) {
-                                context.executeAction('addCash', { args: { cash: result.cost } }, (result) => {
-                                    context.executeAction(action, { x1: x, y1: y, x2: x, y2: y }, (result) => {
-                                    });
-                                });
-                            }
-                        });
-                    }
-                }
-            }
-        }
-    }
-    console.log("Water height adjustment complete.");
-    if (callback) {
-        callback();
-    }
-}
 
 export function setFootPaths(callback: () => void) {
     FOOT_PATH_LOCATIONS.forEach((location) => {

@@ -5,6 +5,7 @@
   "license": "MIT",
   "scripts": {
     "start": "nodemon --watch ./src --ext js,ts --exec \"npm run build:dev\"",
+    "watch": "nodemon --watch ./src --ext js,ts --exec \"npm run build:dev\"",
     "build": "rollup --config rollup.config.js --environment BUILD:production",
     "build:dev": "rollup --config rollup.config.js",
     "clean": "node --eval \"fs.rmSync('./dist', { recursive: true, force: true })\"",

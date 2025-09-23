@@ -12,7 +12,7 @@ function unownPlayerSections(mapSize: any, scale: number, callback: () => void) 
     console.log("Unowning land in player sections...");
     
     const cornerOffset = 5; // 5 tiles from the corner
-    const sectionSize = 10; // 10x10 tile area around each corner marker
+    // const sectionSize = 10; // 10x10 tile area around each corner marker
     
     // Define the 4 player sections
     const sections = [
@@ -252,45 +252,6 @@ export function createPlayerSections(): boolean {
     }
 }
 
-/**
- * Finds the existing park entrance and logs its position
- */
-function findExistingEntrance(mapSize: any, scale: number) {
-    console.log("=== SEARCHING FOR EXISTING ENTRANCE ===");
-    console.log(`Map size: ${mapSize.x} x ${mapSize.y}`);
-    console.log("Searching for existing park entrance...");
-    
-    let tilesChecked = 0;
-    
-    // Search through the map to find the existing entrance
-    for (let x = 1; x <= mapSize.x; x++) {
-        for (let y = 1; y <= mapSize.y; y++) {
-            tilesChecked++;
-            const tile = map.getTile(x, y);
-            if (tile) {
-                for (let i = 0; i < tile.numElements; i++) {
-                    const element = tile.getElement(i);
-                    if (element && element.type === "entrance") {
-                        console.log(`Found existing entrance at tile (${x}, ${y})`);
-                        console.log(`Entrance coordinates: x=${x * scale}, y=${y * scale}, z=${element.baseZ}`);
-                        console.log(`Entrance direction: ${element.direction}`);
-                        return {
-                            x: x * scale,
-                            y: y * scale,
-                            z: element.baseZ,
-                            direction: element.direction,
-                            tileX: x,
-                            tileY: y
-                        };
-                    }
-                }
-            }
-        }
-    }
-    
-    console.log(`Checked ${tilesChecked} tiles, no existing entrance found`);
-    return null;
-}
 
 /**
  * Creates park entrances for each player section (except RED)
@@ -486,7 +447,7 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
 /**
  * Creates guest spawners for each player section
  */
-function createGuestSpawners(mapSize: any, scale: number, callback: () => void) {
+function createGuestSpawners(_mapSize: any, scale: number, callback: () => void) {
     console.log("=== GUEST SPAWNER CREATION STARTED ===");
     console.log("Creating guest spawners for player sections...");
     

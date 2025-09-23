@@ -1,19 +1,77 @@
 
 import { config } from "../config";
+import { logger } from "../logger";
 import type { BingoBoard, Goal } from "../types";
 
 /**
  * Updates the UI to reflect a completed goal without refreshing the entire Bingo board.
  */
 export function updateGoalUI(index: number, board: BingoBoard) {
-    const window = ui.getWindow("bingo-board");
-    if (window) {
-        const button = window.findWidget<ButtonWidget>(`slot${index + 1}`);
-        if (button) {
-            button.isPressed = true;
-            button.border = false;
-            button.text = `✓ ${board[index].name}`;
+    const applyUpdate = () => {
+        const window = ui.getWindow("bingo-board");
+        if (!window) {
+            console.log("[Bingo UI] Window not available yet.");
+            return false;
         }
+        const btn = window.findWidget<ButtonWidget>(`slot${index + 1}`);
+        const label = window.findWidget<LabelWidget>(`slot${index + 1}_text`);
+        if (!btn || !label) {
+            console.log(`[Bingo UI] Widgets for slot${index + 1} not found. button=`, !!btn, "label=", !!label);
+            return false;
+        }
+        btn.isPressed = true;
+        btn.border = false;
+        const goal = board[index];
+        const checks = buildChecksPrefix(goal.colors);
+        const newText = `${checks}${goal.name}`;
+        console.log(`[Bingo UI] Updating slot${index + 1}: colors="${goal.colors}", checks="${checks}", newText="${newText}"`);
+        label.textAlign = "centred";
+        // Keep label vertically centered similarly to initial render
+        const btn2 = window.findWidget<ButtonWidget>(`slot${index + 1}`);
+        if (btn2) {
+            const labelYOffset = Math.floor((btn2.height - 12) / 2);
+            label.y = btn2.y + labelYOffset;
+            label.height = 12;
+        }
+        label.text = newText;
+        return true;
+    };
+
+    // Try once immediately, and retry once shortly after if needed (window may not yet exist)
+    if (!applyUpdate()) {
+        context.setTimeout(() => {
+            applyUpdate();
+        }, 10);
+    }
+}
+
+/**
+ * Builds a concatenated string of coloured checkmarks based on goal.colors.
+ * Supports multiple players by rendering one coloured ✓ per colour.
+ */
+function buildChecksPrefix(colors: string | undefined): string {
+    if (!colors || colors === "blank") return "";
+    const parts = colors.split(/[ ,]+/).filter(Boolean);
+    const tokens = parts.map((c) => colourTokenForName(c.toLowerCase())).filter(Boolean) as string[];
+    if (tokens.length === 0) return "";
+    let prefix = "";
+    for (const t of tokens) {
+        prefix += `{${t}}✓{BLACK} `;
+    }
+    return prefix;
+}
+
+function colourTokenForName(name: string): string | null {
+    switch (name) {
+        case "red": return "RED";
+        case "blue": return "BLUE";
+        case "green": return "GREEN";
+        case "yellow": return "YELLOW";
+        case "purple": return "PURPLE";
+        case "orange": return "ORANGE";
+        case "white": return "WHITE";
+        case "black": return "BLACK";
+        default: return null;
     }
 }
 
@@ -122,7 +180,42 @@ export function triggerBingo(lineKey: string, callback?: Function) {
  * @param board The bingo board to check.
  */
 export function checkGoals(board: BingoBoard) {
-    console.log("Goal check interval running...");
+        logger.info("Goal check interval running...");
+
+    /**
+     * DEBUGGING BLOCK
+     * Ensure the top-left goal (index 0) is always completed to validate UI/logic flows.
+     * This block is clearly marked and can be removed or gated via a config flag later.
+     */
+    try {
+        const debugIndex = 0; // top-left of a 5x5 board
+        const debugGoal = board[debugIndex];
+        logger.debug("Goal status:", debugGoal?.status, "Colors:", debugGoal?.colors);
+        
+        // Always set colors and force UI update for debug
+        if (debugGoal) {
+            debugGoal.colors = "red green";
+            logger.debug("Set colors to:", debugGoal.colors);
+            
+            if (debugGoal.status !== "completed") {
+                const debugGoalKey = `goal_${debugGoal.slot || 1}`;
+                debugGoal.status = "completed";
+                logger.debug("Set status to completed");
+                setGoalCompletionStatus(debugGoalKey, true, debugGoal.name, () => {
+                    updateGoalUI(debugIndex, board);
+                    checkForBingo(board);
+                });
+            } else {
+                logger.debug("Goal already completed, just updating UI");
+                updateGoalUI(debugIndex, board);
+            }
+            logger.debug("Forced completion of top-left goal.");
+        } else {
+            logger.debug("Goal not found");
+        }
+    } catch (e) {
+        logger.debug("Error forcing top-left goal completion:", e);
+    }
 
     try {
         board.forEach((goal, index) => {
@@ -143,7 +236,7 @@ export function checkGoals(board: BingoBoard) {
                             action: "selectGoal",
                             slot: goal.slot,
                             color: "red",
-                            room: config.room
+                            room: config.roomNameInput
                         }) + "\n";
                         if (config.socket) {
                             console.log(`Sending selectGoal action: ${selectGoalAction}`);

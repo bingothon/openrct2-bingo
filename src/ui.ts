@@ -5,7 +5,9 @@ import { bingosyncUI, connectToServer } from "./bingo/bingosync-handler";
 import { BingoBoard, Goal } from "./types";
 import { addLineBreak, configureBoard } from "./ui-helpers";
 import { getSeed, startGame } from "./util";
-import { subscribeToGoalChecks, subscribeToInventions, subscribeToRenewRides, subscribeToServerInitialization } from "./subscriptions";
+import { subscribeToGoalChecks, subscribeToInventions, subscribeToRenewRides } from "./subscriptions/game";
+import { subscribeToServerInitialization } from "./subscriptions/server";
+// removed image resolver
 
 
 const colorRed = "\x1b[31m";
@@ -41,7 +43,7 @@ function initializeLocalGame() {
   // Set up game systems
   subscribeToInventions();
   subscribeToRenewRides();
-  subscribeToServerInitialization(); // Handles map initialization (trees, paths, etc.)
+  subscribeToServerInitialization(showGameDurationDialog); // Handles map initialization (trees, paths, etc.)
 
   // Initialize game board and UI
   const seed = getSeed();
@@ -84,6 +86,8 @@ export function showConnectDialog() {
  */
 function showBingoBoardDialog(board: BingoBoard) {
     const widgets = [];
+    // Holds resolved image ids for overlay custom widgets
+    
     const gridSize = 5;
     const buttonSize = 100; // Button width and height
     const spacing = 5; // Space between buttons
@@ -109,10 +113,17 @@ function showBingoBoardDialog(board: BingoBoard) {
             const goal = board[index];
             const formattedName = addLineBreak(goal.name);
 
+            const completedPrefix = goal.status === "completed" && goal.colors && goal.colors !== "blank"
+                ? buildChecksPrefix(goal.colors)
+                : (goal.status === "completed" ? "{RED}✓{BLACK} " : "");
+            
+            
+            
+            // Base clickable button (can show image)
             widgets.push({
                 type: "button",
                 name: `slot${index + 1}`,
-                text: formattedName, // Use modified name with a line break
+                text: "", // Use overlay label for text
                 x: startX + col * (buttonSize + spacing),
                 y: startY + row * (buttonSize + spacing),
                 width: buttonSize,
@@ -121,6 +132,19 @@ function showBingoBoardDialog(board: BingoBoard) {
                 isPressed: goal.status === "completed",
                 onClick: () => handleButtonClick(goal),
             } as ButtonDesc);
+
+            // Overlay label to display text and coloured checkmarks
+            const labelYOffset = Math.floor((buttonSize - 12) / 2);
+            widgets.push({
+                type: "label",
+                name: `slot${index + 1}_text`,
+                text: `${completedPrefix}${formattedName}`,
+                x: startX + col * (buttonSize + spacing),
+                y: startY + row * (buttonSize + spacing) + labelYOffset,
+                width: buttonSize,
+                height: 12,
+                textAlign: "centred",
+            } as LabelDesc);
         }
     }
 
@@ -132,6 +156,34 @@ function showBingoBoardDialog(board: BingoBoard) {
         height: 535,
         widgets: widgets,
     });
+
+    // No deferred image refresh needed anymore
+}
+
+function buildChecksPrefix(colors: string | undefined): string {
+    if (!colors || colors === "blank") return "";
+    const parts = colors.split(/[ ,]+/).filter(Boolean);
+    const tokens = parts.map((c) => colourTokenForName(c.toLowerCase())).filter(Boolean) as string[];
+    if (tokens.length === 0) return "";
+    let prefix = "";
+    for (const t of tokens) {
+        prefix += `{${t}}✓{BLACK} `;
+    }
+    return prefix;
+}
+
+function colourTokenForName(name: string): string | null {
+    switch (name) {
+        case "red": return "RED";
+        case "blue": return "BLUE";
+        case "green": return "GREEN";
+        case "yellow": return "YELLOW";
+        case "purple": return "PURPLE";
+        case "orange": return "ORANGE";
+        case "white": return "WHITE";
+        case "black": return "BLACK";
+        default: return null;
+    }
 }
 
 /**

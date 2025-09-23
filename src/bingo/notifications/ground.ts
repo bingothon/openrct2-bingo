@@ -1,4 +1,4 @@
-import { clearAndSetForSale, clearMap, clearMiddle, debugMode, ownMapSection } from "../../util";
+import { debugMode, ownMapSection } from "../../util";
 let bingoBeingNotified = false;
 type RandomMapSectionKey = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 
@@ -156,7 +156,7 @@ function writingBingo(baseX: number, baseY: number, callback?: () => void) {
 
         let currentColorIndex = 0;
 
-        function cycleColor() {
+        const cycleColor = () => {
             if (currentColorIndex >= colors.length) {
                 console.log("Completed all color cycles.");
                 if (callback) callback();

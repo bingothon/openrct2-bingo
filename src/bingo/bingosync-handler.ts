@@ -1,5 +1,5 @@
 import { goals } from "./goals";
-import { debugMode, getSeed, setSeed } from "../util";
+import { getSeed, setSeed } from "../util";
 import { BingoBoard, BingoSyncBoardData } from "../types";
 import { config } from "../config";
 import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui-helpers";
@@ -121,7 +121,7 @@ export function processMessage(message: string) {
         if (response.roomUrl) {
             // Extract room ID from the URL
             const roomId = response.roomUrl.split("/").pop();
-            config.room = roomId;
+            config.roomIdInput = roomId;
 
             // Check and process board data if it exists
             if (response.boardData) {

@@ -1,5 +1,4 @@
 import type { Goal, BingoBoard } from "./types";
-import { config } from "./config";
 import { setGoalCompletionStatus } from "./bingo/main";
 import { goals } from "./bingo/goals";
 import { createSeededRandom, shuffle } from "./util";

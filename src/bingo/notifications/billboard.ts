@@ -3,14 +3,14 @@ import { config } from "../../config";
 
 
 // Billboard configuration - SQUARE LAYOUT (standing up like a real billboard)
-const PADDING = 2; // 2 tiles padding on all sides
-const BILLBOARD_SIZE = 36; // 36x36 tiles (square billboard) - increased for larger regions
-const BILLBOARD_OFFSET_X = 50; // Distance from map edge
+const PADDING = 1; // 2 tiles padding on all sides
+const BILLBOARD_SIZE = 46; // 36x36 tiles (square billboard) - increased for larger regions
+const BILLBOARD_OFFSET_X = 42; // Distance from map edge
 const BILLBOARD_OFFSET_Y = 126; // Distance from map edge
 const BORDER_COLOR = 0;
 
 // Player region configuration (2x2 grid within the square)
-const REGION_SIZE = 16; // 16x16 tiles per player region (square regions) - increased for larger borders
+const REGION_SIZE = 20; // 16x16 tiles per player region (square regions) - increased for larger borders
 const REGION_SPACING = 2; // 2 tiles spacing between regions
 
 // Scenery object for building the billboard
@@ -119,17 +119,12 @@ const PLAYER_COLORS = [
 ];
 
 // Player color names for reference - imported from config
-const PLAYER_COLOR_NAMES = [
-    config.playerColorNames.player1, // Player 1
-    config.playerColorNames.player2, // Player 2
-    config.playerColorNames.player3, // Player 3
-    config.playerColorNames.player4  // Player 4
-];
+// (Unused currently; remove to satisfy linter)
 
 /**
  * Creates a colored border around a player region
  */
-function createPlayerRegionBorder(centerX: number, centerZ: number, objectId: number, color: number, scale: number, baseY: number, billboardZ: number) {
+function createPlayerRegionBorder(centerX: number, centerZ: number, objectId: number, color: number, scale: number, baseY: number) {
     // Create a border around the player region (REGION_SIZE x REGION_SIZE)
     const borderSize = REGION_SIZE;
     const halfSize = borderSize / 2;
@@ -261,11 +256,13 @@ export function createScoreboard(): boolean {
         
     console.log("Scoreboard created successfully!");
     return true;
-    } catch (error) {
+    } catch (error: unknown) {
         console.log("Error creating scoreboard:", error);
         console.log("Error type:", typeof error);
-        console.log("Error message:", error?.message);
-        console.log("Error stack:", error?.stack);
+        if (error instanceof Error) {
+            console.log("Error message:", error.message);
+            console.log("Error stack:", error.stack);
+        }
         return false;
     }
 }
@@ -363,9 +360,9 @@ function createPlayerRegionsVertical(baseX: number, baseY: number, objectId: num
         { name: "Player 4", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[1], score: 0 }
     ];
     
-    regions.forEach((region, index) => {
+    regions.forEach((region) => {
         // Create colored border around each player region
-        createPlayerRegionBorder(region.x, region.z, objectId, region.color, scale, baseY, billboardZ);
+        createPlayerRegionBorder(region.x, region.z, objectId, region.color, scale, baseY);
         
         // Center the number within each region - will be handled in placeNumberOnWall
         const numberX = region.x; // Center horizontally (will be handled in placeNumberOnWall)
@@ -399,9 +396,9 @@ function createMirroredPlayerRegions(baseX: number, baseY: number, objectId: num
         { name: "Player 2", x: centerX + regionOffset * scale, z: centerZ - regionOffset * 16 * 2, color: PLAYER_COLORS[3], score: 0 }
     ];
     
-    regions.forEach((region, index) => {
+    regions.forEach((region) => {
         // Create colored border around each player region (mirrored)
-        createPlayerRegionBorder(region.x, region.z, objectId, region.color, scale, baseY, billboardZ);
+        createPlayerRegionBorder(region.x, region.z, objectId, region.color, scale, baseY);
         
         // Center the number within each region - will be handled in placeMirroredNumberOnWall
         const numberX = region.x; // Center horizontally (will be handled in placeMirroredNumberOnWall)
@@ -507,27 +504,7 @@ function placeMirroredNumberOnWall(number: number, baseX: number, baseY: number,
     });
 }
 
-/**
- * Places a number using scenery objects (for flat surfaces)
- */
-function placeNumber(number: number, baseX: number, baseY: number, z: number, objectId: number, color: number, scale: number) {
-    const pattern = NUMBER_PATTERNS[number as keyof typeof NUMBER_PATTERNS];
-    
-    if (!pattern) {
-        console.log(`No pattern found for number: ${number}`);
-        return;
-    }
-    
-    pattern.forEach((row, rowIndex) => {
-        row.forEach((cell, colIndex) => {
-            if (cell === 1) {
-                const x = baseX + colIndex * scale;
-                const y = baseY + rowIndex * scale;
-                placeSceneryObject(x, y, z, objectId, color);
-            }
-        });
-    });
-}
+// Removed unused flat-surface number placement helper to satisfy linter
 
 /**
  * Places a single scenery object with cost handling
@@ -642,7 +619,7 @@ export function clearScoreboard() {
     }
     
     // Clear mirrored billboard (one tile behind at Y=127)
-    const mirroredY = BILLBOARD_OFFSET_Y + 1 * 32;
+    const mirroredY = (BILLBOARD_OFFSET_Y + 1) * 32;
     for (let x = 0; x < BILLBOARD_SIZE; x++) {
         for (let y = 0; y < BILLBOARD_SIZE; y++) {
             const tileX = Math.floor((billboardX + x * 32) / 32);
@@ -779,7 +756,7 @@ function updatePlayerRegion(baseX: number, baseY: number, objectId: number, bill
     }
     
     // Clear the player's region by redrawing the black background
-    clearPlayerRegion(baseX, baseY, regionX, regionZ, objectId, billboardZ, scale, newScore);
+    clearPlayerRegion(baseY, regionX, regionZ, objectId, scale);
     
     // Recreate the colored border around the player region
     let color: number;
@@ -801,11 +778,9 @@ function updatePlayerRegion(baseX: number, baseY: number, objectId: number, bill
             return;
     }
 
-    createPlayerRegionBorder(regionX, regionZ, objectId, color, scale, baseY, billboardZ);
+    createPlayerRegionBorder(regionX, regionZ, objectId, color, scale, baseY);
     
-    // Place the new score number - center based on number of digits
-    const digits = getDigits(newScore);
-    const totalWidth = digits.length * 5; // Each digit is 5 tiles wide
+    // Place the new score number
     const numberX = regionX; // Center horizontally (will be handled in placeNumberOnWall)
     const numberY = baseY; // Keep Y constant for vertical wall
     const numberZ = regionZ - (3 * 16 * 2); // Center vertically (number is ~6 tiles tall with 2x stacking)
@@ -821,7 +796,7 @@ function updatePlayerRegion(baseX: number, baseY: number, objectId: number, bill
  * Clears a player's region by redrawing the black background
  * Always uses two-digit clearing area for consistency
  */
-function clearPlayerRegion(baseX: number, baseY: number, regionX: number, regionZ: number, objectId: number, billboardZ: number, scale: number, score: number) {
+function clearPlayerRegion(baseY: number, regionX: number, regionZ: number, objectId: number, scale: number) {
     // Always use two-digit clearing area (10 tiles + 0.5 spacing + 4 padding = 14.5 tiles wide)
     const digitSpacing = 0.5; // Half a tile spacing between digits
     const twoDigitWidth = 10 + digitSpacing; // 2 digits * 5 tiles each + 1 spacing
