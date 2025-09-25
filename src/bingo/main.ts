@@ -191,7 +191,27 @@ export function checkGoals(board: BingoBoard) {
                 const isCompleted = context.getParkStorage().get(goalKey, false);
                 if (isCompleted && goal.status !== "completed") {
                     goal.status = "completed";
-                    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
+                    
+                    // Check for stored colors
+                    const colorsKey = `${goalKey}_colors`;
+                    const storedColorsData = context.getParkStorage().get(colorsKey, "[]");
+                    if (storedColorsData && storedColorsData !== "[]") {
+                        try {
+                            const storedColorsArray = JSON.parse(storedColorsData);
+                            if (Array.isArray(storedColorsArray) && storedColorsArray.length > 0) {
+                                goal.colors = storedColorsArray.join(" ");
+                                console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed with colors: [${storedColorsArray.join(", ")}]`);
+                            } else {
+                                console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
+                            }
+                        } catch (e) {
+                            // Fallback to old string format
+                            goal.colors = storedColorsData;
+                            console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed with colors: ${storedColorsData}`);
+                        }
+                    } else {
+                        console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
+                    }
                     updateGoalUI(index, board);
                 }
             } else if (network.mode === "server" || network.mode === "none") {
