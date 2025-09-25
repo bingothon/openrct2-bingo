@@ -1,4 +1,4 @@
-import { clearScoreboard } from "../../bingo/notifications/billboard";
+import { clearScoreboard } from "../../bingo/notifications/scoreboard";
 
 export function clearScoreboardAction() {
     return {

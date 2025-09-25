@@ -1,5 +1,7 @@
 import { debugTile } from "./debug-tile-tool";
 import { footpathExtractor } from "./footpath-extractor";
+import { updateGoalUI, setGoalCompletionStatus } from "../bingo/main";
+import { config } from "../config";
 
 export function registerDebugShortkeys(): void {
     if (typeof ui === 'undefined') return;
@@ -95,5 +97,51 @@ export function registerDebugShortkeys(): void {
     }});
     ui.registerShortcut({ id: "debug.viewport", text: "Show Viewport Info", bindings: ["CTRL+SHIFT+V"], callback: () => {
       debugTile.showViewportInfo();
+    }});
+    
+    // Debug goal completion shortcut
+    ui.registerShortcut({ id: "debug.completeGoal", text: "Debug: Complete Top-Left Goal", bindings: ["CTRL+SHIFT+G"], callback: () => {
+      try {
+        // Get the bingo board from the window
+        const window = ui.getWindow("bingo-board");
+        if (!window) {
+          console.log("Bingo board window not found. Please open the bingo board first.");
+          return;
+        }
+        
+        // Get the board data from park storage
+        const parkStorage = context.getParkStorage();
+        const boardData = parkStorage.get('boardData', null);
+        if (!boardData) {
+          console.log("No board data found in park storage.");
+          return;
+        }
+        
+        const board = JSON.parse(boardData);
+        const debugIndex = 0; // top-left of a 5x5 board
+        const debugGoal = board[debugIndex];
+        
+        if (debugGoal) {
+          debugGoal.colors = "red green";
+          console.log("Debug: Setting colors to:", debugGoal.colors);
+          
+          if (debugGoal.status !== "completed") {
+            const debugGoalKey = `goal_${debugGoal.slot || 1}`;
+            debugGoal.status = "completed";
+            console.log("Debug: Setting status to completed");
+            setGoalCompletionStatus(debugGoalKey, true, debugGoal.name, () => {
+              updateGoalUI(debugIndex, board);
+            });
+          } else {
+            console.log("Debug: Goal already completed, just updating UI");
+            updateGoalUI(debugIndex, board);
+          }
+          console.log("Debug: Forced completion of top-left goal.");
+        } else {
+          console.log("Debug: Goal not found");
+        }
+      } catch (e) {
+        console.log("Debug: Error forcing top-left goal completion:", e);
+      }
     }});
   }

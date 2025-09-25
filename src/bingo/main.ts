@@ -182,41 +182,6 @@ export function triggerBingo(lineKey: string, callback?: Function) {
 export function checkGoals(board: BingoBoard) {
         logger.info("Goal check interval running...");
 
-    /**
-     * DEBUGGING BLOCK
-     * Ensure the top-left goal (index 0) is always completed to validate UI/logic flows.
-     * This block is clearly marked and can be removed or gated via a config flag later.
-     */
-    try {
-        const debugIndex = 0; // top-left of a 5x5 board
-        const debugGoal = board[debugIndex];
-        logger.debug("Goal status:", debugGoal?.status, "Colors:", debugGoal?.colors);
-        
-        // Always set colors and force UI update for debug
-        if (debugGoal) {
-            debugGoal.colors = "red green";
-            logger.debug("Set colors to:", debugGoal.colors);
-            
-            if (debugGoal.status !== "completed") {
-                const debugGoalKey = `goal_${debugGoal.slot || 1}`;
-                debugGoal.status = "completed";
-                logger.debug("Set status to completed");
-                setGoalCompletionStatus(debugGoalKey, true, debugGoal.name, () => {
-                    updateGoalUI(debugIndex, board);
-                    checkForBingo(board);
-                });
-            } else {
-                logger.debug("Goal already completed, just updating UI");
-                updateGoalUI(debugIndex, board);
-            }
-            logger.debug("Forced completion of top-left goal.");
-        } else {
-            logger.debug("Goal not found");
-        }
-    } catch (e) {
-        logger.debug("Error forcing top-left goal completion:", e);
-    }
-
     try {
         board.forEach((goal, index) => {
             const goalKey = `goal_${goal.slot}`;

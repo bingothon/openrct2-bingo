@@ -1,4 +1,4 @@
-import { createScoreboard } from "../../bingo/notifications/billboard";
+import { createScoreboard } from "../../bingo/notifications/scoreboard";
 
 export function createScoreboardAction() {
   return {

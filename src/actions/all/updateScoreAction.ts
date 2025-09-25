@@ -1,4 +1,4 @@
-import { updateScore } from "../../bingo/notifications/billboard";
+import { updateScore } from "../../bingo/notifications/scoreboard";
 
 export function updateScoreAction() {
     return {
