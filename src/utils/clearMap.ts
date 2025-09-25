@@ -73,3 +73,4 @@ export function clearMap() {
     console.log("Map clearing process complete.");
 }
 
+

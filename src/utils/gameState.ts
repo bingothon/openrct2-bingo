@@ -14,3 +14,4 @@ export function resetGame(): void {
     context.executeAction('setStorage', { args: { key: 'duration', value: 0 } });
 }
 
+

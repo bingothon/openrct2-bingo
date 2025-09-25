@@ -1,4 +1,4 @@
-import { clearAllTiles, debugMode, setPVPFootPaths } from "src/util";
+import { clearAllTiles, debugMode, setPVPFootPaths } from "src/utils";
 import { unlockEntireMap } from "./shared";
 
 
