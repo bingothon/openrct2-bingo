@@ -1,5 +1,5 @@
 import { INVENTION_ITEMS } from "../../constants";
-import { getRandomItemsByRideType } from "../../util";
+import { getRandomItemsByRideType } from "../../utils";
 
 export function resetResearchAction() {
   return {

@@ -1,4 +1,4 @@
-import { addRandomTrees, debugMode, setFootPaths } from "src/util";
+import { addRandomTrees, debugMode, setFootPaths } from "src/utils";
 
 export function initializeCoopGame(): void {
     console.log("Initializing COOP game mode...");

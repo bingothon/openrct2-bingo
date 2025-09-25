@@ -1,5 +1,5 @@
 import { configureBoard } from "./helpers";
-import { getSeed } from "../util";
+import { getSeed } from "../utils";
 import { openBingoBoard } from "./openBingoBoard";
 
 export function openBingoBoardDialog() {

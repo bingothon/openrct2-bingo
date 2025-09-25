@@ -1,5 +1,5 @@
 import { Goal, BingoBoard } from "src/types";
-import { createSeededRandom, shuffle } from "src/util";
+import { createSeededRandom, shuffle } from "src/utils";
 
 /**
 * Generates a random Bingo board with 25 goals

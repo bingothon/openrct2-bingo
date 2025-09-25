@@ -1,5 +1,5 @@
 import { goals } from "./goals";
-import { getSeed, setSeed } from "../util";
+import { getSeed, setSeed } from "../utils";
 import { BingoBoard, BingoSyncBoardData } from "../types";
 import { config } from "../config";
 import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui/helpers";

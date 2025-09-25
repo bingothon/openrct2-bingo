@@ -2,7 +2,7 @@
 import { configureBoard } from "./ui/helpers";
 import { registerActions } from "./actions/registerActions";
 import { openBingoBoard, showGameDurationDialog, showGameModeDialog, showWelcomeDialog } from "./ui";
-import { checkIfStarted, getSeed, setSeed } from "./util";
+import { checkIfStarted, getSeed, setSeed } from "./utils";
 import { subscribeToGoalChecks, subscribeToInventions, subscribeToRenewRides } from "./subscriptions/game";
 // Removed unused tileAnalyzer import
 import { registerClientShortkeys, registerCommonShortkeys, registerServerOrNoneShortkeys } from "./shortkeys";

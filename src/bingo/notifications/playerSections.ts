@@ -1,6 +1,6 @@
 // Player sections for PVP mode - ground floor divisions
 import { config } from "../../config";
-import { debugMode } from "../../util";
+import { debugMode } from "../../utils";
 
 // Map division configuration for PVP player sections
 const MAP_DIVISION_OBJECT = 'rct2.scenery_small.brbase'; // Base tile for ground borders

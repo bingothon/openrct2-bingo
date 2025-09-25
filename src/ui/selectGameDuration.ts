@@ -1,5 +1,5 @@
 import { config } from "../config";
-import { startGame } from "../util";
+import { startGame } from "../utils";
 import { initializeLocalGame } from "./initializeLocalGame";
 
 /**

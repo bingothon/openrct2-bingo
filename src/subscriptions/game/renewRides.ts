@@ -1,4 +1,4 @@
-import { renewRides } from "src/util";
+import { renewRides } from "src/utils";
 import { subscriptions } from "../manager";
 
 export function subscribeToRenewRides() {

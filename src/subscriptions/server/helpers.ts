@@ -1,6 +1,6 @@
 import { config } from "src/config";
 import { initializeGame } from "src/init";
-import { debugMode, clearAllRides, clearMiddle } from "src/util";
+import { debugMode, clearAllRides, clearMiddle } from "src/utils";
 let isRestarting = false;
 /*
  * Executes an action with a callback

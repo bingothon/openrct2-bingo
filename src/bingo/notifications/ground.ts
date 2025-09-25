@@ -1,4 +1,4 @@
-import { debugMode, ownMapSection } from "../../util";
+import { debugMode, ownMapSection } from "../../utils";
 let bingoBeingNotified = false;
 type RandomMapSectionKey = "top-left" | "top-right" | "bottom-left" | "bottom-right";
 

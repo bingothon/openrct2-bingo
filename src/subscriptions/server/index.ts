@@ -1,7 +1,7 @@
 
 import { subscriptions } from "../manager";
 import { config } from "src/config";
-import { checkIfStarted } from "src/util";
+import { checkIfStarted } from "src/utils";
 import { handleYearProgression, handleGameStatusUpdates, handleEndGameWarnings, handleGameRestart, handleGameInitialization, handleMultiplayerDialog, restart } from "./helpers";
 
 // Re-export restart for external use

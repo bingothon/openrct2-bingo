@@ -1,5 +1,5 @@
 import { openBingoBoardDialog, showConnectDialog, showGameModeDialog } from "./ui";
-import { resetGame } from "./util";
+import { resetGame } from "./utils";
 import { bingosyncUI } from "./bingo/bingosync-handler";
 
 export function registerCommonShortkeys(): void {

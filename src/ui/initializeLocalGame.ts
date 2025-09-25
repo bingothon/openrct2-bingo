@@ -1,6 +1,6 @@
 import { subscribeToInventions, subscribeToRenewRides } from "../subscriptions/game";
 import { subscribeToServerInitialization } from "../subscriptions/server";
-import { getSeed } from "../util";
+import { getSeed } from "../utils";
 import { configureBoard } from "./helpers";
 import { subscribeToGoalChecks } from "../subscriptions/game";
 import { openBingoBoard } from "./openBingoBoard";

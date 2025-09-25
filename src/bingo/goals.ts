@@ -1,6 +1,6 @@
 import { INVENTION_ITEMS } from "src/constants";
 import { Goal } from "../types";
-import { createSeededRandom } from "../util";
+import { createSeededRandom } from "../utils";
 
 type ThoughtKey = keyof typeof thoughtTypes;
 type AwardKey = keyof typeof awardTypes;
