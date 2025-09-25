@@ -2,7 +2,7 @@ import { goals } from "./goals";
 import { getSeed, setSeed } from "../util";
 import { BingoBoard, BingoSyncBoardData } from "../types";
 import { config } from "../config";
-import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui-helpers";
+import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui/helpers";
 // import { restart } from "src/subscriptions";
 config.socket = network.createSocket();
 const socket = config.socket;

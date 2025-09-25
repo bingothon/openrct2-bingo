@@ -56,9 +56,9 @@ function buildChecksPrefix(colors: string | undefined): string {
     if (tokens.length === 0) return "";
     let prefix = "";
     for (const t of tokens) {
-        prefix += `{${t}}✓{BLACK} `;
+        prefix += `{${t}}✓{BLACK}`;
     }
-    return prefix;
+    return prefix + "\n";
 }
 
 function colourTokenForName(name: string): string | null {

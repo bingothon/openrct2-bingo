@@ -1,4 +1,4 @@
-import { configureBoard } from "../../ui-helpers";
+import { configureBoard } from "../../ui/helpers";
 import { openBingoBoard } from "../../ui";
 import { subscribeToGoalChecks } from "../../subscriptions/game";
 

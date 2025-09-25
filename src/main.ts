@@ -1,5 +1,5 @@
 
-import { configureBoard } from "./ui-helpers";
+import { configureBoard } from "./ui/helpers";
 import { registerActions } from "./actions/registerActions";
 import { openBingoBoard, showGameDurationDialog, showGameModeDialog, showWelcomeDialog } from "./ui";
 import { checkIfStarted, getSeed, setSeed } from "./util";
