@@ -226,7 +226,7 @@ export function createScoreboard(): void {
                     {
                         x1: field.x1 * 32,
                         y1: field.y1 * 32,
-                        x2: (field.x2 * 32) -1,
+                        x2: field.x2 * 32 - 1,
                         y2: field.y2 * 32,
                         setting: 2,
                         ownership: 0,
@@ -245,7 +245,6 @@ export function createScoreboard(): void {
                                 x2: field.x2 * 32,
                                 y2: field.y2 * 32,
                                 setting: 1,
-
                             },
                             (result) => {
                                 if (result.error) {
@@ -273,7 +272,10 @@ export function createScoreboard(): void {
                                     const loadedObject = objectManager.load(identifier);
 
                                     if (!loadedObject) {
-                                        logger.debug('Failed to load billboard object:', identifier);
+                                        logger.debug(
+                                            'Failed to load billboard object:',
+                                            identifier,
+                                        );
                                         return false;
                                     }
                                     logger.debug(
@@ -303,7 +305,13 @@ export function createScoreboard(): void {
                                             const wallZ = billboardZ + zLevel * 16 * 2; // 2x stacking like numbers (32 units per level)
 
                                             // Place 2 objects stacked vertically for each wall tile (same as numbers)
-                                            placeSceneryObject(wallX, wallY, wallZ, objectId, BORDER_COLOR); // Gray wall
+                                            placeSceneryObject(
+                                                wallX,
+                                                wallY,
+                                                wallZ,
+                                                objectId,
+                                                BORDER_COLOR,
+                                            ); // Gray wall
                                             placeSceneryObject(
                                                 wallX,
                                                 wallY,
@@ -350,10 +358,11 @@ export function createScoreboard(): void {
                                     logger.debug('Step 12: Mirrored billboard completed');
 
                                     logger.debug('Scoreboard created successfully!');
-                                    return true;
                                     debugMode(0, () => {
                                         logger.debug('[SCOREBOARD] Debug mode disabled.');
+                                        return true;
                                     });
+                                    
                                 } catch (error: unknown) {
                                     logger.debug('Error creating scoreboard:', error);
                                     logger.debug('Error type:', typeof error);

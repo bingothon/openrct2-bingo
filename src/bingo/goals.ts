@@ -567,35 +567,35 @@ export const goals = (seed: number) => {
                 return allBuilt && profitableCount >= requiredProfitableCount;
             },
         },
-        {
-            name: "Place 5 Litter Bins",
-            slot: undefined,
-            colors: "blank",
-            status: "incomplete",
-            currentCondition: () => {
-                // Count litter bins by checking footpath additions
-                let litterBinCount = 0;
-                const footpathAdditions = objectManager.getAllObjects("footpath_addition");
+        // {
+        //     name: "Place 5 Litter Bins",
+        //     slot: undefined,
+        //     colors: "blank",
+        //     status: "incomplete",
+        //     currentCondition: () => {
+        //         // Count litter bins by checking footpath additions
+        //         let litterBinCount = 0;
+        //         const footpathAdditions = objectManager.getAllObjects("footpath_addition");
                 
-                // Count litter bin objects that are placed
-                for (const addition of footpathAdditions) {
-                    if (addition.identifier === "rct2.footpath_item.litter1") {
-                        // This is a litter bin object, but we need to count how many are placed
-                        // For now, we'll use a simple approach - count based on the object being available
-                        litterBinCount = 1; // At least one litter bin type is available
-                        break;
-                    }
-                }
+        //         // Count litter bin objects that are placed
+        //         for (const addition of footpathAdditions) {
+        //             if (addition.identifier === "rct2.footpath_item.litter1") {
+        //                 // This is a litter bin object, but we need to count how many are placed
+        //                 // For now, we'll use a simple approach - count based on the object being available
+        //                 litterBinCount = 1; // At least one litter bin type is available
+        //                 break;
+        //             }
+        //         }
                 
-                return `Litter bins available: ${litterBinCount > 0 ? 'Yes' : 'No'}`;
-            },
-            checkCondition: () => {
-                // For now, just check if the litter bin object is available
-                // A more sophisticated check would require tracking placed objects
-                const footpathAdditions = objectManager.getAllObjects("footpath_addition");
-                return footpathAdditions.some(addition => addition.identifier === "rct2.footpath_item.litter1");
-            }
-        }
+        //         return `Litter bins available: ${litterBinCount > 0 ? 'Yes' : 'No'}`;
+        //     },
+        //     checkCondition: () => {
+        //         // For now, just check if the litter bin object is available
+        //         // A more sophisticated check would require tracking placed objects
+        //         const footpathAdditions = objectManager.getAllObjects("footpath_addition");
+        //         return footpathAdditions.some(addition => addition.identifier === "rct2.footpath_item.litter1");
+        //     }
+        // }
     ];
     return goals;
 };
