@@ -244,7 +244,7 @@ export function createScoreboard(): void {
                                 y1: field.y1 * 32,
                                 x2: field.x2 * 32,
                                 y2: field.y2 * 32,
-                                setting: 1,
+                                setting: 0,
                             },
                             (result) => {
                                 if (result.error) {
@@ -1044,17 +1044,17 @@ function updatePlayerRegion(
     // Recreate the colored border around the player region
     let color: number;
     switch (playerNumber) {
-        case 0: // Player 1 -> Green (same as initial creation)
-            color = PLAYER_COLORS[2];
+        case 0: // Player 1 -> Green (top-left)
+            color = PLAYER_COLORS[2]; // Bright Green
             break;
-        case 1: // Player 2 -> Yellow (same as initial creation)
-            color = PLAYER_COLORS[3];
+        case 1: // Player 2 -> Yellow (top-right)
+            color = PLAYER_COLORS[3]; // Yellow
             break;
-        case 2: // Player 3 -> Red (same as initial creation)
-            color = PLAYER_COLORS[0];
+        case 2: // Player 3 -> Red (bottom-left)
+            color = PLAYER_COLORS[0]; // Bright Red
             break;
-        case 3: // Player 4 -> Blue (same as initial creation)
-            color = PLAYER_COLORS[1];
+        case 3: // Player 4 -> Blue (bottom-right)
+            color = PLAYER_COLORS[1]; // Light Blue (this might be the issue)
             break;
         default:
             console.log(`Invalid player number: ${playerNumber}`);

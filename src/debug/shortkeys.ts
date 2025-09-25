@@ -1,50 +1,28 @@
 import { debugTile } from "./debug-tile-tool";
 import { footpathExtractor } from "./footpath-extractor";
-import { updateGoalUI, setGoalCompletionStatus } from "../bingo/main";
-import { config } from "../config";
+import { BingoManager } from "../bingo/BingoManager";
 
 export function registerDebugShortkeys(): void {
     if (typeof ui === 'undefined') return;
-    // Test shortcuts for updating individual player scores
-    ui.registerShortcut({ id: "bingoSync.updatePlayer1", text: "Update Player 1 Score", bindings: ["CTRL+1"], callback: () => {
-      const newScore = Math.floor(Math.random() * 26);
-      context.executeAction("updateScore", { args: { playerNumber: 0, newScore } }, (result) => {
-        if (result.error) {
-          console.log("Failed to update player 1 score:", result.errorMessage);
-        } else {
-          console.log(`Player 1 score updated to ${newScore}!`);
-        }
-      });
+    
+    const bingoManager = BingoManager.getInstance();
+    
+    // Test shortcuts for updating individual player scores (now based on actual goal completion)
+    ui.registerShortcut({ id: "bingoSync.updatePlayer1", text: "Update Player 1 Score (Green)", bindings: ["CTRL+1"], callback: () => {
+      bingoManager.updatePlayerScoreboard("player1");
+      console.log("Updated Player 1 (Green) scoreboard based on completed goals");
     }});
-    ui.registerShortcut({ id: "bingoSync.updatePlayer2", text: "Update Player 2 Score", bindings: ["CTRL+2"], callback: () => {
-      const newScore = Math.floor(Math.random() * 26);
-      context.executeAction("updateScore", { args: { playerNumber: 1, newScore } }, (result) => {
-        if (result.error) {
-          console.log("Failed to update player 2 score:", result.errorMessage);
-        } else {
-          console.log(`Player 2 score updated to ${newScore}!`);
-        }
-      });
+    ui.registerShortcut({ id: "bingoSync.updatePlayer2", text: "Update Player 2 Score (Yellow)", bindings: ["CTRL+2"], callback: () => {
+      bingoManager.updatePlayerScoreboard("player2");
+      console.log("Updated Player 2 (Yellow) scoreboard based on completed goals");
     }});
-    ui.registerShortcut({ id: "bingoSync.updatePlayer3", text: "Update Player 3 Score", bindings: ["CTRL+3"], callback: () => {
-      const newScore = Math.floor(Math.random() * 26);
-      context.executeAction("updateScore", { args: { playerNumber: 2, newScore } }, (result) => {
-        if (result.error) {
-          console.log("Failed to update player 3 score:", result.errorMessage);
-        } else {
-          console.log(`Player 3 score updated to ${newScore}!`);
-        }
-      });
+    ui.registerShortcut({ id: "bingoSync.updatePlayer3", text: "Update Player 3 Score (Red)", bindings: ["CTRL+3"], callback: () => {
+      bingoManager.updatePlayerScoreboard("player3");
+      console.log("Updated Player 3 (Red) scoreboard based on completed goals");
     }});
-    ui.registerShortcut({ id: "bingoSync.updatePlayer4", text: "Update Player 4 Score", bindings: ["CTRL+4"], callback: () => {
-      const newScore = Math.floor(Math.random() * 26);
-      context.executeAction("updateScore", { args: { playerNumber: 3, newScore } }, (result) => {
-        if (result.error) {
-          console.log("Failed to update player 4 score:", result.errorMessage);
-        } else {
-          console.log(`Player 4 score updated to ${newScore}!`);
-        }
-      });
+    ui.registerShortcut({ id: "bingoSync.updatePlayer4", text: "Update Player 4 Score (Blue)", bindings: ["CTRL+4"], callback: () => {
+      bingoManager.updatePlayerScoreboard("player4");
+      console.log("Updated Player 4 (Blue) scoreboard based on completed goals");
     }});
   
     // Footpath utilities
@@ -121,196 +99,247 @@ export function registerDebugShortkeys(): void {
     }});
     
     ui.registerShortcut({ id: "debug.clearAllGoals", text: "Debug: Clear All Goals", bindings: ["CTRL+ALT+C"], callback: () => {
-      clearAllGoals();
+      console.log("=== CLEARING GOALS ONLY ===");
+      try {
+        bingoManager.clearAllGoals();
+        console.log("Goals cleared successfully");
+      } catch (e) {
+        console.log("Error clearing goals:", e);
+      }
+    }});
+    
+    ui.registerShortcut({ id: "debug.resetBoard", text: "Debug: Reset Board (Full Reset)", bindings: ["CTRL+ALT+X"], callback: () => {
+      resetBoardCompletely();
+    }});
+    
+    // New shortcuts for bingo management
+    ui.registerShortcut({ id: "debug.showBingoInfo", text: "Debug: Show Bingo Info", bindings: ["CTRL+ALT+I"], callback: () => {
+      console.log("Bingo Debug Info:", bingoManager.getDebugInfo());
+    }});
+    
+    ui.registerShortcut({ id: "debug.showPlayers", text: "Debug: Show Players", bindings: ["CTRL+ALT+P"], callback: () => {
+      const players = bingoManager.getAllPlayers();
+      console.log("Registered Players:", players.map(p => `${p.name} (${p.color})`));
+    }});
+    
+    ui.registerShortcut({ id: "debug.checkBoard", text: "Debug: Check Board Status", bindings: ["CTRL+ALT+O"], callback: () => {
+      const bingo = bingoManager.getBingo();
+      const state = bingo.getState();
+      console.log("Board Status:", {
+        gameMode: state.gameMode,
+        boardLength: state.board.length,
+        hasBoard: state.board.length > 0,
+        firstGoal: state.board.length > 0 ? state.board[0] : null
+      });
+    }});
+    
+    // Test different goal slots
+    ui.registerShortcut({ id: "debug.completeGoal2", text: "Debug: Complete Goal 2 (Red)", bindings: ["CTRL+ALT+2"], callback: () => {
+      completeGoalWithColorAndSlot("red", "2");
+    }});
+    
+    ui.registerShortcut({ id: "debug.completeGoal3", text: "Debug: Complete Goal 3 (Blue)", bindings: ["CTRL+ALT+3"], callback: () => {
+      completeGoalWithColorAndSlot("blue", "3");
+    }});
+    
+    // Game mode testing
+    ui.registerShortcut({ id: "debug.setCoopMode", text: "Debug: Set Coop Mode", bindings: ["CTRL+ALT+Q"], callback: () => {
+      bingoManager.setGameMode("coop");
+      console.log("Game mode set to COOP - multiple players can select same goals");
+    }});
+    
+    ui.registerShortcut({ id: "debug.setPvpMode", text: "Debug: Set PVP Mode", bindings: ["CTRL+ALT+W"], callback: () => {
+      bingoManager.setGameMode("pvp");
+      console.log("Game mode set to PVP - multiple players can select same goals, map divided");
+    }});
+    
+    ui.registerShortcut({ id: "debug.setLockoutMode", text: "Debug: Set Lockout Mode", bindings: ["CTRL+ALT+E"], callback: () => {
+      bingoManager.setGameMode("lockout");
+      console.log("Game mode set to LOCKOUT - only one player can select each goal");
+    }});
+    
+    // Test lockout behavior - try to complete same goal with different players
+    ui.registerShortcut({ id: "debug.testLockout", text: "Debug: Test Lockout (Goal 4)", bindings: ["CTRL+ALT+Z"], callback: () => {
+      testLockoutBehavior();
+    }});
+    
+    // Scoreboard management shortcuts
+    ui.registerShortcut({ id: "debug.createScoreboard", text: "Debug: Create Scoreboard", bindings: ["CTRL+ALT+S"], callback: () => {
+      bingoManager.createScoreboard();
+      console.log("Scoreboard created - use PVP/Lockout modes for automatic updates");
+    }});
+    
+    ui.registerShortcut({ id: "debug.updateAllScores", text: "Debug: Update All Player Scores", bindings: ["CTRL+ALT+U"], callback: () => {
+      bingoManager.updateAllPlayerScoreboards();
+      console.log("All player scores updated on scoreboard");
+    }});
+    
+    ui.registerShortcut({ id: "debug.clearScoreboard", text: "Debug: Clear Scoreboard", bindings: ["CTRL+ALT+K"], callback: () => {
+      bingoManager.clearScoreboard();
+      console.log("Scoreboard cleared");
+    }});
+    
+    ui.registerShortcut({ id: "debug.randomGoal", text: "Debug: Random Goal for Random Player", bindings: ["CTRL+ALT+N"], callback: () => {
+      completeRandomGoalForRandomPlayer();
     }});
     
     function completeGoalWithColor(colors: string) {
+      completeGoalWithColorAndSlot(colors, "1");
+    }
+    
+    function completeGoalWithColorAndSlot(colors: string, slot: string) {
       try {
-        // Get the bingo board from the window
-        const window = ui.getWindow("bingo-board");
-        if (!window) {
-          console.log("Bingo board window not found. Please open the bingo board first.");
+        console.log(`Debug: Completing goal ${slot} using BingoManager...`);
+        
+        // Parse the colors string into an array
+        const colorArray = colors.split(/[ ,]+/).filter(Boolean);
+        console.log(`Debug: Colors to add: [${colorArray.join(", ")}]`);
+        
+        // Use ONLY the new BingoManager approach
+        const success = bingoManager.completeGoalWithColors(slot, colorArray);
+        
+        if (success) {
+          console.log(`Debug: Goal ${slot} completed successfully with colors: [${colorArray.join(", ")}]`);
+        } else {
+          console.log(`Debug: Failed to complete goal ${slot}`);
+        }
+        
+      } catch (e) {
+        console.log("Debug: Error completing goal:", e);
+      }
+    }
+    
+    function testLockoutBehavior() {
+      console.log("=== TESTING LOCKOUT BEHAVIOR ===");
+      
+      // Ensure we're in lockout mode
+      bingoManager.setGameMode("lockout");
+      console.log("0. Set game mode to LOCKOUT");
+      
+      // First, clear goal 4 to start fresh using BingoManager
+      console.log("1. Clearing goal 4 to start fresh...");
+      bingoManager.clearAllGoals(); // This properly resets the Bingo class state
+      
+      // Wait a moment for the goal to be cleared, then try to complete it
+      context.setTimeout(() => {
+        // Try to complete goal 4 with red player
+        console.log("2. Trying to complete goal 4 with RED player...");
+        const success1 = bingoManager.completeGoalWithColors("4", ["red"]);
+        console.log(`   Result: ${success1 ? "SUCCESS" : "FAILED"}`);
+        
+        // Wait a moment, then try to complete the same goal 4 with blue player
+        context.setTimeout(() => {
+          console.log("3. Trying to complete goal 4 with BLUE player...");
+          const success2 = bingoManager.completeGoalWithColors("4", ["blue"]);
+          console.log(`   Result: ${success2 ? "SUCCESS" : "FAILED"}`);
+          
+          // Check the final state
+          const bingo = bingoManager.getBingo();
+          const state = bingo.getState();
+          
+          // Find goal 4 using ES5 compatible method
+          let goal4 = null;
+          for (let i = 0; i < state.board.length; i++) {
+            if (state.board[i].slot === "4") {
+              goal4 = state.board[i];
+              break;
+            }
+          }
+          
+          if (goal4) {
+            console.log(`4. Final state of goal 4:`);
+            console.log(`   Status: ${goal4.status}`);
+            console.log(`   Colors: ${goal4.colors}`);
+            console.log(`   Game Mode: ${state.gameMode}`);
+          }
+          
+          // Show player stats
+          console.log("5. Player Statistics:");
+          const players = bingoManager.getAllPlayers();
+          for (let i = 0; i < players.length; i++) {
+            const player = players[i];
+            const stats = bingoManager.getBingo().getPlayerStats(player.id);
+            if (stats) {
+              console.log(`   ${player.name} (${player.color}): ${stats.completedGoals} goals completed`);
+            }
+          }
+          
+          console.log("=== LOCKOUT TEST COMPLETE ===");
+        }, 100);
+      }, 100);
+    }
+    
+    function completeRandomGoalForRandomPlayer() {
+      console.log("=== RANDOM GOAL FOR RANDOM PLAYER ===");
+      
+      try {
+        const bingo = bingoManager.getBingo();
+        const state = bingo.getState();
+        
+        // Get all incomplete goals
+        const incompleteGoals = [];
+        for (let i = 0; i < state.board.length; i++) {
+          if (state.board[i].status === "incomplete") {
+            incompleteGoals.push(state.board[i]);
+          }
+        }
+        
+        if (incompleteGoals.length === 0) {
+          console.log("No incomplete goals available!");
           return;
         }
         
-        console.log("Debug: Trying to complete top-left goal...");
+        // Pick a random incomplete goal
+        const randomGoalIndex = Math.floor(Math.random() * incompleteGoals.length);
+        const randomGoal = incompleteGoals[randomGoalIndex];
         
-        const parkStorage = context.getParkStorage();
-        const debugGoalKey = "goal_1"; // Top-left goal should be slot 1
-        const debugGoalName = "Debug Goal";
-        
-        // Check if goal already exists and get current colors
-        const isAlreadyCompleted = parkStorage.get(debugGoalKey, false);
-        const currentColorsData = parkStorage.get(`${debugGoalKey}_colors`, "[]");
-        
-        console.log(`Debug: Goal ${debugGoalKey} already completed: ${isAlreadyCompleted}`);
-        console.log(`Debug: Current colors data: "${currentColorsData}"`);
-        console.log(`Debug: New colors: "${colors}"`);
-        
-        // Parse current colors as JSON array, fallback to empty array
-        let existingColors = [];
-        try {
-          existingColors = JSON.parse(currentColorsData);
-        } catch (e) {
-          // If parsing fails, treat as empty array
-          existingColors = [];
-          console.log("Debug: Failed to parse existing colors, defaulting to []", e);
+        // Get all available players
+        const players = bingoManager.getAllPlayers();
+        if (players.length === 0) {
+          console.log("No players available!");
+          return;
         }
         
-        // Add new colors to existing ones, but ensure uniqueness so a player/color is only added once
-        const newColors = colors.split(/[ ,]+/).filter(Boolean);
-        const allColors = unionUnique(existingColors, newColors);
+        // Pick a random player
+        const randomPlayerIndex = Math.floor(Math.random() * players.length);
+        const randomPlayer = players[randomPlayerIndex];
         
-        console.log(`Debug: Existing colors: [${existingColors.join(", ")}]`);
-        console.log(`Debug: New colors: [${newColors.join(", ")}]`);
-        console.log(`Debug: All colors: [${allColors.join(", ")}]`);
+        console.log(`Random Goal: ${randomGoal.name} (Slot ${randomGoal.slot})`);
+        console.log(`Random Player: ${randomPlayer.name} (${randomPlayer.color})`);
         
-        // Store the colors as JSON array in park storage (unique list)
-        const colorsKey = `${debugGoalKey}_colors`;
-        parkStorage.set(colorsKey, JSON.stringify(allColors));
-        console.log(`Debug: Stored colors array: [${allColors.join(", ")}] for key '${colorsKey}'`);
+        // Complete the goal for the random player
+        const success = bingoManager.completeGoalWithColors(randomGoal.slot || "1", [randomPlayer.color]);
         
-        // Set the goal as completed
-        setGoalCompletionStatus(debugGoalKey, true, debugGoalName, () => {
-          console.log("Debug: Goal completion status set successfully");
-          console.log(`Debug: Goal completed with colors: [${allColors.join(", ")}]`);
+        if (success) {
+          console.log(`✅ Successfully completed goal ${randomGoal.slot} for ${randomPlayer.name}!`);
           
-          // Update the UI label for slot1 by prepending checks to existing text
-          try {
-            const window = ui.getWindow("bingo-board");
-            if (window) {
-              const btn = window.findWidget<ButtonWidget>("slot1");
-              const label = window.findWidget<LabelWidget>("slot1_text");
-              if (btn && label) {
-                btn.isPressed = true;
-                btn.border = false;
-                const currentText = label.text || "";
-                const stripped = stripExistingChecks(currentText);
-                const checks = buildChecksPrefixFromArray(allColors);
-                label.text = `${checks}${stripped}`;
-                label.textAlign = "centred";
-                console.log("Debug: UI label for slot1 updated successfully.");
-              } else {
-                console.log("Debug: slot1 widgets not found to update UI.");
-              }
-            } else {
-              console.log("Debug: bingo-board window not found for UI update.");
-            }
-          } catch (uiErr) {
-            console.log("Debug: Error updating UI label:", uiErr);
+          // Show updated player stats
+          const stats = bingo.getPlayerStats(randomPlayer.id);
+          if (stats) {
+            console.log(`📊 ${randomPlayer.name} now has ${stats.completedGoals} goals completed`);
           }
-        });
-        
-      } catch (e) {
-        console.log("Debug: Error forcing top-left goal completion:", e);
-      }
-    }
-    
-    // Remove any existing coloured checkmark prefix from a label text
-    function stripExistingChecks(text: string): string {
-      try {
-        return text.replace(/^(?:\{[A-Z]+\}✓\{BLACK\})+\n?/, "");
-      } catch (e) {
-        return text;
-      }
-    }
-
-    // Merge arrays with uniqueness without using Set (ES5 compatible)
-    function unionUnique(existing: string[], incoming: string[]): string[] {
-      const seen: { [key: string]: boolean } = {};
-      const result: string[] = [];
-      function addIfNew(value: string) {
-        const key = value.toLowerCase();
-        if (!seen[key]) {
-          seen[key] = true;
-          result.push(value);
-        }
-      }
-      for (var i = 0; i < existing.length; i++) addIfNew(existing[i]);
-      for (var j = 0; j < incoming.length; j++) addIfNew(incoming[j]);
-      return result;
-    }
-    
-    function buildChecksPrefix(colors: string | undefined): string {
-      if (!colors || colors === "blank") return "";
-      const parts = colors.split(/[ ,]+/).filter(Boolean);
-      const tokens = parts.map((c) => colourTokenForName(c.toLowerCase())).filter(Boolean) as string[];
-      if (tokens.length === 0) return "";
-      let prefix = "";
-      for (const t of tokens) {
-        prefix += `{${t}}✓{BLACK}`;
-      }
-      return prefix + "\n";
-    }
-    
-    function buildChecksPrefixFromArray(colors: string[]): string {
-      if (!colors || colors.length === 0) return "";
-      const tokens = colors.map((c) => colourTokenForName(c.toLowerCase())).filter(Boolean) as string[];
-      if (tokens.length === 0) return "";
-      let prefix = "";
-      for (const t of tokens) {
-        prefix += `{${t}}✓{BLACK}`;
-      }
-      return prefix + "\n";
-    }
-    
-    function colourTokenForName(name: string): string | null {
-      switch (name) {
-        case "red": return "RED";
-        case "blue": return "BLUE";
-        case "green": return "GREEN";
-        case "yellow": return "YELLOW";
-        case "purple": return "PURPLE";
-        case "orange": return "ORANGE";
-        case "white": return "WHITE";
-        case "black": return "BLACK";
-        default: return null;
-      }
-    }
-    
-    function clearAllGoals() {
-      try {
-        console.log("Debug: Clearing all goals...");
-        
-        const parkStorage = context.getParkStorage();
-        
-        // Clear all goal completion statuses and colors
-        for (let i = 1; i <= 25; i++) {
-          const goalKey = `goal_${i}`;
-          const colorsKey = `${goalKey}_colors`;
-          
-          // Set goal as incomplete
-          parkStorage.set(goalKey, false);
-          // Remove colors (set to empty array)
-          parkStorage.set(colorsKey, "[]");
-        }
-        
-        console.log("Debug: All goals cleared successfully!");
-        
-        // Force UI update for all slots
-        const window = ui.getWindow("bingo-board");
-        if (window) {
-          for (let i = 1; i <= 25; i++) {
-            const btn = window.findWidget<ButtonWidget>(`slot${i}`);
-            const label = window.findWidget<LabelWidget>(`slot${i}_text`);
-            
-            if (btn && label) {
-              // Reset button to incomplete state
-              btn.isPressed = false;
-              btn.border = true;
-              
-              // Reset label text (we need the original goal name, but we'll use a placeholder)
-              label.text = `Goal ${i}`;
-              label.textAlign = "centred";
-            }
-          }
-          console.log("Debug: UI updated to show all goals as incomplete");
         } else {
-          console.log("Debug: Bingo board window not found, cannot update UI");
+          console.log(`❌ Failed to complete goal ${randomGoal.slot} for ${randomPlayer.name}`);
         }
         
       } catch (e) {
-        console.log("Debug: Error clearing all goals:", e);
+        console.log("Error completing random goal:", e);
       }
     }
+    
+    function resetBoardCompletely() {
+      console.log("=== FULL BOARD RESET ===");
+      
+      try {
+        // Use the BingoManager's reset method (which handles everything)
+        bingoManager.resetBoard();
+        
+        console.log("Board completely reset - all goals cleared, UI updated, state reset");
+        
+      } catch (e) {
+        console.log("Error during board reset:", e);
+      }
+    }
+    
+    
   }

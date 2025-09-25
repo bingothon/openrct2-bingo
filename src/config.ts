@@ -22,7 +22,7 @@ const config: Config = {
   // Player colors for PVP scoreboard (OpenRCT2 color values)
   playerColors: {
     player1: 28, // COLOUR_BRIGHT_RED
-    player2: 7,  // COLOUR_LIGHT_BLUE
+    player2: 6,  // COLOUR_BRIGHT_BLUE (changed from LIGHT_BLUE)
     player3: 14, // COLOUR_BRIGHT_GREEN
     player4: 18  // COLOUR_YELLOW
   },
@@ -30,7 +30,7 @@ const config: Config = {
   // Player color names for reference
   playerColorNames: {
     player1: "Bright Red",
-    player2: "Light Blue", 
+    player2: "Bright Blue", 
     player3: "Bright Green",
     player4: "Yellow"
   }

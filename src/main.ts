@@ -9,6 +9,7 @@ import { registerClientShortkeys, registerCommonShortkeys, registerServerOrNoneS
 import { registerDebugShortkeys } from "./debug/shortkeys";
 import { config } from "./config";
 import { restart, subscribeIfStarted } from "./subscriptions/server";
+import { initializeBingoSystem } from "./bingo/integration";
 
 
 export function main(): void {
@@ -45,6 +46,10 @@ export function main(): void {
     const seed = getSeed();
     console.log(`Seed received from host: ${seed}`);
     const board = configureBoard(seed);
+    
+    // Initialize the BingoManager with the board
+    initializeBingoSystem();
+    
     try {
       if (!checkIfStarted()) {
         console.log("Game not started, showing game duration dialog.");

@@ -15,6 +15,42 @@ export type BingoSyncBoardData = {
   
 export type BingoBoard = Goal[];
 
+// Enhanced types for the Bingo class
+export interface Player {
+  id: string;
+  name: string;
+  color: string;
+  colorToken: string;
+  isActive: boolean;
+  completedGoals: string[]; // Array of goal slot IDs
+  mapRegion?: MapRegion;
+}
+
+export interface MapRegion {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+  name: string;
+}
+
+export interface GameModeConfig {
+  allowMultipleSelections: boolean; // PVP allows multiple players to select same goal
+  maxPlayers: number;
+  mapDivision: boolean; // Whether to divide map into player regions
+  scoreTracking: boolean; // Whether to track individual player scores
+}
+
+export interface BingoState {
+  gameMode: "coop" | "pvp" | "lockout";
+  players: { [key: string]: Player }; // Plain object instead of Map
+  activePlayers: string[]; // Array of active player IDs
+  board: BingoBoard;
+  completedBingos: string[]; // Array of completed bingo line keys
+  gameStarted: boolean;
+  seed: number;
+}
+
 // Configuration types
 export interface GameTime {
   day: number;
