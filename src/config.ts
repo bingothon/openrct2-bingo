@@ -17,7 +17,7 @@ const config: Config = {
   daysElapsed: 0,
   started: false,
   socket: undefined,
-  gameMode: "coop", // "coop", "pvp", or "lockout"
+  gameMode: "pvp", // "coop", "pvp", or "lockout"
   
   // Player colors for PVP scoreboard (OpenRCT2 color values)
   playerColors: {

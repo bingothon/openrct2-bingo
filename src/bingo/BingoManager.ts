@@ -231,11 +231,8 @@ export class BingoManager {
     // Update UI
     this.updateUIAfterReset();
 
-    // Reset scoreboard (in PVP/Lockout modes)
-    const gameConfig = this.getGameModeConfig();
-    if (gameConfig.scoreTracking) {
-      this.updateAllPlayerScoreboards();
-    }
+    // Reset scoreboard (always reset scores to 0 when clearing goals)
+    this.updateAllPlayerScoreboards();
 
     logger.info("All goals cleared successfully");
   }
@@ -255,11 +252,8 @@ export class BingoManager {
     // Update UI
     this.updateUIAfterReset();
 
-    // Reset scoreboard (in PVP/Lockout modes)
-    const gameConfig = this.getGameModeConfig();
-    if (gameConfig.scoreTracking) {
-      this.updateAllPlayerScoreboards();
-    }
+    // Reset scoreboard (always reset scores to 0 when resetting board)
+    this.updateAllPlayerScoreboards();
 
     logger.info("Board completely reset");
   }

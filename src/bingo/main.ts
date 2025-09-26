@@ -64,11 +64,11 @@ function buildChecksPrefix(colors: string | undefined): string {
 function colourTokenForName(name: string): string | null {
     switch (name) {
         case "red": return "RED";
-        case "blue": return "BLUE";
+        case "blue": return "BABYBLUE"; // Using OpenRCT2's BABYBLUE token
         case "green": return "GREEN";
         case "yellow": return "YELLOW";
-        case "purple": return "PURPLE";
-        case "orange": return "ORANGE";
+        case "purple": return "PALELAVENDER"; // Using OpenRCT2's PALELAVENDER token
+        case "orange": return "PALEGOLD"; // Using OpenRCT2's PALEGOLD token
         case "white": return "WHITE";
         case "black": return "BLACK";
         default: return null;
