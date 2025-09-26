@@ -1,6 +1,5 @@
 import { config } from "src/config";
 import { initializeGame } from "src/init";
-import { debugMode, clearAllRides, clearMiddle } from "src/utils";
 let isRestarting = false;
 /*
  * Executes an action with a callback
@@ -61,23 +60,6 @@ export function handleEndGameWarnings(duration: number): void {
 }
 
 /**
- * Handles game restart when time is up
- */
-export function handleGameRestart(duration: number): void {
-    console.log('DEBUGGING', date.yearsElapsed, duration, date.month, date.day, isRestarting);
-    
-    if (duration !== 0 && date.yearsElapsed === duration && date.month === 0 && date.day >= 1 && !isRestarting) {
-        const message = `Game is restarting now!`;
-        sendGameMessage(message);
-        
-        isRestarting = true;
-        if (network.mode === 'server') {
-            restart();
-        }
-    }
-}
-
-/**
  * Handles game initialization when started flag is set
  */
 export function handleGameInitialization(parkStorage: any): void {
@@ -105,35 +87,4 @@ export function handleMultiplayerDialog(noPlayersDayCounter: number, showGameDur
     }
     
     return noPlayersDayCounter;
-}
-
-/**
- * Main restart function - organized callback chain
- */
-export const restart = ( callback?: Function) => {
-    console.log("Starting game restart process...");
-
-    // Step 1: Enable debug mode
-    debugMode(1, () => {
-        // Step 2: Reset financial settings
-        executeActionCallback("parksetloan", { value: 0 }, () => {
-            executeActionCallback("setCash", { args: { cash: 1000000 } }, () => {
-                executeActionCallback('parksetresearchfunding', { priorities: 31, fundingAmount: 0 }, () => {
-                    // Step 3: Clear rides and middle area
-                    clearAllRides(() => {
-                        clearMiddle(() => {
-                            // Step 4: Reset date
-                            executeActionCallback("parksetdate", { day: 0, month: 0, year: 0 }, () => {
-                                // Step 5: Disable debug mode
-                                debugMode(0, () => {
-                                    console.log("Game restart completed successfully!");
-                                    callback?.();
-                                });
-                            });
-                        });
-                    });
-                });
-            });
-        });
-    });
 }

@@ -12,7 +12,7 @@ import { initializeBingoSystem } from "../bingo/integration";
  * Initializes the game after mode and duration selection
  */
 export function initializeLocalGame() {
-  console.log("Initializing local game...");
+  console.log("Initializing game after mode and duration selection...");
   
   // Set up game systems
   subscribeToInventions();
@@ -28,9 +28,13 @@ export function initializeLocalGame() {
   
   subscribeToGoalChecks(board);
   openBingoBoard(board);
-  showConnectDialog();
   
-  console.log("Local game initialized successfully.");
+  // Only show connect dialog in local/single-player mode
+  if (network.mode === "none") {
+    showConnectDialog();
+  }
+  
+  console.log("Game initialized successfully.");
 }
 
 

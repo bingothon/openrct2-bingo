@@ -1,11 +1,13 @@
 import { debugTile } from "./debug-tile-tool";
 import { footpathExtractor } from "./footpath-extractor";
 import { BingoManager } from "../bingo/BingoManager";
+import { GameManager } from "../managers/GameManager";
 
 export function registerDebugShortkeys(): void {
     if (typeof ui === 'undefined') return;
     
     const bingoManager = BingoManager.getInstance();
+    const gameManager = GameManager.getInstance();
     
     // Test shortcuts for updating individual player scores (now based on actual goal completion)
     ui.registerShortcut({ id: "bingoSync.updatePlayer1", text: "Update Player 1 Score (Green)", bindings: ["CTRL+1"], callback: () => {
@@ -183,6 +185,31 @@ export function registerDebugShortkeys(): void {
       completeRandomGoalForRandomPlayer();
     }});
     
+    // GameManager debug shortcuts
+    ui.registerShortcut({ id: "debug.gameManagerInfo", text: "Debug: Show GameManager Info", bindings: ["CTRL+ALT+M"], callback: () => {
+      console.log("=== GAME MANAGER DEBUG INFO ===");
+      console.log(gameManager.getDebugInfo());
+    }});
+    
+    ui.registerShortcut({ id: "debug.testBuildingRestriction", text: "Debug: Test Building Restriction", bindings: ["CTRL+ALT+T"], callback: () => {
+      testBuildingRestriction();
+    }});
+    
+    ui.registerShortcut({ id: "debug.toggleBuildingRestrictions", text: "Debug: Toggle Building Restrictions", bindings: ["CTRL+ALT+R"], callback: () => {
+      toggleBuildingRestrictions();
+    }});
+    
+    ui.registerShortcut({ id: "debug.testTileRegion", text: "Debug: Test Tile Region (64,64)", bindings: ["CTRL+ALT+J"], callback: () => {
+      testTileRegion(64, 64);
+    }});
+    
+    ui.registerShortcut({ id: "debug.initializeGameManager", text: "Debug: Initialize GameManager", bindings: ["CTRL+ALT+I"], callback: () => {
+      console.log("=== MANUALLY INITIALIZING GAME MANAGER ===");
+      gameManager.initializeGame();
+      console.log("GameManager initialization completed. Debug info:");
+      console.log(gameManager.getDebugInfo());
+    }});
+    
     function completeGoalWithColor(colors: string) {
       completeGoalWithColorAndSlot(colors, "1");
     }
@@ -339,6 +366,75 @@ export function registerDebugShortkeys(): void {
       } catch (e) {
         console.log("Error during board reset:", e);
       }
+    }
+    
+    function testBuildingRestriction() {
+      console.log("=== TESTING BUILDING RESTRICTION ===");
+      
+      // Test different tiles and players
+      const testCases = [
+        { tile: { x: 32, y: 32 }, player: "1", description: "Player 1 (red) in top-left region" },
+        { tile: { x: 96, y: 32 }, player: "2", description: "Player 2 (green) in top-right region" },
+        { tile: { x: 32, y: 96 }, player: "3", description: "Player 3 (blue) in bottom-left region" },
+        { tile: { x: 96, y: 96 }, player: "4", description: "Player 4 (yellow) in bottom-right region" },
+        { tile: { x: 64, y: 64 }, player: "1", description: "Player 1 trying to build in center (neutral)" },
+        { tile: { x: 5, y: 5 }, player: "2", description: "Player 2 trying to build in corner marker area" }
+      ];
+      
+      testCases.forEach((testCase, index) => {
+        const canBuild = gameManager.canPlayerBuildAtTile(testCase.player, testCase.tile);
+        const region = gameManager.getTileRegion(testCase.tile);
+        const playerRegion = gameManager.getPlayerRegion(testCase.player);
+        
+        console.log(`${index + 1}. ${testCase.description}`);
+        console.log(`   Tile: (${testCase.tile.x}, ${testCase.tile.y})`);
+        console.log(`   Tile Region: ${region || 'neutral/outside'}`);
+        console.log(`   Player Region: ${playerRegion || 'none'}`);
+        console.log(`   Can Build: ${canBuild ? '✅ YES' : '❌ NO'}`);
+        console.log('');
+      });
+    }
+    
+    function toggleBuildingRestrictions() {
+      console.log("=== TOGGLING BUILDING RESTRICTIONS ===");
+      
+      // This is a simple toggle - in a real implementation you might want to track state
+      // For now, we'll just show current status and suggest manual toggling
+      console.log("Current building restrictions status:");
+      console.log("- Use gameManager.enableBuildingRestrictions() to enable");
+      console.log("- Use gameManager.disableBuildingRestrictions() to disable");
+      console.log("- Use gameManager.setGameMode('coop'|'pvp'|'lockout') to configure automatically");
+      
+      // Show current game mode from config
+      const currentMode = bingoManager.getBingo().getState().gameMode;
+      console.log(`Current game mode: ${currentMode}`);
+      
+      if (currentMode === 'coop') {
+        console.log("Coop mode: Building restrictions should be DISABLED");
+      } else if (currentMode === 'pvp' || currentMode === 'lockout') {
+        console.log(`${currentMode} mode: Building restrictions should be ENABLED`);
+      }
+    }
+    
+    function testTileRegion(x: number, y: number) {
+      console.log(`=== TESTING TILE REGION (${x}, ${y}) ===`);
+      
+      const region = gameManager.getTileRegion({ x, y });
+      const groundState = gameManager.getGroundDivisionManager().getState();
+      
+      console.log(`Tile coordinates: (${x}, ${y})`);
+      console.log(`Region: ${region || 'neutral/outside'}`);
+      console.log(`Map size: ${groundState.mapWidthTiles}x${groundState.mapHeightTiles}`);
+      console.log(`Center: (${groundState.centerTileX}, ${groundState.centerTileY})`);
+      
+      if (region) {
+        const regionData = gameManager.getGroundDivisionManager().getRegion(region);
+        console.log(`Region bounds: (${regionData.x1},${regionData.y1}) to (${regionData.x2},${regionData.y2})`);
+      }
+      
+      // Test if tile is in divided area
+      const isInDividedArea = gameManager.getGroundDivisionManager().isTileInDividedArea({ x, y });
+      console.log(`In divided area: ${isInDividedArea ? 'YES' : 'NO'}`);
     }
     
     

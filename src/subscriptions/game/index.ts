@@ -16,4 +16,10 @@ export {
     unsubscribeFromRenewRides
 } from './renewRides';
 
+// Building Restrictions-related subscriptions
+export {
+    subscribeToBuildingRestrictions,
+    unsubscribeFromBuildingRestrictions
+} from './buildingRestrictions';
+
 // Server-related subscriptions

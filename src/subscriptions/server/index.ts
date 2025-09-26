@@ -2,11 +2,9 @@
 import { subscriptions } from "../manager";
 import { config } from "src/config";
 import { checkIfStarted } from "src/utils";
-import { handleYearProgression, handleGameStatusUpdates, handleEndGameWarnings, handleGameRestart, handleGameInitialization, handleMultiplayerDialog, restart } from "./helpers";
+import { handleYearProgression, handleGameStatusUpdates, handleEndGameWarnings, handleGameInitialization, handleMultiplayerDialog } from "./helpers";
 
 // Re-export restart for external use
-export { restart };
-
 export function subscribeIfStarted(showGameDurationCallback?: () => void) {
     subscriptions.upsert("server-if-started", () => context.subscribe("interval.day", () => {
         console.log('checking if started', checkIfStarted())
@@ -46,7 +44,6 @@ export function subscribeToServerInitialization(showGameDurationCallback?: () =>
         handleYearProgression(remainingYears);
         handleGameStatusUpdates(remainingYears, dayCounter);
         handleEndGameWarnings(duration);
-        handleGameRestart(duration);
         handleGameInitialization(parkStorage);
         
         // Handle multiplayer-specific logic

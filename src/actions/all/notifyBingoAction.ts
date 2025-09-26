@@ -1,5 +1,6 @@
 import { notifyTextBingo } from "../../bingo/notifications/text";
 import { notifyGroundBingo } from "../../bingo/notifications/ground";
+import { config } from "../../config";
 
 export function notifyBingoAction() {
   return {
@@ -15,7 +16,17 @@ export function notifyBingoAction() {
       if (network.mode === "server") {
         notifyTextBingo(event.args.lineKey);
       }
-      notifyGroundBingo();
+      
+      // Debug: Log current game mode
+      console.log(`[notifyBingoAction] Current game mode: ${config.gameMode}`);
+      
+      // Only show ground notifications for COOP mode
+      if (config.gameMode === "coop") {
+        console.log("COOP mode: Showing ground bingo notification");
+        notifyGroundBingo();
+      } else {
+        console.log(`${config.gameMode.toUpperCase()} mode: Skipping ground bingo notification`);
+      }
 
       return { error: 0 };
     }

@@ -12,6 +12,8 @@ const predeterminedSections: RandomMapSectionKey[] = [
 const remainingSections = [...predeterminedSections];
 
 function handleMapSectionOwnership(callback: () => void) {
+    console.log("[handleMapSectionOwnership] This should only be called in COOP mode!");
+    
     // If no sections are left, log and call the callback
     if (remainingSections.length === 0) {
         console.log("All map sections have already been owned.");
@@ -80,6 +82,7 @@ export function placeSmallSceneryObject({
 
 export function notifyGroundBingo() {
     console.log("Notifying ground bingo...");
+    console.log("[notifyGroundBingo] This function should only be called in COOP mode!");
     context.executeAction("addCash", { args: { cash: 10000000 } }, (result) => {
         if (result.error) {
             console.log("Failed to add cash:", result.errorMessage);
