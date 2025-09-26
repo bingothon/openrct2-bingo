@@ -6,6 +6,63 @@ import { debugMode } from "../../utils";
 const MAP_DIVISION_OBJECT = 'rct2.scenery_small.brbase'; // Base tile for ground borders
 
 /**
+ * Unowns the land along the dividing lines (center lines) where borders are placed
+ */
+function unownDividingLines(mapSize: any, scale: number, callback: () => void) {
+    console.log("Unowning land along dividing lines...");
+    
+    const centerX = (mapSize.x / 2) * scale;
+    const centerY = (mapSize.y / 2) * scale;
+    
+    let completed = 0;
+    const totalOperations = 2; // Vertical line + Horizontal line
+    
+    // Unown land along the vertical dividing line (center X) - using 1-based indexing
+    context.executeAction("landsetrights", {
+        x1: centerX,
+        y1: 1 * scale, // Start at tile 1, not 0
+        x2: centerX,
+        y2: mapSize.y * scale,
+        setting: 0, // 0: unown land
+        ownership: 0 // not used for setting 0
+    }, (result) => {
+        if (result.error) {
+            console.log(`Failed to unown vertical dividing line: ${result.errorMessage}`);
+        } else {
+            console.log("Successfully unowned vertical dividing line");
+        }
+        
+        completed++;
+        if (completed === totalOperations) {
+            console.log("All dividing lines unowned successfully!");
+            callback();
+        }
+    });
+    
+    // Unown land along the horizontal dividing line (center Y) - using 1-based indexing
+    context.executeAction("landsetrights", {
+        x1: 1 * scale, // Start at tile 1, not 0
+        y1: centerY,
+        x2: mapSize.x * scale,
+        y2: centerY,
+        setting: 0, // 0: unown land
+        ownership: 0 // not used for setting 0
+    }, (result) => {
+        if (result.error) {
+            console.log(`Failed to unown horizontal dividing line: ${result.errorMessage}`);
+        } else {
+            console.log("Successfully unowned horizontal dividing line");
+        }
+        
+        completed++;
+        if (completed === totalOperations) {
+            console.log("All dividing lines unowned successfully!");
+            callback();
+        }
+    });
+}
+
+/**
  * Unowns the land in each player section to prevent building
  */
 function unownPlayerSections(mapSize: any, scale: number, callback: () => void) {
@@ -105,44 +162,161 @@ function placePlayerCornerMarker(x: number, y: number, z: number, objectId: numb
  * Places a single scenery object with cost handling
  */
 function placeSceneryObject(x: number, y: number, z: number, objectId: number, color: number) {
-    // Place the scenery directly without trying to remove first
-    const sceneryArgs = {
-        x: x,
-        y: y,
-        z: z,
-        direction: 0,
-        object: objectId,
-        quadrant: 0,
-        primaryColour: color,
-        secondaryColour: 0,
-        tertiaryColour: 0
-    };
-    
-    // Query the action to check cost
-    context.queryAction("smallsceneryplace", sceneryArgs, (queryResult) => {
-        if (queryResult.cost && queryResult.cost > 0) {
-            // Add cash to cover the cost
-            context.executeAction('addCash', { args: { cash: queryResult.cost } }, (cashResult) => {
-                if (cashResult.error) {
-                    console.log("Failed to add cash for scenery placement:", cashResult.errorMessage);
-                } else {
-                    // Execute the scenery placement
-                    context.executeAction("smallsceneryplace", sceneryArgs, (result) => {
-                        if (result.error) {
-                            console.log(`Failed to place scenery at (${x}, ${y}, ${z}): ${result.errorMessage}`);
-                        }
-                    });
-                }
-            });
-        } else {
-            // No cost, execute directly
-            context.executeAction("smallsceneryplace", sceneryArgs, (result) => {
-                if (result.error) {
-                    console.log(`Failed to place scenery at (${x}, ${y}, ${z}): ${result.errorMessage}`);
+    // Detect if a matching small scenery element exists at the exact location
+    const tileX = Math.floor(x / 32);
+    const tileY = Math.floor(y / 32);
+
+    // Special debug logging for tile (64, 128)
+    if (tileX === 64 && tileY === 128) {
+        console.log(`🔍 DEBUG: placeSceneryObject called for tile (64, 128)`);
+        console.log(`   Input coords: (${x}, ${y}, ${z})`);
+        console.log(`   Tile coords: (${tileX}, ${tileY})`);
+        console.log(`   Object ID: ${objectId}`);
+        console.log(`   Color: ${color}`);
+    }
+
+    const inBounds = tileX >= 0 && tileX < map.size.x && tileY >= 0 && tileY < map.size.y;
+    let hasMatchingScenery = false;
+
+    if (inBounds) {
+        const tile = map.getTile(tileX, tileY);
+        
+        // Special debug logging for tile (64, 128)
+        if (tileX === 64 && tileY === 128) {
+            console.log(`🔍 DEBUG: Tile (64, 128) has ${tile.elements.length} elements`);
+            tile.elements.forEach((element, index) => {
+                console.log(`   Element ${index}: ${element.type} at z=${element.baseZ}`);
+                if (element.type === 'small_scenery') {
+                    const scenery = element as SmallSceneryElement;
+                    console.log(`     - Object: ${scenery.object}, Quadrant: ${scenery.quadrant}`);
                 }
             });
         }
-    });
+        
+        for (const element of tile.elements) {
+            if (
+                element.type === 'small_scenery' &&
+                element.baseZ === z &&
+                (element as SmallSceneryElement).object === objectId
+            ) {
+                hasMatchingScenery = true;
+                if (tileX === 64 && tileY === 128) {
+                    console.log(`🔍 DEBUG: Found matching scenery at tile (64, 128)`);
+                }
+                break;
+            }
+        }
+    } else {
+        if (tileX === 64 && tileY === 128) {
+            console.log(`🔍 DEBUG: Tile (64, 128) is out of bounds!`);
+            console.log(`   Map size: ${map.size.x} x ${map.size.y}`);
+        }
+    }
+
+    // Only attempt to remove if there is actually a matching element
+    const tryPlace = () => {
+        const sceneryArgs = {
+            x,
+            y,
+            z,
+            direction: 0,
+            object: objectId,
+            quadrant: 0,
+            primaryColour: color,
+            secondaryColour: 0,
+            tertiaryColour: 0,
+        };
+
+        context.queryAction('smallsceneryplace', sceneryArgs, (queryResult) => {
+            // Special debug logging for tile (64, 128)
+            if (tileX === 64 && tileY === 128) {
+                console.log(`🔍 DEBUG: Query result for tile (64, 128):`);
+                console.log(`   Error: ${queryResult.error}`);
+                console.log(`   Error Message: ${queryResult.errorMessage}`);
+                console.log(`   Cost: ${queryResult.cost}`);
+            }
+            
+            if (queryResult.error) {
+                // Suppress "Land not owned by park!" errors to reduce log spam
+                if (
+                    queryResult.errorMessage &&
+                    queryResult.errorMessage.indexOf('Land not owned by park') !== -1
+                ) {
+                    console.log('Land not owned by park - scenery placement failed');
+                } else {
+                    console.log(
+                        `Failed to query scenery placement at (${x}, ${y}), z: ${z} - ${queryResult.errorMessage}`,
+                    );
+                }
+                return;
+            }
+            if (queryResult.cost && queryResult.cost > 0) {
+                context.executeAction(
+                    'addCash',
+                    { args: { cash: queryResult.cost } },
+                    (cashResult) => {
+                        if (cashResult.error) {
+                            console.log(
+                                'Failed to add cash for scenery placement:',
+                                cashResult.errorMessage,
+                            );
+                            return;
+                        }
+                        context.executeAction('smallsceneryplace', sceneryArgs, (placeResult) => {
+                            // Special debug logging for tile (64, 128)
+                            if (tileX === 64 && tileY === 128) {
+                                console.log(`🔍 DEBUG: Final placement result for tile (64, 128):`);
+                                console.log(`   Error: ${placeResult.error}`);
+                                console.log(`   Error Message: ${placeResult.errorMessage}`);
+                                console.log(`   Success: ${!placeResult.error}`);
+                            }
+                            
+                            if (placeResult.error) {
+                                console.log(
+                                    `Failed to place scenery at (${x}, ${y}), z: ${z} - ${placeResult.errorMessage}`,
+                                );
+                            }
+                        });
+                    },
+                );
+            } else {
+                context.executeAction('smallsceneryplace', sceneryArgs, (placeResult) => {
+                    // Special debug logging for tile (64, 128)
+                    if (tileX === 64 && tileY === 128) {
+                        console.log(`🔍 DEBUG: No-cost placement result for tile (64, 128):`);
+                        console.log(`   Error: ${placeResult.error}`);
+                        console.log(`   Error Message: ${placeResult.errorMessage}`);
+                        console.log(`   Success: ${!placeResult.error}`);
+                    }
+                    
+                    if (placeResult.error) {
+                        console.log(
+                            `Failed to place scenery at (${x}, ${y}), z: ${z} - ${placeResult.errorMessage}`,
+                        );
+                    }
+                });
+            }
+        });
+    };
+
+    if (hasMatchingScenery) {
+        // Special debug logging for tile (64, 128)
+        if (tileX === 64 && tileY === 128) {
+            console.log(`🔍 DEBUG: Removing existing scenery at tile (64, 128) before placing new one`);
+        }
+        
+        const removeAction = { x, y, z, object: objectId, quadrant: 0 };
+        context.executeAction('smallsceneryremove', removeAction, () => {
+            // Ignore remove errors; we verified presence already to avoid spam logs
+            tryPlace();
+        });
+    } else {
+        // Special debug logging for tile (64, 128)
+        if (tileX === 64 && tileY === 128) {
+            console.log(`🔍 DEBUG: No existing scenery found at tile (64, 128), proceeding with placement`);
+        }
+        tryPlace();
+    }
 }
 
 /**
@@ -154,7 +328,6 @@ export function createPlayerSections(): boolean {
     
     try {
         const mapSize = { x: 128, y: 128 };
-        console.log("Map size:", mapSize);
         
         // Load the base tile object
         const identifier = MAP_DIVISION_OBJECT;
@@ -177,21 +350,39 @@ export function createPlayerSections(): boolean {
         console.log("Map center:", { centerX, centerY });
         
         // Create borders to divide the map into 4 sections
-        // Vertical line (divides left and right)
-        for (let y = 0; y < mapSize.y; y++) {
+        // Vertical line (divides left and right) - using 1-based indexing
+        console.log(`Creating vertical border at x=${centerX} (tile ${centerX/32}) from y=1 to y=${mapSize.y}`);
+        for (let y = 1; y <= mapSize.y; y++) {
             const borderX = centerX;
             const borderY = y * scale;
             const borderZ = baseZ;
+            
+            // Special debug logging for tile (64, 128)
+            if (borderX / 32 === 64 && y === 128) {
+                console.log(`🔍 DEBUG: Attempting to place border at tile (64, 128)`);
+                console.log(`   World coords: (${borderX}, ${borderY})`);
+                console.log(`   Object ID: ${objectId}`);
+                console.log(`   Color: 0 (black)`);
+            }
             
             // Place base tile for vertical border
             placeSceneryObject(borderX, borderY, borderZ, objectId, 0); // Black border
         }
         
-        // Horizontal line (divides top and bottom)
-        for (let x = 0; x < mapSize.x; x++) {
+        // Horizontal line (divides top and bottom) - using 1-based indexing
+        console.log(`Creating horizontal border at y=${centerY} (tile ${centerY/32}) from x=1 to x=${mapSize.x}`);
+        for (let x = 1; x <= mapSize.x; x++) {
             const borderX = x * scale;
             const borderY = centerY;
             const borderZ = baseZ;
+            
+            // Special debug logging for tile (64, 128)
+            if (x === 64 && borderY / 32 === 64) {
+                console.log(`🔍 DEBUG: Attempting to place border at tile (64, 64) - center intersection`);
+                console.log(`   World coords: (${borderX}, ${borderY})`);
+                console.log(`   Object ID: ${objectId}`);
+                console.log(`   Color: 0 (black)`);
+            }
             
             // Place base tile for horizontal border
             placeSceneryObject(borderX, borderY, borderZ, objectId, 0); // Black border
@@ -227,20 +418,23 @@ export function createPlayerSections(): boolean {
             
             console.log("Colored markers placed, now unowning land...");
             
-            // Unown the land in each player section
-            unownPlayerSections(mapSize, scale, () => {
-            // Create entrances for each player section (except RED) - still in debug mode
-            createPlayerEntrancesAndFootpaths(mapSize, scale, () => {
-                // Create guest spawners for each player section - still in debug mode
-                createGuestSpawners(mapSize, scale, () => {
-                    // Disable debug mode after everything is done
-                    console.log("Disabling debug mode...");
-                    debugMode(0, () => {
-                        console.log("Debug mode disabled successfully");
-                        console.log("Player sections, entrances, and guest spawners created successfully!");
+            // Unown the land along the dividing lines first
+            unownDividingLines(mapSize, scale, () => {
+                // Then unown the land in each player section
+                unownPlayerSections(mapSize, scale, () => {
+                    // Create entrances for each player section (except RED) - still in debug mode
+                    createPlayerEntrancesAndFootpaths(mapSize, scale, () => {
+                        // Create guest spawners for each player section - still in debug mode
+                        createGuestSpawners(mapSize, scale, () => {
+                            // Disable debug mode after everything is done
+                            console.log("Disabling debug mode...");
+                            debugMode(0, () => {
+                                console.log("Debug mode disabled successfully");
+                                console.log("Player sections, entrances, and guest spawners created successfully!");
+                            });
+                        });
                     });
                 });
-            });
             });
         });
         
@@ -388,6 +582,10 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
             const centerTile = entrance.tiles[1]; // Middle tile
             
             console.log(`🔍 About to place ${entrance.name} at (${centerTile.x}, ${centerTile.y})`);
+            console.log(`🔍 All tiles for ${entrance.name}:`, entrance.tiles);
+            console.log(`🔍 Center tile (index 1):`, centerTile);
+            console.log(`🔍 World coordinates: (${centerTile.x * scale}, ${centerTile.y * scale})`);
+            console.log(`🔍 Scale: ${scale}`);
             // console.log(`🔍 Sandbox mode should be enabled: ${context.cheats.sandboxMode}`);
             
             context.executeAction("parkentranceplace", {
@@ -404,6 +602,9 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
                     console.log(`❌ FAILED to place ${entrance.name}: ${entranceResult.errorMessage}`);
                 } else {
                     console.log(`✅ Successfully placed ${entrance.name}`);
+                    console.log(`🔍 Entrance placement result:`, entranceResult);
+                    console.log(`🔍 Expected coordinates: (${centerTile.x}, ${centerTile.y})`);
+                    console.log(`🔍 World coordinates sent: (${centerTile.x * scale}, ${centerTile.y * scale})`);
                 }
                 
                 if (entranceCompleted === totalEntrances) {

@@ -123,8 +123,12 @@ export const restart = ( callback?: Function) => {
                     clearAllRides(() => {
                         clearMiddle(() => {
                             // Step 4: Reset date
-                            executeActionCallback("parksetdate", { day: 0, month: 0, year: 0 }, () => {    
-                                callback?.();
+                            executeActionCallback("parksetdate", { day: 0, month: 0, year: 0 }, () => {
+                                // Step 5: Disable debug mode
+                                debugMode(0, () => {
+                                    console.log("Game restart completed successfully!");
+                                    callback?.();
+                                });
                             });
                         });
                     });

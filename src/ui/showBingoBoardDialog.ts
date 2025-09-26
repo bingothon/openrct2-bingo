@@ -1,5 +1,6 @@
 import { BingoBoard, Goal } from "../types";
 import { addLineBreak } from "./helpers";
+import { config } from "../config";
 
 /**
  * Displays the Bingo board dialog with a 5x5 grid of buttons representing each Bingo slot.
@@ -38,7 +39,10 @@ export function showBingoBoardDialog(board: BingoBoard) {
                 ? buildChecksPrefix(goal.colors)
                 : (goal.status === "completed" ? "{RED}✓{BLACK} " : "");
             
-            
+            // In lockout mode, color the entire text with the player's color
+            const displayText = goal.status === "completed" && config.gameMode === "lockout" && goal.colors && goal.colors !== "blank"
+                ? buildColoredText(goal.colors, formattedName)
+                : `${completedPrefix}${formattedName}`;
             
             // Base clickable button (can show image)
             widgets.push({
@@ -59,7 +63,7 @@ export function showBingoBoardDialog(board: BingoBoard) {
             widgets.push({
                 type: "label",
                 name: `slot${index + 1}_text`,
-                text: `${completedPrefix}${formattedName}`,
+                text: displayText,
                 x: startX + col * (buttonSize + spacing),
                 y: startY + row * (buttonSize + spacing) + labelYOffset,
                 width: buttonSize,
@@ -91,6 +95,17 @@ function buildChecksPrefix(colors: string | undefined): string {
         prefix += `{${t}}✓{BLACK}`;
     }
     return prefix + "\n";
+}
+
+function buildColoredText(colors: string | undefined, text: string): string {
+    if (!colors || colors === "blank") return text;
+    const parts = colors.split(/[ ,]+/).filter(Boolean);
+    const tokens = parts.map((c) => colourTokenForName(c.toLowerCase())).filter(Boolean) as string[];
+    if (tokens.length === 0) return text;
+    
+    // Use the first color to color the entire text
+    const colorToken = tokens[0];
+    return `{${colorToken}}${text}{BLACK}`;
 }
 
 function colourTokenForName(name: string): string | null {

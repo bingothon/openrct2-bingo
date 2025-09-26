@@ -15,7 +15,7 @@ const REGION_SIZE = 20; // 16x16 tiles per player region (square regions) - incr
 const REGION_SPACING = 2; // 2 tiles spacing between regions
 
 const EXTEND_MAP_SIZE_Y = 192;
-const EXTEND_MAP_SIZE_X = 128;
+const EXTEND_MAP_SIZE_X = 130;
 
 // Scenery object for building the billboard
 const BILLBOARD_OBJECT = 'rct2.scenery_small.brbase';
@@ -290,10 +290,9 @@ export function createScoreboard(): void {
                                     // Create a REAL vertical billboard wall (standing up like a wall)
                                     const billboardZ = baseZ + 8 * 16; // 8 levels up in the air
 
-                                    // Skip terrain clearing - let the game handle object placement naturally
-                                    logger.debug(
-                                        'Step 3: Skipping terrain clearing to avoid land ownership issues',
-                                    );
+                                    // Clear the billboard area to prevent "base block in the way" errors
+                                    logger.debug('Step 3: Clearing billboard area...');
+                                    clearBillboardArea(billboardX, billboardY, BILLBOARD_SIZE, scale);
 
                                     // Build a square vertical wall by stacking Z levels to create height (2x stacking like numbers)
                                     logger.debug('Step 5: Building billboard wall...');
@@ -720,6 +719,43 @@ function placeMirroredNumberOnWall(
 }
 
 // Removed unused flat-surface number placement helper to satisfy linter
+
+/**
+ * Clears the billboard area to prevent placement conflicts
+ */
+function clearBillboardArea(baseX: number, baseY: number, size: number, _scale: number) {
+    const tileX = Math.floor(baseX / 32);
+    const tileY = Math.floor(baseY / 32);
+    
+    // Clear a square area for the billboard
+    for (let x = 0; x < size; x++) {
+        for (let y = 0; y < size; y++) {
+            const currentTileX = tileX + x;
+            const currentTileY = tileY + y;
+            
+            if (currentTileX >= 0 && currentTileX < map.size.x && currentTileY >= 0 && currentTileY < map.size.y) {
+                const tile = map.getTile(currentTileX, currentTileY);
+                
+                // Remove all small scenery elements from this tile
+                for (let i = tile.elements.length - 1; i >= 0; i--) {
+                    if (tile.elements[i].type === 'small_scenery') {
+                        const element = tile.elements[i] as SmallSceneryElement;
+                        const removeAction = { 
+                            x: currentTileX * 32, 
+                            y: currentTileY * 32, 
+                            z: element.baseZ, 
+                            object: element.object, 
+                            quadrant: 0 
+                        };
+                        context.executeAction('smallsceneryremove', removeAction, () => {
+                            // Ignore errors - element might already be removed
+                        });
+                    }
+                }
+            }
+        }
+    }
+}
 
 /**
  * Places a single scenery object with cost handling

@@ -23,7 +23,12 @@ export function updateGoalUI(index: number, board: BingoBoard) {
         btn.border = false;
         const goal = board[index];
         const checks = buildChecksPrefix(goal.colors);
-        const newText = `${checks}${goal.name}`;
+        
+        // In lockout mode, color the entire text with the player's color
+        const newText = goal.status === "completed" && config.gameMode === "lockout" && goal.colors && goal.colors !== "blank"
+            ? buildColoredText(goal.colors, goal.name)
+            : `${checks}${goal.name}`;
+            
         console.log(`[Bingo UI] Updating slot${index + 1}: colors="${goal.colors}", checks="${checks}", newText="${newText}"`);
         label.textAlign = "centred";
         // Keep label vertically centered similarly to initial render
@@ -59,6 +64,17 @@ function buildChecksPrefix(colors: string | undefined): string {
         prefix += `{${t}}✓{BLACK}`;
     }
     return prefix + "\n";
+}
+
+function buildColoredText(colors: string | undefined, text: string): string {
+    if (!colors || colors === "blank") return text;
+    const parts = colors.split(/[ ,]+/).filter(Boolean);
+    const tokens = parts.map((c) => colourTokenForName(c.toLowerCase())).filter(Boolean) as string[];
+    if (tokens.length === 0) return text;
+    
+    // Use the first color to color the entire text
+    const colorToken = tokens[0];
+    return `{${colorToken}}${text}{BLACK}`;
 }
 
 function colourTokenForName(name: string): string | null {
