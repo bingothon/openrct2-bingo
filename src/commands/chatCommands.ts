@@ -1,12 +1,12 @@
 import { GameManager } from "../managers/GameManager";
 import { config } from "../config";
 
-// Color to region mapping
+// Color to region mapping - matches scoreboard layout
 const COLOR_TO_REGION: Record<string, { region: string; name: string }> = {
-  "red": { region: "top-left", name: "Player 1" },
-  "green": { region: "top-right", name: "Player 2" },
-  "blue": { region: "bottom-left", name: "Player 3" },
-  "yellow": { region: "bottom-right", name: "Player 4" }
+  "red": { region: "top-left", name: "Player 1" },    // Green in top-left
+  "blue": { region: "top-right", name: "Player 2" }, // Yellow in top-right  
+  "green": { region: "bottom-left", name: "Player 3" },  // Red in bottom-left
+  "yellow": { region: "bottom-right", name: "Player 4" } // Blue in bottom-right
 };
 
 export function registerChatCommands(): void {
@@ -19,7 +19,7 @@ export function registerChatCommands(): void {
     const message = e.message.toLowerCase().trim();
     
     // Check if it's a register command
-    if (message.startsWith("/register ")) {
+    if (message.indexOf("/register ") === 0) {
       const color = message.substring(9).trim(); // Remove "/register " prefix
       
       // Only allow in PVP or Lockout modes

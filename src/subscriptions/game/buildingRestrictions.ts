@@ -76,8 +76,7 @@ export function subscribeToBuildingRestrictions(
                 e.result = {
                     error: 1, // Generic error
                     errorTitle: "Building Restricted",
-                    errorMessage: `No players registered. Please register first using /register COLOR command.`,
-                    position: { x: args.x, y: args.y, z: (args.z && typeof args.z === 'number') ? args.z : 0 }
+                    errorMessage: `No players registered. Please register first using /register COLOR command.`
                 };
                 return;
             }
@@ -94,8 +93,7 @@ export function subscribeToBuildingRestrictions(
                 e.result = {
                     error: 1, // Generic error
                     errorTitle: "Building Restricted",
-                    errorMessage: `You can only build in your ${playerColor} region. This tile belongs to another player's region.`,
-                    position: { x: args.x, y: args.y, z: (args.z && typeof args.z === 'number') ? args.z : 0 }
+                    errorMessage: `You can only build in your ${playerColor} region. This tile belongs to another player's region.`
                 };
                 return;
             }
