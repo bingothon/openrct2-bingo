@@ -87,7 +87,7 @@ export function subscribeToBuildingRestrictions(
                 console.log(`[BuildingRestrictions] Player ${playerId} (region: ${playerRegion}) trying to build in ${region} - BLOCKED`);
                 
                 // Get player's color for the error message
-                const player = playerManager.getPlayer(playerId);
+                const player = playerManager.getPlayer(playerId.toString());
                 const playerColor = player ? player.colour : "unknown";
                 
                 // Player is trying to build in another player's region - deny the action
