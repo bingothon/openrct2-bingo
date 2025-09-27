@@ -9,6 +9,9 @@ export function registerDebugShortkeys(): void {
     const bingoManager = BingoManager.getInstance();
     const gameManager = GameManager.getInstance();
     
+    // COMMENTING OUT ALL SHORTCUTS EXCEPT BUILDING RESTRICTIONS DEBUG
+    /*
+    
     // Test shortcuts for updating individual player scores (now based on actual goal completion)
     ui.registerShortcut({ id: "bingoSync.updatePlayer1", text: "Update Player 1 Score (Green)", bindings: ["CTRL+1"], callback: () => {
       bingoManager.updatePlayerScoreboard("player1");
@@ -80,21 +83,21 @@ export function registerDebugShortkeys(): void {
     }});
     
     // Debug goal completion shortcuts for different colors
-    ui.registerShortcut({ id: "debug.completeGoalRed", text: "Debug: Complete Top-Left Goal (Red)", bindings: ["CTRL+ALT+R"], callback: () => {
-      completeGoalWithColor("red");
-    }});
+    // ui.registerShortcut({ id: "debug.completeGoalRed", text: "Debug: Complete Top-Left Goal (Red)", bindings: ["CTRL+ALT+R"], callback: () => {
+    //   completeGoalWithColor("red");
+    // }});
     
-    ui.registerShortcut({ id: "debug.completeGoalGreen", text: "Debug: Complete Top-Left Goal (Green)", bindings: ["CTRL+ALT+G"], callback: () => {
-      completeGoalWithColor("green");
-    }});
+    // ui.registerShortcut({ id: "debug.completeGoalGreen", text: "Debug: Complete Top-Left Goal (Green)", bindings: ["CTRL+ALT+G"], callback: () => {
+    //   completeGoalWithColor("green");
+    // }});
     
-    ui.registerShortcut({ id: "debug.completeGoalBlue", text: "Debug: Complete Top-Left Goal (Blue)", bindings: ["CTRL+ALT+B"], callback: () => {
-      completeGoalWithColor("blue");
-    }});
+    // ui.registerShortcut({ id: "debug.completeGoalBlue", text: "Debug: Complete Top-Left Goal (Blue)", bindings: ["CTRL+ALT+B"], callback: () => {
+    //   completeGoalWithColor("blue");
+    // }});
     
-    ui.registerShortcut({ id: "debug.completeGoalYellow", text: "Debug: Complete Top-Left Goal (Yellow)", bindings: ["CTRL+ALT+Y"], callback: () => {
-      completeGoalWithColor("yellow");
-    }});
+    // ui.registerShortcut({ id: "debug.completeGoalYellow", text: "Debug: Complete Top-Left Goal (Yellow)", bindings: ["CTRL+ALT+Y"], callback: () => {
+    //   completeGoalWithColor("yellow");
+    // }});
     
     ui.registerShortcut({ id: "debug.completeGoalAll", text: "Debug: Complete Top-Left Goal (All Colors)", bindings: ["CTRL+ALT+A"], callback: () => {
       completeGoalWithColor("red green blue yellow");
@@ -115,14 +118,16 @@ export function registerDebugShortkeys(): void {
     }});
     
     // New shortcuts for bingo management
-    ui.registerShortcut({ id: "debug.showBingoInfo", text: "Debug: Show Bingo Info", bindings: ["CTRL+ALT+I"], callback: () => {
-      console.log("Bingo Debug Info:", bingoManager.getDebugInfo());
-    }});
+    // COMMENTED OUT FOR DEBUGGING
+    // ui.registerShortcut({ id: "debug.showBingoInfo", text: "Debug: Show Bingo Info", bindings: ["CTRL+ALT+I"], callback: () => {
+    //   console.log("Bingo Debug Info:", bingoManager.getDebugInfo());
+    // }});
     
-    ui.registerShortcut({ id: "debug.showPlayers", text: "Debug: Show Players", bindings: ["CTRL+ALT+P"], callback: () => {
-      const players = bingoManager.getAllPlayers();
-      console.log("Registered Players:", players.map(p => `${p.name} (${p.color})`));
-    }});
+    // COMMENTED OUT FOR DEBUGGING
+    // ui.registerShortcut({ id: "debug.showPlayers", text: "Debug: Show Players", bindings: ["CTRL+ALT+P"], callback: () => {
+    //   const players = bingoManager.getAllPlayers();
+    //   console.log("Registered Players:", players.map(p => `${p.name} (${p.color})`));
+    // }});
     
     ui.registerShortcut({ id: "debug.checkBoard", text: "Debug: Check Board Status", bindings: ["CTRL+ALT+O"], callback: () => {
       const bingo = bingoManager.getBingo();
@@ -136,34 +141,34 @@ export function registerDebugShortkeys(): void {
     }});
     
     // Test different goal slots
-    ui.registerShortcut({ id: "debug.completeGoal2", text: "Debug: Complete Goal 2 (Red)", bindings: ["CTRL+ALT+2"], callback: () => {
-      completeGoalWithColorAndSlot("red", "2");
-    }});
+    // ui.registerShortcut({ id: "debug.completeGoal2", text: "Debug: Complete Goal 2 (Red)", bindings: ["CTRL+ALT+2"], callback: () => {
+    //   completeGoalWithColorAndSlot("red", "2");
+    // }});
     
-    ui.registerShortcut({ id: "debug.completeGoal3", text: "Debug: Complete Goal 3 (Blue)", bindings: ["CTRL+ALT+3"], callback: () => {
-      completeGoalWithColorAndSlot("blue", "3");
-    }});
+    // ui.registerShortcut({ id: "debug.completeGoal3", text: "Debug: Complete Goal 3 (Blue)", bindings: ["CTRL+ALT+3"], callback: () => {
+    //   completeGoalWithColorAndSlot("blue", "3");
+    // }});
     
     // Game mode testing
-    ui.registerShortcut({ id: "debug.setCoopMode", text: "Debug: Set Coop Mode", bindings: ["CTRL+ALT+Q"], callback: () => {
-      bingoManager.setGameMode("coop");
-      console.log("Game mode set to COOP - multiple players can select same goals");
-    }});
+    // ui.registerShortcut({ id: "debug.setCoopMode", text: "Debug: Set Coop Mode", bindings: ["CTRL+ALT+Q"], callback: () => {
+    //   bingoManager.setGameMode("coop");
+    //   console.log("Game mode set to COOP - multiple players can select same goals");
+    // }});
     
-    ui.registerShortcut({ id: "debug.setPvpMode", text: "Debug: Set PVP Mode", bindings: ["CTRL+ALT+W"], callback: () => {
-      bingoManager.setGameMode("pvp");
-      console.log("Game mode set to PVP - multiple players can select same goals, map divided");
-    }});
+    // ui.registerShortcut({ id: "debug.setPvpMode", text: "Debug: Set PVP Mode", bindings: ["CTRL+ALT+W"], callback: () => {
+    //   bingoManager.setGameMode("pvp");
+    //   console.log("Game mode set to PVP - multiple players can select same goals, map divided");
+    // }});
     
     ui.registerShortcut({ id: "debug.setLockoutMode", text: "Debug: Set Lockout Mode", bindings: ["CTRL+ALT+E"], callback: () => {
       bingoManager.setGameMode("lockout");
       console.log("Game mode set to LOCKOUT - only one player can select each goal");
     }});
     
-    // Test lockout behavior - try to complete same goal with different players
-    ui.registerShortcut({ id: "debug.testLockout", text: "Debug: Test Lockout (Goal 4)", bindings: ["CTRL+ALT+Z"], callback: () => {
-      testLockoutBehavior();
-    }});
+    // // Test lockout behavior - try to complete same goal with different players
+    // ui.registerShortcut({ id: "debug.testLockout", text: "Debug: Test Lockout (Goal 4)", bindings: ["CTRL+ALT+Z"], callback: () => {
+    //   testLockoutBehavior();
+    // }});
     
     // Scoreboard management shortcuts
     ui.registerShortcut({ id: "debug.createScoreboard", text: "Debug: Create Scoreboard", bindings: ["CTRL+ALT+S"], callback: () => {
@@ -181,9 +186,10 @@ export function registerDebugShortkeys(): void {
       console.log("Scoreboard cleared");
     }});
     
-    ui.registerShortcut({ id: "debug.randomGoal", text: "Debug: Random Goal for Random Player", bindings: ["CTRL+ALT+N"], callback: () => {
-      completeRandomGoalForRandomPlayer();
-    }});
+    // COMMENTED OUT FOR DEBUGGING
+    // ui.registerShortcut({ id: "debug.randomGoal", text: "Debug: Random Goal for Random Player", bindings: ["CTRL+ALT+N"], callback: () => {
+    //   completeRandomGoalForRandomPlayer();
+    // }});
     
     // GameManager debug shortcuts
     ui.registerShortcut({ id: "debug.gameManagerInfo", text: "Debug: Show GameManager Info", bindings: ["CTRL+ALT+M"], callback: () => {
@@ -209,6 +215,24 @@ export function registerDebugShortkeys(): void {
       console.log("GameManager initialization completed. Debug info:");
       console.log(gameManager.getDebugInfo());
     }});
+    
+    
+    
+    */
+    ui.registerShortcut({ id: "debug.showCurrentPlayer", text: "Debug: Show Current Player Assignment", bindings: ["CTRL+ALT+P"], callback: () => {
+      showCurrentPlayerAssignment();
+    }});
+    // ONLY KEEPING THE BUILDING RESTRICTIONS DEBUG SHORTCUTS
+    ui.registerShortcut({ id: "debug.testBuildingRestrictions", text: "Debug: Test Building Restrictions", bindings: ["CTRL+ALT+B"], callback: () => {
+      testBuildingRestrictions();
+    }});
+    
+    ui.registerShortcut({ id: "debug.forceEnableRestrictions", text: "Debug: Force Enable Building Restrictions", bindings: ["CTRL+ALT+F"], callback: () => {
+      console.log("=== FORCE ENABLING BUILDING RESTRICTIONS ===");
+      gameManager.setGameMode("lockout");
+      console.log("=== END FORCE ENABLE ===");
+    }});
+    
     
     function completeGoalWithColor(colors: string) {
       completeGoalWithColorAndSlot(colors, "1");
@@ -436,6 +460,79 @@ export function registerDebugShortkeys(): void {
       const isInDividedArea = gameManager.getGroundDivisionManager().isTileInDividedArea({ x, y });
       console.log(`In divided area: ${isInDividedArea ? 'YES' : 'NO'}`);
     }
+    
+    function showCurrentPlayerAssignment() {
+      console.log("=== CURRENT PLAYER ASSIGNMENT DEBUG ===");
+      
+      // Get all registered players
+      const allPlayers = gameManager.getAllPlayers();
+      console.log(`Total registered players: ${allPlayers.length}`);
+      
+      // Show all registered players and their assignments
+      console.log(`Registered players:`);
+      for (let i = 0; i < allPlayers.length; i++) {
+        const player = allPlayers[i];
+        console.log(`   ${i + 1}. ${player.name} (${player.colour}): ${player.region} [ID: ${player.id}]`);
+        
+        // Show region details for each player
+        const regionData = gameManager.getGroundDivisionManager().getRegion(player.region);
+        console.log(`      Region bounds: (${regionData.x1},${regionData.y1}) to (${regionData.x2},${regionData.y2})`);
+      }
+      
+      // Show game mode and building restrictions status
+      const debugInfo = gameManager.getDebugInfo();
+      const restrictionsMatch = debugInfo.match(/Building restrictions: (enabled|disabled)/);
+      const restrictionsStatus = restrictionsMatch ? restrictionsMatch[1] : 'unknown';
+      console.log(`Building restrictions: ${restrictionsStatus}`);
+      console.log(`Game mode: ${restrictionsStatus === 'enabled' ? 'PVP/Lockout' : 'Coop'}`);
+      
+      // Show ground division info
+      const groundState = gameManager.getGroundDivisionManager().getState();
+      console.log(`Map size: ${groundState.mapWidthTiles}x${groundState.mapHeightTiles}`);
+      console.log(`Center: (${groundState.centerTileX}, ${groundState.centerTileY})`);
+      
+      console.log("=== END PLAYER ASSIGNMENT DEBUG ===");
+    }
+    
+    function testBuildingRestrictions() {
+      console.log("=== BUILDING RESTRICTIONS DEBUG ===");
+      
+      const gameManager = GameManager.getInstance();
+      
+      // 0. Set game mode to lockout
+      console.log("0. Setting game mode to LOCKOUT");
+      gameManager.setGameMode("lockout");
+      
+      // 1. Force set initializing to false
+      console.log("1. Setting initializing to false");
+      gameManager.setInitializing(false);
+      
+      // 2. Set game mode to enable building restrictions
+      console.log("2. Setting game mode to enable building restrictions");
+      gameManager.setGameMode("lockout");
+      
+      // 3. Show current state
+      console.log("3. Current state:");
+      console.log(`   - Game mode: LOCKOUT`);
+      console.log(`   - Initializing: ${gameManager.isGameInitializing()}`);
+      console.log(`   - Building restrictions: ${gameManager.getDebugInfo().indexOf('enabled') !== -1 ? 'ENABLED' : 'DISABLED'}`);
+      console.log(`   - Registered players: ${gameManager.getAllPlayers().length}`);
+      
+      // 4. Register current player as RED
+      console.log("4. Registering current player as RED");
+      const currentPlayerId = "0"; // Server player for testing
+      gameManager.registerPlayer(currentPlayerId, "Player 1", "red", "top-left");
+      console.log("   ✅ Registered Player 0 (red) in top-left region");
+      
+      // 5. Instructions for testing
+      console.log("5. TESTING INSTRUCTIONS:");
+      console.log("   a) Try building in TOP-LEFT region (1,1 to 64,64) - should be ALLOWED");
+      console.log("   b) Try building in TOP-RIGHT region (65,1 to 128,64) - should be BLOCKED");
+      console.log("   c) Check console logs for building restriction messages");
+      
+      console.log("=== END BUILDING RESTRICTIONS DEBUG ===");
+    }
+    
     
     
   }

@@ -20,7 +20,6 @@ import {
   createScoreboardAction,
   clearScoreboardAction,
   updateScoreAction,
-  createPlayerSectionsAction
 } from "./index";
 
 export function registerActions() {
@@ -87,8 +86,6 @@ export function registerActions() {
   const updateScore = updateScoreAction();
   context.registerAction(updateScore.name, updateScore.query, updateScore.execute);
 
-  const createPlayerSections = createPlayerSectionsAction();
-  context.registerAction(createPlayerSections.name, createPlayerSections.query, createPlayerSections.execute);
 
   console.log("Actions registered.");
 }

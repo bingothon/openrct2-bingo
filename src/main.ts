@@ -20,11 +20,13 @@ import {
 } from './shortkeys';
 import { registerDebugShortkeys } from './debug/shortkeys';
 import { config } from './config';
-import { restart, subscribeIfStarted } from './subscriptions/server';
+import { subscribeIfStarted } from './subscriptions/server';
 import { initializeBingoSystem } from './bingo/integration';
+import { registerChatCommands } from './commands/chatCommands';
 
 export function main(): void {
     registerActions();
+    registerChatCommands();
     network.defaultGroup = 3;
 
     // Shortkeys are registered below per mode

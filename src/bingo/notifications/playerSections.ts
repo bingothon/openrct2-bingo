@@ -145,7 +145,7 @@ function unownPlayerSections(mapSize: any, scale: number, callback: () => void) 
 /**
  * Places a corner marker for a player section
  */
-function placePlayerCornerMarker(x: number, y: number, z: number, objectId: number, color: number, scale: number) {
+function placePlayerCornerMarker(x: number, y: number, z: number, objectId: number, color: number, scale: number, callback?: () => void) {
     // Create a 3x3 colored square as a corner marker
     for (let dx = -1; dx <= 1; dx++) {
         for (let dy = -1; dy <= 1; dy++) {
@@ -156,6 +156,9 @@ function placePlayerCornerMarker(x: number, y: number, z: number, objectId: numb
             placeSceneryObject(markerX, markerY, markerZ, objectId, color);
         }
     }
+    
+    // Call the callback when done
+    if (callback) callback();
 }
 
 /**
@@ -216,14 +219,14 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
     // Only attempt to remove if there is actually a matching element
     const tryPlace = () => {
         const sceneryArgs = {
-            x,
-            y,
-            z,
-            direction: 0,
-            object: objectId,
-            quadrant: 0,
-            primaryColour: color,
-            secondaryColour: 0,
+                x,
+                y,
+                z,
+                direction: 0,
+                object: objectId,
+                quadrant: 0,
+                primaryColour: color,
+                secondaryColour: 0,
             tertiaryColour: 0,
         };
 
@@ -323,11 +326,11 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
  * Creates 4 player sections on the ground by dividing the map into quarters
  * Uses base tiles to create borders between sections
  */
-export function createPlayerSections(): boolean {
+export function createPlayerSections(callback: () => void): void {
     console.log("Creating 4 player sections on the ground...");
     
     try {
-        const mapSize = { x: 128, y: 128 };
+        const mapSize = { x: map.size.x, y: map.size.y };
         
         // Load the base tile object
         const identifier = MAP_DIVISION_OBJECT;
@@ -335,7 +338,8 @@ export function createPlayerSections(): boolean {
         
         if (!loadedObject) {
             console.log("Failed to load base tile object:", identifier);
-            return false;
+            callback();
+            return;
         }
         console.log("Base tile object loaded successfully, index:", loadedObject.index);
         
@@ -350,16 +354,16 @@ export function createPlayerSections(): boolean {
         console.log("Map center:", { centerX, centerY });
         
         // Create borders to divide the map into 4 sections
-        // Vertical line (divides left and right) - using 1-based indexing
-        console.log(`Creating vertical border at x=${centerX} (tile ${centerX/32}) from y=1 to y=${mapSize.y}`);
-        for (let y = 1; y <= mapSize.y; y++) {
+        // Vertical line (divides left and right) - using 0-based indexing
+        console.log(`Creating vertical border at x=${centerX} (tile ${centerX/32}) from y=0 to y=${mapSize.y-1}`);
+        for (let y = 0; y < mapSize.y; y++) {
             const borderX = centerX;
             const borderY = y * scale;
             const borderZ = baseZ;
             
-            // Special debug logging for tile (64, 128)
-            if (borderX / 32 === 64 && y === 128) {
-                console.log(`🔍 DEBUG: Attempting to place border at tile (64, 128)`);
+            // Special debug logging for tile (64, 127) - center intersection
+            if (borderX / 32 === 64 && y === 63) {
+                console.log(`🔍 DEBUG: Attempting to place border at tile (64, 63)`);
                 console.log(`   World coords: (${borderX}, ${borderY})`);
                 console.log(`   Object ID: ${objectId}`);
                 console.log(`   Color: 0 (black)`);
@@ -369,16 +373,16 @@ export function createPlayerSections(): boolean {
             placeSceneryObject(borderX, borderY, borderZ, objectId, 0); // Black border
         }
         
-        // Horizontal line (divides top and bottom) - using 1-based indexing
-        console.log(`Creating horizontal border at y=${centerY} (tile ${centerY/32}) from x=1 to x=${mapSize.x}`);
-        for (let x = 1; x <= mapSize.x; x++) {
+        // Horizontal line (divides top and bottom) - using 0-based indexing
+        console.log(`Creating horizontal border at y=${centerY} (tile ${centerY/32}) from x=0 to x=${mapSize.x-1}`);
+        for (let x = 0; x < mapSize.x; x++) {
             const borderX = x * scale;
             const borderY = centerY;
             const borderZ = baseZ;
             
-            // Special debug logging for tile (64, 128)
-            if (x === 64 && borderY / 32 === 64) {
-                console.log(`🔍 DEBUG: Attempting to place border at tile (64, 64) - center intersection`);
+            // Special debug logging for tile (63, 63) - center intersection
+            if (x === 63 && borderY / 32 === 63) {
+                console.log(`🔍 DEBUG: Attempting to place border at tile (63, 63) - center intersection`);
                 console.log(`   World coords: (${borderX}, ${borderY})`);
                 console.log(`   Object ID: ${objectId}`);
                 console.log(`   Color: 0 (black)`);
@@ -396,41 +400,42 @@ export function createPlayerSections(): boolean {
             // Add corner markers for each player section
             const cornerOffset = 5; // 5 tiles from the corner
             
-            // Player 1: Top-left corner
+            console.log("Placing Player 1 corner marker (top-left)...");
             const player1X = cornerOffset * scale;
             const player1Y = cornerOffset * scale;
-            placePlayerCornerMarker(player1X, player1Y, baseZ, objectId, config.playerColors.player1, scale);
-            
-            // Player 2: Top-right corner
-            const player2X = (mapSize.x - cornerOffset) * scale;
-            const player2Y = cornerOffset * scale;
-            placePlayerCornerMarker(player2X, player2Y, baseZ, objectId, config.playerColors.player2, scale);
-            
-            // Player 3: Bottom-left corner
-            const player3X = cornerOffset * scale;
-            const player3Y = (mapSize.y - cornerOffset) * scale;
-            placePlayerCornerMarker(player3X, player3Y, baseZ, objectId, config.playerColors.player3, scale);
-            
-            // Player 4: Bottom-right corner
-            const player4X = (mapSize.x - cornerOffset) * scale;
-            const player4Y = (mapSize.y - cornerOffset) * scale;
-            placePlayerCornerMarker(player4X, player4Y, baseZ, objectId, config.playerColors.player4, scale);
-            
-            console.log("Colored markers placed, now unowning land...");
-            
-            // Unown the land along the dividing lines first
-            unownDividingLines(mapSize, scale, () => {
-                // Then unown the land in each player section
-                unownPlayerSections(mapSize, scale, () => {
-                    // Create entrances for each player section (except RED) - still in debug mode
-                    createPlayerEntrancesAndFootpaths(mapSize, scale, () => {
-                        // Create guest spawners for each player section - still in debug mode
-                        createGuestSpawners(mapSize, scale, () => {
-                            // Disable debug mode after everything is done
-                            console.log("Disabling debug mode...");
-                            debugMode(0, () => {
-                                console.log("Debug mode disabled successfully");
-                                console.log("Player sections, entrances, and guest spawners created successfully!");
+            placePlayerCornerMarker(player1X, player1Y, baseZ, objectId, config.playerColors.player1, scale, () => {
+                console.log("Placing Player 2 corner marker (top-right)...");
+                const player2X = (mapSize.x - cornerOffset) * scale;
+                const player2Y = cornerOffset * scale;
+                placePlayerCornerMarker(player2X, player2Y, baseZ, objectId, config.playerColors.player2, scale, () => {
+                    console.log("Placing Player 3 corner marker (bottom-left)...");
+                    const player3X = cornerOffset * scale;
+                    const player3Y = (mapSize.y - cornerOffset) * scale;
+                    placePlayerCornerMarker(player3X, player3Y, baseZ, objectId, config.playerColors.player3, scale, () => {
+                        console.log("Placing Player 4 corner marker (bottom-right)...");
+                        const player4X = (mapSize.x - cornerOffset) * scale;
+                        const player4Y = (mapSize.y - cornerOffset) * scale;
+                        placePlayerCornerMarker(player4X, player4Y, baseZ, objectId, config.playerColors.player4, scale, () => {
+                            console.log("Colored markers placed, now unowning land...");
+                            
+                            // Unown the land along the dividing lines first
+                            unownDividingLines(mapSize, scale, () => {
+                                // Then unown the land in each player section
+                                unownPlayerSections(mapSize, scale, () => {
+                                    // Create entrances for each player section (except RED) - still in debug mode
+                                    createPlayerEntrancesAndFootpaths(mapSize, scale, () => {
+                                        // Create guest spawners for each player section - still in debug mode
+                                        createGuestSpawners(mapSize, scale, () => {
+                                            // Disable debug mode after everything is done
+                                            console.log("Disabling debug mode...");
+                                            debugMode(0, () => {
+                                                console.log("Debug mode disabled successfully");
+                                                console.log("Player sections, entrances, and guest spawners created successfully!");
+                                                callback();
+                                            });
+                                        });
+                                    });
+                                });
                             });
                         });
                     });
@@ -438,11 +443,9 @@ export function createPlayerSections(): boolean {
             });
         });
         
-        return true;
-        
     } catch (error) {
         console.log("Error creating player sections:", error);
-        return false;
+        callback();
     }
 }
 

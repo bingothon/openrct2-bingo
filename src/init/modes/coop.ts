@@ -1,7 +1,12 @@
 import { addRandomTrees, debugMode, setFootPaths } from "src/utils";
+import { GameManager } from "../../managers/GameManager";
 
 export function initializeCoopGame(): void {
     console.log("Initializing COOP game mode...");
+    
+    // Step 0: Initialize GameManager (this disables building restrictions during initialization)
+    const gameManager = GameManager.getInstance();
+    gameManager.initializeGame();
     
     // Step 1: Enable debug mode
     debugMode(1, () => {
@@ -25,6 +30,8 @@ export function initializeCoopGame(): void {
                                         debugMode(0, () => {
                                             // Step 11: Set foot paths
                                             setFootPaths(() => {
+                                                // Step 12: Game initialization complete
+                                                gameManager.setInitializing(false);
                                                 console.log('COOP game initialized successfully!');
                                             });
                                         });

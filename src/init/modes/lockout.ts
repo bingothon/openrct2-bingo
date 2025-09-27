@@ -1,10 +1,16 @@
 import { clearAllTiles, debugMode, setPVPFootPaths } from "src/utils";
 import { unlockEntireMap } from "./shared";
+import { GameManager } from "../../managers/GameManager";
+import { createPlayerSections } from "src/bingo/notifications/playerSections";
 
 
 
 export function initializeLockoutGame(): void {
     console.log("Initializing PVP/LOCKOUT game mode...");
+    
+    // Step 0: Initialize GameManager (this disables building restrictions during initialization)
+    const gameManager = GameManager.getInstance();
+    gameManager.initializeGame();
     
     // Step 1: Enable debug mode
     debugMode(1, () => {
@@ -34,7 +40,9 @@ export function initializeLockoutGame(): void {
                                                     initializePlayerSections(() => {
                                                         // Step 14: Initialize scoreboard with 0 0 / 0 0
                                                         initializeScoreboard(() => {
-                                                            console.log('PVP/LOCKOUT game initialized successfully!');
+                                                            // Step 15: Game initialization complete
+                                                            gameManager.setInitializing(false);
+                                                            console.log('LOCKOUT game initialized successfully!');
                                                         });
                                                     });
                                                 });
@@ -57,13 +65,9 @@ export function initializeLockoutGame(): void {
 function initializePlayerSections(callback: () => void): void {
     console.log("Initializing PVP player sections...");
     
-    // Create the player sections using the game action
-    context.executeAction("createPlayerSections", { args: {} }, (result) => {
-        if (result.error) {
-            console.log("Failed to create player sections:", result.errorMessage);
-        } else {
-            console.log("Player sections created successfully - map divided into 4 quarters");
-        }
+    // Create the player sections with callback
+    createPlayerSections(() => {
+        console.log("Player sections created successfully - map divided into 4 quarters");
         callback();
     });
 }
@@ -80,8 +84,9 @@ function initializeScoreboard(callback: () => void): void {
             console.log("Failed to create scoreboard:", result.errorMessage);
         } else {
             console.log("Scoreboard created with initial scores: 0 0 / 0 0");
+            callback();
         }
-        callback();
+        
     });
 }
 

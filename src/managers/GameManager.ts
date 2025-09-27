@@ -9,6 +9,7 @@ import { GroundDivisionManager, PlayerRegionKey } from "./GroundDivisionManager"
 import { PlayerManager, RegisteredPlayer } from "./PlayerManager";
 import { GoalManager } from "./GoalManager";
 import { subscribeToBuildingRestrictions, unsubscribeFromBuildingRestrictions } from "../subscriptions/game/buildingRestrictions";
+import { config } from "../config";
 
 export class GameManager {
     private static instance: GameManager;
@@ -16,6 +17,7 @@ export class GameManager {
     private playerManager: PlayerManager;
     private goalManager: GoalManager;
     private buildingRestrictionsActive: boolean = false;
+    private isInitializing: boolean = false;
 
     private constructor() {
         this.groundDivision = new GroundDivisionManager();
@@ -34,48 +36,20 @@ export class GameManager {
     }
 
     /**
-     * Initialize the game with default players and regions
+     * Initialize the game (no automatic player registration)
      */
     public initializeGame(): void {
-        console.log("[GameManager] Initializing game with default players...");
+        console.log("[GameManager] Initializing game...");
         
-        // Register default players with their assigned regions
-        this.registerDefaultPlayers();
+        // Set initialization state
+        this.isInitializing = true;
         
-        // Enable building restrictions for PVP and Lockout modes
-        this.enableBuildingRestrictions();
+        // Building restrictions will be handled by setGameMode() after initialization
         
         console.log("[GameManager] Game initialized successfully");
+        console.log("[GameManager] Players must register manually using /register COLOR command");
     }
 
-    /**
-     * Register default players for the 4 regions
-     */
-    private registerDefaultPlayers(): void {
-        console.log("[GameManager] Starting to register default players...");
-        
-        const defaultPlayers = [
-            { id: "1", name: "Player 1", color: "red", region: "top-left" as PlayerRegionKey },
-            { id: "2", name: "Player 2", color: "green", region: "top-right" as PlayerRegionKey },
-            { id: "3", name: "Player 3", color: "blue", region: "bottom-left" as PlayerRegionKey },
-            { id: "4", name: "Player 4", color: "yellow", region: "bottom-right" as PlayerRegionKey }
-        ];
-
-        console.log(`[GameManager] About to register ${defaultPlayers.length} players...`);
-        
-        defaultPlayers.forEach(player => {
-            console.log(`[GameManager] Registering player: ${player.name} (${player.color}) in ${player.region} region`);
-            this.playerManager.registerPlayer(player.id, player.name, player.color, player.region);
-            console.log(`[GameManager] Successfully registered ${player.name} (${player.color}) in ${player.region} region`);
-        });
-        
-        // Verify registration
-        const registeredPlayers = this.playerManager.getAllPlayers();
-        console.log(`[GameManager] Verification: ${registeredPlayers.length} players registered`);
-        registeredPlayers.forEach(player => {
-            console.log(`[GameManager] Verified: ${player.name} (${player.color}) in ${player.region}`);
-        });
-    }
 
     /**
      * Register a player with a specific region
@@ -139,7 +113,7 @@ export class GameManager {
     }
 
     /**
-     * Disable building restrictions (for Coop mode)
+     * Disable building restrictions (for Coop mode or during initialization)
      */
     public disableBuildingRestrictions(): void {
         if (this.buildingRestrictionsActive) {
@@ -149,18 +123,67 @@ export class GameManager {
         }
     }
 
+
+    /**
+     * Check if the game is currently initializing
+     */
+    public isGameInitializing(): boolean {
+        return this.isInitializing;
+    }
+
+    /**
+     * Force set the initializing state (for debugging)
+     */
+    public setInitializing(initializing: boolean): void {
+        this.isInitializing = initializing;
+        console.log(`[GameManager] Force set initializing to: ${initializing}`);
+        if (initializing) {
+            this.disableBuildingRestrictions();
+        } else {
+            this.enableBuildingRestrictions();
+        }
+    }
+
+
+    /**
+     * Get the current game mode (helper method)
+     */
+    public getCurrentGameMode(): "coop" | "pvp" | "lockout" {
+        // This is a simple way to get the current mode - you might want to store this in the GameManager
+        // For now, we'll use the config
+        return config.gameMode;
+    }
+
     /**
      * Set game mode and configure restrictions accordingly
      */
     public setGameMode(mode: "coop" | "pvp" | "lockout"): void {
-        console.log(`[GameManager] Setting game mode to: ${mode}`);
+        console.log(`[GameManager] setGameMode called with mode: ${mode}, isInitializing: ${this.isInitializing}, buildingRestrictionsActive: ${this.buildingRestrictionsActive}`);
+        
+        // Don't override restrictions if we're still initializing
+        if (this.isInitializing) {
+            console.log(`[GameManager] Skipping restriction changes during initialization`);
+            return;
+        }
+        
+        // Check if restrictions are already correctly configured for this mode
+        const shouldHaveRestrictions = (mode === "pvp" || mode === "lockout");
+        const hasCorrectRestrictions = (shouldHaveRestrictions && this.buildingRestrictionsActive) || 
+                                      (!shouldHaveRestrictions && !this.buildingRestrictionsActive);
+        
+        if (hasCorrectRestrictions) {
+            console.log(`[GameManager] Building restrictions already correctly configured for ${mode.toUpperCase()} mode`);
+            return;
+        }
         
         switch (mode) {
             case "coop":
+                console.log(`[GameManager] Disabling building restrictions for COOP mode`);
                 this.disableBuildingRestrictions();
                 break;
             case "pvp":
             case "lockout":
+                console.log(`[GameManager] Enabling building restrictions for ${mode.toUpperCase()} mode`);
                 this.enableBuildingRestrictions();
                 break;
         }
@@ -201,7 +224,7 @@ export class GameManager {
         
         info += "Players:\n";
         players.forEach(player => {
-            info += `  - ${player.name} (${player.color}): ${player.region}\n`;
+            info += `  - ${player.name} (${player.colour}): ${player.region}\n`;
         });
         
         info += "\nRegions:\n";

@@ -30,29 +30,9 @@ export class BingoManager {
     this.bingo.setGameMode(gameMode);
     this.bingo.setBoard(board);
     
-    // Register default players for testing
-    if (config.debug) {
-      this.registerDefaultPlayers();
-    }
+    // No automatic player registration - players must use /register COLOR command
   }
 
-  /**
-   * Register default players for debugging
-   */
-  private registerDefaultPlayers(): void {
-    const defaultPlayers = [
-      { id: "player1", name: "Player 1", color: "red" },
-      { id: "player2", name: "Player 2", color: "green" },
-      { id: "player3", name: "Player 3", color: "blue" },
-      { id: "player4", name: "Player 4", color: "yellow" }
-    ];
-
-    defaultPlayers.forEach(player => {
-      this.bingo.registerPlayer(player.id, player.name, player.color);
-    });
-
-    logger.info("Registered default players for debugging");
-  }
 
   /**
    * Complete a goal with specific colors (for debug shortkeys)

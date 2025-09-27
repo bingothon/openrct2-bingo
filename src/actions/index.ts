@@ -19,7 +19,6 @@ export { setStorageAction } from "./all/setStorageAction";
 export { createScoreboardAction } from "./all/createScoreboardAction";
 export { clearScoreboardAction } from "./all/clearScoreboardAction";
 export { updateScoreAction } from "./all/updateScoreAction";
-export { createPlayerSectionsAction } from "./all/createPlayerSectionsAction";
 
 
 
