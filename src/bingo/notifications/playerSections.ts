@@ -9,7 +9,6 @@ const MAP_DIVISION_OBJECT = 'rct2.scenery_small.brbase'; // Base tile for ground
  * Unowns the land along the dividing lines (center lines) where borders are placed
  */
 function unownDividingLines(mapSize: any, scale: number, callback: () => void) {
-    console.log("Unowning land along dividing lines...");
     
     const centerX = (mapSize.x / 2) * scale;
     const centerY = (mapSize.y / 2) * scale;
@@ -28,13 +27,10 @@ function unownDividingLines(mapSize: any, scale: number, callback: () => void) {
     }, (result) => {
         if (result.error) {
             console.log(`Failed to unown vertical dividing line: ${result.errorMessage}`);
-        } else {
-            console.log("Successfully unowned vertical dividing line");
         }
         
         completed++;
         if (completed === totalOperations) {
-            console.log("All dividing lines unowned successfully!");
             callback();
         }
     });
@@ -50,13 +46,10 @@ function unownDividingLines(mapSize: any, scale: number, callback: () => void) {
     }, (result) => {
         if (result.error) {
             console.log(`Failed to unown horizontal dividing line: ${result.errorMessage}`);
-        } else {
-            console.log("Successfully unowned horizontal dividing line");
         }
         
         completed++;
         if (completed === totalOperations) {
-            console.log("All dividing lines unowned successfully!");
             callback();
         }
     });
@@ -66,7 +59,6 @@ function unownDividingLines(mapSize: any, scale: number, callback: () => void) {
  * Unowns the land in each player section to prevent building
  */
 function unownPlayerSections(mapSize: any, scale: number, callback: () => void) {
-    console.log("Unowning land in player sections...");
     
     const cornerOffset = 5; // 5 tiles from the corner
     // const sectionSize = 10; // 10x10 tile area around each corner marker
@@ -116,7 +108,6 @@ function unownPlayerSections(mapSize: any, scale: number, callback: () => void) 
         const x2 = section.x2 * scale;
         const y2 = section.y2 * scale;
         
-        console.log(`Unowning land for ${section.name}: (${x1}, ${y1}) to (${x2}, ${y2})`);
         
         // Unown the land using landsetrights action
         context.executeAction("landsetrights", {
@@ -129,13 +120,10 @@ function unownPlayerSections(mapSize: any, scale: number, callback: () => void) 
         }, (result) => {
             if (result.error) {
                 console.log(`Failed to unown land for ${section.name}: ${result.errorMessage}`);
-            } else {
-                console.log(`Successfully unowned land for ${section.name}`);
             }
             
             completed++;
             if (completed === sections.length) {
-                console.log("All player sections unowned successfully!");
                 callback();
             }
         });
@@ -169,32 +157,11 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
     const tileX = Math.floor(x / 32);
     const tileY = Math.floor(y / 32);
 
-    // Special debug logging for tile (64, 128)
-    if (tileX === 64 && tileY === 128) {
-        console.log(`🔍 DEBUG: placeSceneryObject called for tile (64, 128)`);
-        console.log(`   Input coords: (${x}, ${y}, ${z})`);
-        console.log(`   Tile coords: (${tileX}, ${tileY})`);
-        console.log(`   Object ID: ${objectId}`);
-        console.log(`   Color: ${color}`);
-    }
-
     const inBounds = tileX >= 0 && tileX < map.size.x && tileY >= 0 && tileY < map.size.y;
     let hasMatchingScenery = false;
 
     if (inBounds) {
         const tile = map.getTile(tileX, tileY);
-        
-        // Special debug logging for tile (64, 128)
-        if (tileX === 64 && tileY === 128) {
-            console.log(`🔍 DEBUG: Tile (64, 128) has ${tile.elements.length} elements`);
-            tile.elements.forEach((element, index) => {
-                console.log(`   Element ${index}: ${element.type} at z=${element.baseZ}`);
-                if (element.type === 'small_scenery') {
-                    const scenery = element as SmallSceneryElement;
-                    console.log(`     - Object: ${scenery.object}, Quadrant: ${scenery.quadrant}`);
-                }
-            });
-        }
         
         for (const element of tile.elements) {
             if (
@@ -203,16 +170,8 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
                 (element as SmallSceneryElement).object === objectId
             ) {
                 hasMatchingScenery = true;
-                if (tileX === 64 && tileY === 128) {
-                    console.log(`🔍 DEBUG: Found matching scenery at tile (64, 128)`);
-                }
                 break;
             }
-        }
-    } else {
-        if (tileX === 64 && tileY === 128) {
-            console.log(`🔍 DEBUG: Tile (64, 128) is out of bounds!`);
-            console.log(`   Map size: ${map.size.x} x ${map.size.y}`);
         }
     }
 
@@ -231,14 +190,6 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
         };
 
         context.queryAction('smallsceneryplace', sceneryArgs, (queryResult) => {
-            // Special debug logging for tile (64, 128)
-            if (tileX === 64 && tileY === 128) {
-                console.log(`🔍 DEBUG: Query result for tile (64, 128):`);
-                console.log(`   Error: ${queryResult.error}`);
-                console.log(`   Error Message: ${queryResult.errorMessage}`);
-                console.log(`   Cost: ${queryResult.cost}`);
-            }
-            
             if (queryResult.error) {
                 // Suppress "Land not owned by park!" errors to reduce log spam
                 if (
@@ -266,14 +217,6 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
                             return;
                         }
                         context.executeAction('smallsceneryplace', sceneryArgs, (placeResult) => {
-                            // Special debug logging for tile (64, 128)
-                            if (tileX === 64 && tileY === 128) {
-                                console.log(`🔍 DEBUG: Final placement result for tile (64, 128):`);
-                                console.log(`   Error: ${placeResult.error}`);
-                                console.log(`   Error Message: ${placeResult.errorMessage}`);
-                                console.log(`   Success: ${!placeResult.error}`);
-                            }
-                            
                             if (placeResult.error) {
                                 console.log(
                                     `Failed to place scenery at (${x}, ${y}), z: ${z} - ${placeResult.errorMessage}`,
@@ -284,14 +227,6 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
                 );
             } else {
                 context.executeAction('smallsceneryplace', sceneryArgs, (placeResult) => {
-                    // Special debug logging for tile (64, 128)
-                    if (tileX === 64 && tileY === 128) {
-                        console.log(`🔍 DEBUG: No-cost placement result for tile (64, 128):`);
-                        console.log(`   Error: ${placeResult.error}`);
-                        console.log(`   Error Message: ${placeResult.errorMessage}`);
-                        console.log(`   Success: ${!placeResult.error}`);
-                    }
-                    
                     if (placeResult.error) {
                         console.log(
                             `Failed to place scenery at (${x}, ${y}), z: ${z} - ${placeResult.errorMessage}`,
@@ -303,21 +238,12 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
     };
 
     if (hasMatchingScenery) {
-        // Special debug logging for tile (64, 128)
-        if (tileX === 64 && tileY === 128) {
-            console.log(`🔍 DEBUG: Removing existing scenery at tile (64, 128) before placing new one`);
-        }
-        
         const removeAction = { x, y, z, object: objectId, quadrant: 0 };
         context.executeAction('smallsceneryremove', removeAction, () => {
             // Ignore remove errors; we verified presence already to avoid spam logs
             tryPlace();
         });
     } else {
-        // Special debug logging for tile (64, 128)
-        if (tileX === 64 && tileY === 128) {
-            console.log(`🔍 DEBUG: No existing scenery found at tile (64, 128), proceeding with placement`);
-        }
         tryPlace();
     }
 }
@@ -341,7 +267,6 @@ export function createPlayerSections(callback: () => void): void {
             callback();
             return;
         }
-        console.log("Base tile object loaded successfully, index:", loadedObject.index);
         
         const objectId = loadedObject.index;
         const scale = 32;
@@ -351,72 +276,48 @@ export function createPlayerSections(callback: () => void): void {
         const centerX = (mapSize.x / 2) * scale;
         const centerY = (mapSize.y / 2) * scale;
         
-        console.log("Map center:", { centerX, centerY });
         
         // Create borders to divide the map into 4 sections
         // Vertical line (divides left and right) - using 0-based indexing
-        console.log(`Creating vertical border at x=${centerX} (tile ${centerX/32}) from y=0 to y=${mapSize.y-1}`);
         for (let y = 0; y < mapSize.y; y++) {
             const borderX = centerX;
             const borderY = y * scale;
             const borderZ = baseZ;
             
-            // Special debug logging for tile (64, 127) - center intersection
-            if (borderX / 32 === 64 && y === 63) {
-                console.log(`🔍 DEBUG: Attempting to place border at tile (64, 63)`);
-                console.log(`   World coords: (${borderX}, ${borderY})`);
-                console.log(`   Object ID: ${objectId}`);
-                console.log(`   Color: 0 (black)`);
-            }
             
             // Place base tile for vertical border
             placeSceneryObject(borderX, borderY, borderZ, objectId, 0); // Black border
         }
         
         // Horizontal line (divides top and bottom) - using 0-based indexing
-        console.log(`Creating horizontal border at y=${centerY} (tile ${centerY/32}) from x=0 to x=${mapSize.x-1}`);
         for (let x = 0; x < mapSize.x; x++) {
             const borderX = x * scale;
             const borderY = centerY;
             const borderZ = baseZ;
             
-            // Special debug logging for tile (63, 63) - center intersection
-            if (x === 63 && borderY / 32 === 63) {
-                console.log(`🔍 DEBUG: Attempting to place border at tile (63, 63) - center intersection`);
-                console.log(`   World coords: (${borderX}, ${borderY})`);
-                console.log(`   Object ID: ${objectId}`);
-                console.log(`   Color: 0 (black)`);
-            }
             
             // Place base tile for horizontal border
             placeSceneryObject(borderX, borderY, borderZ, objectId, 0); // Black border
         }
         
         // Enable debug mode to allow land ownership changes
-        console.log("Enabling debug mode for land ownership changes...");
         debugMode(1, () => {
-            console.log("Debug mode enabled successfully");
             
             // Add corner markers for each player section
             const cornerOffset = 5; // 5 tiles from the corner
             
-            console.log("Placing Player 1 corner marker (top-left)...");
             const player1X = cornerOffset * scale;
             const player1Y = cornerOffset * scale;
             placePlayerCornerMarker(player1X, player1Y, baseZ, objectId, config.playerColors.player1, scale, () => {
-                console.log("Placing Player 2 corner marker (top-right)...");
                 const player2X = (mapSize.x - cornerOffset) * scale;
                 const player2Y = cornerOffset * scale;
                 placePlayerCornerMarker(player2X, player2Y, baseZ, objectId, config.playerColors.player2, scale, () => {
-                    console.log("Placing Player 3 corner marker (bottom-left)...");
                     const player3X = cornerOffset * scale;
                     const player3Y = (mapSize.y - cornerOffset) * scale;
                     placePlayerCornerMarker(player3X, player3Y, baseZ, objectId, config.playerColors.player3, scale, () => {
-                        console.log("Placing Player 4 corner marker (bottom-right)...");
                         const player4X = (mapSize.x - cornerOffset) * scale;
                         const player4Y = (mapSize.y - cornerOffset) * scale;
                         placePlayerCornerMarker(player4X, player4Y, baseZ, objectId, config.playerColors.player4, scale, () => {
-                            console.log("Colored markers placed, now unowning land...");
                             
                             // Unown the land along the dividing lines first
                             unownDividingLines(mapSize, scale, () => {
@@ -427,10 +328,8 @@ export function createPlayerSections(callback: () => void): void {
                                         // Create guest spawners for each player section - still in debug mode
                                         createGuestSpawners(mapSize, scale, () => {
                                             // Disable debug mode after everything is done
-                                            console.log("Disabling debug mode...");
                                             debugMode(0, () => {
-                                                console.log("Debug mode disabled successfully");
-                                                console.log("Player sections, entrances, and guest spawners created successfully!");
+                                                console.log("Player sections created successfully!");
                                                 callback();
                                             });
                                         });
@@ -453,13 +352,10 @@ export function createPlayerSections(callback: () => void): void {
 /**
  * Creates park entrances for each player section (except RED)
  */
-function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback: () => void) {
-    console.log("=== ENTRANCE CREATION STARTED ===");
+function createPlayerEntrancesAndFootpaths(_mapSize: any, scale: number, callback: () => void) {
     console.log("Creating park entrances for player sections...");
-    console.log("Function called with mapSize:", mapSize, "scale:", scale);
     
     // Load the park entrance object using the traditional entrance
-    console.log("Loading traditional park entrance object...");
     const entranceObject = objectManager.load("rct2.park_entrance.pkent1");
     if (!entranceObject) {
         console.log("Failed to load traditional park entrance object");
@@ -468,7 +364,6 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
     }
     
     // Load footpath surface object for the entrance
-    console.log("Loading ashphalt footpath surface object...");
     const footpathObject = objectManager.load("rct2.footpath_surface.ash");
     if (!footpathObject) {
         console.log("Failed to load tarmac footpath surface object");
@@ -476,9 +371,6 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
         return;
     }
     
-    console.log(`Loaded entrance object at index: ${entranceObject.index}`);
-    console.log(`Loaded footpath object at index: ${footpathObject.index}`);
-    console.log("Objects loaded successfully, proceeding with entrance creation...");
     
     // Static tiles to unown
     const tilesToUnown = [
@@ -543,12 +435,10 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
         }
     ];
     
-    console.log("Unowning land tiles...");
     let unownCompleted = 0;
     const totalTiles = tilesToUnown.length;
     
     if (totalTiles === 0) {
-        console.log("No tiles to unown, proceeding directly to entrance and footpath placement...");
         placeEntrancesAndFootpaths();
     } else {
         tilesToUnown.forEach((tile) => {
@@ -563,12 +453,9 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
                 unownCompleted++;
                 if (unownResult.error) {
                     console.log(`Failed to unown tile (${tile.x}, ${tile.y}): ${unownResult.errorMessage}`);
-                } else {
-                    console.log(`Successfully unowned tile (${tile.x}, ${tile.y})`);
                 }
                 
                 if (unownCompleted === totalTiles) {
-                    console.log("All tiles unowned, proceeding to entrance and footpath placement...");
                     placeEntrancesAndFootpaths();
                 }
             });
@@ -576,7 +463,6 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
     }
     
     function placeEntrancesAndFootpaths() {
-        console.log("Placing entrances FIRST...");
         let entranceCompleted = 0;
         const totalEntrances = entrances.length;
         
@@ -584,12 +470,6 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
             // Place entrance at the center tile (middle of the 3-tile line)
             const centerTile = entrance.tiles[1]; // Middle tile
             
-            console.log(`🔍 About to place ${entrance.name} at (${centerTile.x}, ${centerTile.y})`);
-            console.log(`🔍 All tiles for ${entrance.name}:`, entrance.tiles);
-            console.log(`🔍 Center tile (index 1):`, centerTile);
-            console.log(`🔍 World coordinates: (${centerTile.x * scale}, ${centerTile.y * scale})`);
-            console.log(`🔍 Scale: ${scale}`);
-            // console.log(`🔍 Sandbox mode should be enabled: ${context.cheats.sandboxMode}`);
             
             context.executeAction("parkentranceplace", {
                 x: centerTile.x * scale,
@@ -602,16 +482,12 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
             }, (entranceResult) => {
                 entranceCompleted++;
                 if (entranceResult.error) {
-                    console.log(`❌ FAILED to place ${entrance.name}: ${entranceResult.errorMessage}`);
+                    console.log(`Failed to place ${entrance.name}: ${entranceResult.errorMessage}`);
                 } else {
-                    console.log(`✅ Successfully placed ${entrance.name}`);
-                    console.log(`🔍 Entrance placement result:`, entranceResult);
-                    console.log(`🔍 Expected coordinates: (${centerTile.x}, ${centerTile.y})`);
-                    console.log(`🔍 World coordinates sent: (${centerTile.x * scale}, ${centerTile.y * scale})`);
+                    console.log(`Successfully placed ${entrance.name}`);
                 }
                 
                 if (entranceCompleted === totalEntrances) {
-                    console.log("All entrances placed, now placing footpaths...");
                     // Place footpaths AFTER entrances
                     let footpathCompleted = 0;
                     const totalFootpaths = footpathTiles.length;
@@ -630,13 +506,10 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
                         }, (footpathResult) => {
                             footpathCompleted++;
                             if (footpathResult.error) {
-                                console.log(`❌ FAILED to place footpath at (${tile.x}, ${tile.y}): ${footpathResult.errorMessage}`);
-                            } else {
-                                console.log(`✅ Successfully placed footpath at (${tile.x}, ${tile.y})`);
+                                console.log(`Failed to place footpath at (${tile.x}, ${tile.y}): ${footpathResult.errorMessage}`);
                             }
                             
                             if (footpathCompleted === totalFootpaths) {
-                                console.log("All footpaths placed successfully!");
                                 callback();
                             }
                         });
@@ -652,7 +525,6 @@ function createPlayerEntrancesAndFootpaths(mapSize: any, scale: number, callback
  * Creates guest spawners for each player section
  */
 function createGuestSpawners(_mapSize: any, scale: number, callback: () => void) {
-    console.log("=== GUEST SPAWNER CREATION STARTED ===");
     console.log("Creating guest spawners for player sections...");
     
     // Define spawner positions for each player section
@@ -680,12 +552,10 @@ function createGuestSpawners(_mapSize: any, scale: number, callback: () => void)
         }
     ];
     
-    console.log("Placing guest spawners...");
     let spawnerCompleted = 0;
     const totalSpawners = spawners.length;
     
     spawners.forEach((spawner) => {
-        console.log(`Placing ${spawner.name} at (${spawner.x}, ${spawner.y}, ${spawner.z})`);
         
         context.executeAction("peepspawnplace", {
             x: spawner.x * scale,
@@ -695,13 +565,10 @@ function createGuestSpawners(_mapSize: any, scale: number, callback: () => void)
         }, (spawnerResult) => {
             spawnerCompleted++;
             if (spawnerResult.error) {
-                console.log(`❌ FAILED to place ${spawner.name}: ${spawnerResult.errorMessage}`);
-            } else {
-                console.log(`✅ Successfully placed ${spawner.name}`);
+                console.log(`Failed to place ${spawner.name}: ${spawnerResult.errorMessage}`);
             }
             
             if (spawnerCompleted === totalSpawners) {
-                console.log("All guest spawners created successfully!");
                 callback();
             }
         });
