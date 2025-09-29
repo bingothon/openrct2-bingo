@@ -371,6 +371,8 @@ export function createScoreboard(): void {
                                     }
                                     return false;
                                 }
+                                
+                                return true;
                             },
                         );
                     },

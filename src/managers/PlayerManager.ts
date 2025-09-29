@@ -29,7 +29,7 @@ export class PlayerManager {
     public getAllPlayers(): RegisteredPlayer[] {
         const list: RegisteredPlayer[] = [];
         for (const id in this.players) list.push(this.players[id]);
-        console.log(`[PlayerManager] getAllPlayers() called. Found ${list.length} players. Player IDs: [${Object.keys(this.players).join(', ')}]`);
+        // Removed excessive logging - only log when debug is needed
         return list;
     }
 

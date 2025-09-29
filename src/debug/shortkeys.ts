@@ -1,5 +1,3 @@
-import { debugTile } from "./debug-tile-tool";
-import { footpathExtractor } from "./footpath-extractor";
 import { BingoManager } from "../bingo/BingoManager";
 import { GameManager } from "../managers/GameManager";
 
@@ -219,8 +217,28 @@ export function registerDebugShortkeys(): void {
     
     
     */
-    ui.registerShortcut({ id: "debug.showCurrentPlayer", text: "Debug: Show Current Player Assignment", bindings: ["CTRL+ALT+P"], callback: () => {
-      showCurrentPlayerAssignment();
+    ui.registerShortcut({ id: "debug.showCurrentPlayer", text: "Debug: Show Player States", bindings: ["CTRL+ALT+P"], callback: () => {
+      console.log("=== PLAYER STATES DEBUG ===");
+      const gameManager = GameManager.getInstance();
+      const playerStateManager = gameManager.getPlayerStateManager();
+      
+      if (!playerStateManager) {
+        console.log("❌ PlayerStateManager not available");
+        return;
+      }
+      
+      const allStates = playerStateManager.getAllPlayerStates();
+      console.log(`Found ${Object.keys(allStates).length} player states:`);
+      console.log("Player states object:", allStates);
+      
+      for (const playerId in allStates) {
+        const state = allStates[playerId];
+        console.log(`\n--- Player ${playerId} (${state.playerName}) ---`);
+        console.log(`Region: ${state.region}`);
+        console.log(`Guests: ${state.guests.count}`);
+        console.log(`Rides: ${state.rides.length}`);
+      }
+      console.log("=== END PLAYER STATES DEBUG ===");
     }});
     // ONLY KEEPING THE BUILDING RESTRICTIONS DEBUG SHORTCUTS
     ui.registerShortcut({ id: "debug.testBuildingRestrictions", text: "Debug: Test Building Restrictions", bindings: ["CTRL+ALT+B"], callback: () => {
@@ -532,6 +550,199 @@ export function registerDebugShortkeys(): void {
       
       console.log("=== END BUILDING RESTRICTIONS DEBUG ===");
     }
+    
+    // Player State Debug Shortcuts
+    ui.registerShortcut({ 
+      id: "debug.playerStates", 
+      text: "Show All Player States", 
+      bindings: ["CTRL+ALT+V"], 
+      callback: () => {
+        console.log("=== PLAYER STATES DEBUG ===");
+        const gameManager = GameManager.getInstance();
+        const playerStateManager = gameManager.getPlayerStateManager();
+        
+        if (!playerStateManager) {
+          console.log("❌ PlayerStateManager not available");
+          return;
+        }
+        
+        const allStates = playerStateManager.getAllPlayerStates();
+        console.log(`Found ${Object.keys(allStates).length} player states:`);
+        console.log("Player states object:", allStates);
+        
+        for (const playerId in allStates) {
+          const state = allStates[playerId];
+          console.log(`\n--- Player ${playerId} (${state.playerName}) ---`);
+          console.log(`Region: ${state.region}`);
+          console.log(`Guests: ${state.guests.count}`);
+          console.log(`Rides: ${state.rides.length}`);
+        }
+        console.log("=== END PLAYER STATES DEBUG ===");
+      }
+    });
+    
+    ui.registerShortcut({ 
+      id: "debug.scanRides", 
+      text: "Debug: Scan for Rides", 
+      bindings: ["CTRL+ALT+R"], 
+      callback: () => {
+        console.log("=== MANUAL RIDE SCAN ===");
+        const gameManager = GameManager.getInstance();
+        const playerStateManager = gameManager.getPlayerStateManager();
+        
+        if (!playerStateManager) {
+          console.log("❌ PlayerStateManager not available");
+          return;
+        }
+        
+        console.log("🔍 Manually scanning for rides...");
+        playerStateManager.scanForExistingRides();
+        console.log("=== END MANUAL RIDE SCAN ===");
+      }
+    });
+    
+    ui.registerShortcut({ 
+      id: "debug.playerRides", 
+      text: "Show Player Rides (Player 1)", 
+      bindings: ["CTRL+SHIFT+R"], 
+      callback: () => {
+        console.log("=== PLAYER RIDES DEBUG ===");
+        const gameManager = GameManager.getInstance();
+        const playerStateManager = gameManager.getPlayerStateManager();
+        
+        if (!playerStateManager) {
+          console.log("❌ PlayerStateManager not available");
+          return;
+        }
+        
+        const playerId = "player1"; // Default to player1
+        const rides = playerStateManager.getPlayerRides(playerId);
+        console.log(`Player ${playerId} has ${rides.length} rides:`);
+        
+        if (rides.length === 0) {
+          console.log("No rides found for this player");
+          return;
+        }
+        
+        rides.forEach((ride: any, index: number) => {
+          console.log(`\n--- Ride ${index + 1}: ${ride.name} ---`);
+          console.log(`ID: ${ride.id}`);
+          console.log(`Type: ${ride.type}`);
+          console.log(`Status: ${ride.status || 'unknown'}`);
+          console.log(`Classification: ${ride.classification || 'unknown'}`);
+          console.log(`Excitement: ${ride.excitement || 'N/A'}`);
+          console.log(`Intensity: ${ride.intensity || 'N/A'}`);
+          console.log(`Nausea: ${ride.nausea || 'N/A'}`);
+          console.log(`Total Profit: ${ride.totalProfit || 0}`);
+          console.log(`Total Customers: ${ride.totalCustomers || 0}`);
+          console.log(`Age: ${ride.age || 'N/A'} months`);
+          console.log(`Value: ${ride.value || 0}`);
+          console.log(`Running Cost: ${ride.runningCost || 0}`);
+          console.log(`Satisfaction: ${ride.satisfaction || 'N/A'}`);
+          console.log(`Downtime: ${ride.downtime || 'N/A'}%`);
+          console.log(`Ride Length: ${ride.rideLength || 'N/A'}m`);
+          console.log(`Max Speed: ${ride.maxSpeed || 'N/A'}`);
+          console.log(`Average Speed: ${ride.averageSpeed || 'N/A'}`);
+          console.log(`Ride Time: ${ride.rideTime || 'N/A'}`);
+          console.log(`Total Air Time: ${ride.totalAirTime || 'N/A'}`);
+        });
+        console.log("=== END PLAYER RIDES DEBUG ===");
+      }
+    });
+    
+    ui.registerShortcut({ 
+      id: "debug.rideProperties", 
+      text: "Show All Ride Properties (Player 1)", 
+      bindings: ["CTRL+SHIFT+PROP"], 
+      callback: () => {
+        console.log("=== RIDE PROPERTIES DEBUG ===");
+        const gameManager = GameManager.getInstance();
+        const playerStateManager = gameManager.getPlayerStateManager();
+        
+        if (!playerStateManager) {
+          console.log("❌ PlayerStateManager not available");
+          return;
+        }
+        
+        const playerId = "player1";
+        const rides = playerStateManager.getPlayerRides(playerId);
+        
+        if (rides.length === 0) {
+          console.log("No rides found for this player");
+          return;
+        }
+        
+        // Show all properties of the first ride
+        const firstRide = rides[0];
+        console.log(`All properties for ride: ${firstRide.name}`);
+        console.log("Properties:");
+        
+        for (const prop in firstRide) {
+          if (firstRide.hasOwnProperty(prop)) {
+            const value = firstRide[prop];
+            const valueType = typeof value;
+            let displayValue = value;
+            
+            if (valueType === 'object' && value !== null) {
+              displayValue = `[Object: ${Object.keys(value).length} properties]`;
+            } else if (valueType === 'function') {
+              displayValue = '[Function]';
+            } else if (valueType === 'undefined') {
+              displayValue = 'undefined';
+            }
+            
+            console.log(`  ${prop}: ${displayValue} (${valueType})`);
+          }
+        }
+        console.log("=== END RIDE PROPERTIES DEBUG ===");
+      }
+    });
+    
+    ui.registerShortcut({ 
+      id: "debug.playerStats", 
+      text: "Show Player Statistics", 
+      bindings: ["CTRL+SHIFT+S"], 
+      callback: () => {
+        console.log("=== PLAYER STATISTICS DEBUG ===");
+        const gameManager = GameManager.getInstance();
+        const playerStateManager = gameManager.getPlayerStateManager();
+        
+        if (!playerStateManager) {
+          console.log("❌ PlayerStateManager not available");
+          return;
+        }
+        
+        const allStates = playerStateManager.getAllPlayerStates();
+        
+        for (const playerId in allStates) {
+          const state = allStates[playerId];
+          console.log(`\n--- ${state.playerName} (${playerId}) ---`);
+          console.log(`Total Rides: ${playerStateManager.getPlayerRideCount(playerId)}`);
+          console.log(`Total Profit: ${playerStateManager.getPlayerTotalProfit(playerId)}`);
+          console.log(`Guest Count: ${state.guests.count}`);
+          
+          // Show ride type breakdown
+          const rideTypes: { [key: string]: number } = {};
+          state.rides.forEach((ride: any) => {
+            const type = ride.type || 'unknown';
+            rideTypes[type] = (rideTypes[type] || 0) + 1;
+          });
+          
+          console.log("Ride Types:");
+          for (const type in rideTypes) {
+            console.log(`  Type ${type}: ${rideTypes[type]} rides`);
+          }
+          
+          // Show excitement ratings
+          const excitementRatings = playerStateManager.getPlayerRideProperty(playerId, 'excitement');
+          if (excitementRatings.length > 0) {
+            const avgExcitement = excitementRatings.reduce((sum: number, rating: any) => sum + (rating || 0), 0) / excitementRatings.length;
+            console.log(`Average Excitement: ${(avgExcitement / 100).toFixed(2)}`);
+          }
+        }
+        console.log("=== END PLAYER STATISTICS DEBUG ===");
+      }
+    });
     
     
     

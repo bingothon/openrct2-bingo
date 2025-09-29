@@ -56,7 +56,7 @@ export function setPVPFootPaths(callback: () => void) {
                         if (result.error) {
                             console.log(`Failed to place footpath at (${footpathAction.x}, ${footpathAction.y}):`, result.error);
                         } else {
-                            console.log(`Footpath placed at (${footpathAction.x}, ${footpathAction.y})`);
+                            // console.log(`Footpath placed at (${footpathAction.x}, ${footpathAction.y})`);
                         }
                     });
                 });

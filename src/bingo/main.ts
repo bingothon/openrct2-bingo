@@ -2,6 +2,7 @@
 import { config } from "../config";
 import { logger } from "../logger";
 import type { BingoBoard, Goal } from "../types";
+import { GameManager } from "../managers/GameManager";
 
 /**
  * Updates the UI to reflect a completed goal without refreshing the entire Bingo board.
@@ -233,24 +234,22 @@ export function checkGoals(board: BingoBoard) {
             } else if (network.mode === "server" || network.mode === "none") {
                 try {
                     if (goal.status === "incomplete" && goal.checkCondition()) {
-                        const selectGoalAction = JSON.stringify({
-                            action: "selectGoal",
-                            slot: goal.slot,
-                            color: "red",
-                            room: config.roomNameInput
-                        }) + "\n";
-                        if (config.socket) {
-                            console.log(`Sending selectGoal action: ${selectGoalAction}`);
-                            config.socket.write(selectGoalAction);
+                        if (config.gameMode === "coop") {
+                            // Coop mode - complete immediately
+                            completeGoal(goal, goalKey, index, board);
                         } else {
-                            console.log("Socket is not defined in config.");
+                            // PVP/Lockout: check if any player can complete
+                            const stateManager = GameManager.getInstance().getPlayerStateManager();
+                            const allPlayers = GameManager.getInstance().getAllPlayers();
+                            
+                            for (let i = 0; i < allPlayers.length; i++) {
+                                const player = allPlayers[i];
+                                if (stateManager.isGoalCompletedForPlayer(goal, player.id)) {
+                                    completeGoal(goal, goalKey, index, board);
+                                    break;
+                                }
+                            }
                         }
-                        goal.status = "completed";
-                        setGoalCompletionStatus(goalKey, true, goal.name, () => {
-                            checkForBingo(board);
-                        });
-                        console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);
-                        updateGoalUI(index, board);
                     }
                 } catch (error) {
                     console.log(`Error checking goal ${goal.slot || "unslotted"} - ${goal.name}:`, error);
@@ -270,6 +269,30 @@ export function checkGoals(board: BingoBoard) {
  * @param {boolean} completed - The completion status to set (true for completed, false for incomplete).
  * @param {string} goalName - Optional name of the goal for logging purposes.
  */
+function completeGoal(goal: Goal, goalKey: string, index: number, board: BingoBoard): void {
+    const selectGoalAction = JSON.stringify({
+        action: "selectGoal",
+        slot: goal.slot,
+        color: "red",
+        room: config.roomNameInput
+    }) + "\n";
+    
+    if (config.socket) {
+        console.log(`Sending selectGoal action: ${selectGoalAction}`);
+        config.socket.write(selectGoalAction);
+    } else {
+        console.log("Socket is not defined in config.");
+    }
+    
+    goal.status = "completed";
+    setGoalCompletionStatus(goalKey, true, goal.name, () => {
+        checkForBingo(board);
+    });
+    
+    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);
+    updateGoalUI(index, board);
+}
+
 export function setGoalCompletionStatus(goalKey: string, completed: boolean, goalName?: string, callback?: () => void) {
     context.executeAction(
         "setGoalCompletion",

@@ -135,24 +135,29 @@ function unownPlayerSections(mapSize: any, scale: number, callback: () => void) 
  */
 function placePlayerCornerMarker(x: number, y: number, z: number, objectId: number, color: number, scale: number, callback?: () => void) {
     // Create a 3x3 colored square as a corner marker
+    let completed = 0;
+    const totalPlacements = 9; // 3x3 grid
+    
     for (let dx = -1; dx <= 1; dx++) {
         for (let dy = -1; dy <= 1; dy++) {
             const markerX = x + (dx * scale);
             const markerY = y + (dy * scale);
             const markerZ = z;
             
-            placeSceneryObject(markerX, markerY, markerZ, objectId, color);
+            placeSceneryObject(markerX, markerY, markerZ, objectId, color, () => {
+                completed++;
+                if (completed === totalPlacements && callback) {
+                    callback();
+                }
+            });
         }
     }
-    
-    // Call the callback when done
-    if (callback) callback();
 }
 
 /**
  * Places a single scenery object with cost handling
  */
-function placeSceneryObject(x: number, y: number, z: number, objectId: number, color: number) {
+function placeSceneryObject(x: number, y: number, z: number, objectId: number, color: number, callback?: () => void) {
     // Detect if a matching small scenery element exists at the exact location
     const tileX = Math.floor(x / 32);
     const tileY = Math.floor(y / 32);
@@ -196,12 +201,14 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
                     queryResult.errorMessage &&
                     queryResult.errorMessage.indexOf('Land not owned by park') !== -1
                 ) {
-                    console.log('Land not owned by park - scenery placement failed');
+                    console.log(`Land not owned by park - scenery placement failed at (${x}, ${y}), z: ${z} - ${queryResult.errorMessage}`);
+                    if (callback) callback();
                 } else {
                     console.log(
                         `Failed to query scenery placement at (${x}, ${y}), z: ${z} - ${queryResult.errorMessage}`,
                     );
                 }
+                if (callback) callback();
                 return;
             }
             if (queryResult.cost && queryResult.cost > 0) {
@@ -214,6 +221,7 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
                                 'Failed to add cash for scenery placement:',
                                 cashResult.errorMessage,
                             );
+                            if (callback) callback();
                             return;
                         }
                         context.executeAction('smallsceneryplace', sceneryArgs, (placeResult) => {
@@ -222,6 +230,7 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
                                     `Failed to place scenery at (${x}, ${y}), z: ${z} - ${placeResult.errorMessage}`,
                                 );
                             }
+                            if (callback) callback();
                         });
                     },
                 );
@@ -232,6 +241,7 @@ function placeSceneryObject(x: number, y: number, z: number, objectId: number, c
                             `Failed to place scenery at (${x}, ${y}), z: ${z} - ${placeResult.errorMessage}`,
                         );
                     }
+                    if (callback) callback();
                 });
             }
         });
@@ -273,31 +283,43 @@ export function createPlayerSections(callback: () => void): void {
         const baseZ = 0; // Ground level
         
         // Calculate the center of the map for dividing into 4 sections
-        const centerX = (mapSize.x / 2) * scale;
-        const centerY = (mapSize.y / 2) * scale;
+        // Use the original 130x130 map area (1-based indexing), not the extended map
+        const originalMapSize = 130; // 130x130 map (1-based indexing)
+        const centerX = (originalMapSize / 2) * scale; // 65 * 32 = 2080
+        const centerY = (originalMapSize / 2) * scale; // 65 * 32 = 2080
         
         
         // Create borders to divide the map into 4 sections
         // Vertical line (divides left and right) - using 0-based indexing
-        for (let y = 0; y < mapSize.y; y++) {
+        // For 130x130 map (1-based), use 0-128 (0-based) to stay within bounds
+        for (let y = 0; y < originalMapSize - 1; y++) {
             const borderX = centerX;
             const borderY = y * scale;
             const borderZ = baseZ;
             
             
             // Place base tile for vertical border
-            placeSceneryObject(borderX, borderY, borderZ, objectId, 0); // Black border
+            placeSceneryObject(borderX, borderY, borderZ, objectId, 0, () => {
+                // Silent callback - errors are already logged in placeSceneryObject
+            }); // Black border
         }
         
         // Horizontal line (divides top and bottom) - using 0-based indexing
-        for (let x = 0; x < mapSize.x; x++) {
+        // For 130x130 map (1-based), use 0-128 (0-based) to stay within bounds
+        for (let x = 0; x < originalMapSize - 1; x++) {
             const borderX = x * scale;
             const borderY = centerY;
             const borderZ = baseZ;
             
+            // Skip the center intersection to avoid placing base block twice
+            if (borderX === centerX) {
+                continue; // Skip this tile as it's already covered by the vertical line
+            }
             
             // Place base tile for horizontal border
-            placeSceneryObject(borderX, borderY, borderZ, objectId, 0); // Black border
+            placeSceneryObject(borderX, borderY, borderZ, objectId, 0, () => {
+                // Silent callback - errors are already logged in placeSceneryObject
+            }); // Black border
         }
         
         // Enable debug mode to allow land ownership changes

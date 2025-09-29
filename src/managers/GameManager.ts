@@ -8,6 +8,7 @@
 import { GroundDivisionManager, PlayerRegionKey } from "./GroundDivisionManager";
 import { PlayerManager, RegisteredPlayer } from "./PlayerManager";
 import { GoalManager } from "./GoalManager";
+import { PlayerStateManager, PlayerStateManagerInstance } from "./PlayerStateManager";
 import { subscribeToBuildingRestrictions, unsubscribeFromBuildingRestrictions } from "../subscriptions/game/buildingRestrictions";
 import { config } from "../config";
 
@@ -16,6 +17,7 @@ export class GameManager {
     private groundDivision: GroundDivisionManager;
     private playerManager: PlayerManager;
     private goalManager: GoalManager;
+    private playerStateManager: PlayerStateManagerInstance;
     private buildingRestrictionsActive: boolean = false;
     private isInitializing: boolean = false;
 
@@ -23,6 +25,10 @@ export class GameManager {
         this.groundDivision = new GroundDivisionManager();
         this.playerManager = new PlayerManager();
         this.goalManager = new GoalManager(this.groundDivision, this.playerManager);
+        this.playerStateManager = new (PlayerStateManager as any)(
+            this.groundDivision,
+            this.playerManager
+        );
     }
 
     /**
@@ -44,6 +50,9 @@ export class GameManager {
         // Set initialization state
         this.isInitializing = true;
         
+        // PlayerStateManager is already initialized in constructor
+        console.log("[GameManager] PlayerStateManager ready to track player state");
+        
         // Building restrictions will be handled by setGameMode() after initialization
         
         console.log("[GameManager] Game initialized successfully");
@@ -57,6 +66,10 @@ export class GameManager {
     public registerPlayer(id: string, name: string, color: string, region: PlayerRegionKey): void {
         this.playerManager.registerPlayer(id, name, color, region);
         console.log(`[GameManager] Registered ${name} (${color}) in ${region} region`);
+        
+        // Reinitialize PlayerStateManager to include the new player
+        this.playerStateManager.initializePlayerStates();
+        console.log("[GameManager] PlayerStateManager updated with new player state");
     }
 
     /**
@@ -208,6 +221,13 @@ export class GameManager {
      */
     public getGoalManager(): GoalManager {
         return this.goalManager;
+    }
+
+    /**
+     * Get player state manager (for region-aware goal checking)
+     */
+    public getPlayerStateManager(): PlayerStateManagerInstance {
+        return this.playerStateManager;
     }
 
     /**

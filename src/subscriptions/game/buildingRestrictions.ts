@@ -19,12 +19,10 @@ export function subscribeToBuildingRestrictions(
 ) {
     subscriptions.upsert("buildingRestrictions", () =>
         context.subscribe("action.query", (e) => {
-            console.log(`[BuildingRestrictions] Action ${e.action} from player ${e.player}`);
             
             // Check if game is initializing - if so, allow all building actions
             const gameManager = GameManager.getInstance();
             if (gameManager.isGameInitializing()) {
-                console.log(`[BuildingRestrictions] Allowing action ${e.action} during initialization`);
                 return; // Allow all actions during initialization
             }
             
@@ -48,7 +46,6 @@ export function subscribeToBuildingRestrictions(
             // Get coordinates from the action arguments
             const args = e.args as BuildingActionArgs;
             if (!args || typeof args.x !== 'number' || typeof args.y !== 'number') {
-                console.log(`[BuildingRestrictions] Invalid args:`, args);
                 return;
             }
 
@@ -67,12 +64,10 @@ export function subscribeToBuildingRestrictions(
             const playerId = e.player;
             const playerRegion = playerManager.getPlayerRegion(playerId);
             
-            console.log(`[BuildingRestrictions] Player ${playerId} trying to build at (${tileX},${tileY}) in region ${region}, player's region: ${playerRegion}`);
-            
             // If no players are registered, block all building
             const allPlayers = playerManager.getAllPlayers();
             if (allPlayers.length === 0) {
-                console.log(`[BuildingRestrictions] No players registered, blocking building`);
+                console.log(`[BuildingRestrictions] BLOCKED: No players registered`);
                 e.result = {
                     error: 1, // Generic error
                     errorTitle: "Building Restricted",
@@ -83,7 +78,7 @@ export function subscribeToBuildingRestrictions(
             
             // Check if player is trying to build in their assigned region
             if (playerRegion !== region) {
-                console.log(`[BuildingRestrictions] Player ${playerId} (region: ${playerRegion}) trying to build in ${region} - BLOCKED`);
+                console.log(`[BuildingRestrictions] BLOCKED: Player ${playerId} (${playerRegion}) trying to build in ${region}`);
                 
                 // Get player's color for the error message
                 const player = playerManager.getPlayer(playerId.toString());
@@ -98,8 +93,6 @@ export function subscribeToBuildingRestrictions(
                 return;
             }
             
-            console.log(`[BuildingRestrictions] Player ${playerId} building in their own region ${region} - ALLOWED`);
-
             // Player is building in their own region - allow the action
         })
     );
