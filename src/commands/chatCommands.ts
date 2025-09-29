@@ -1,5 +1,6 @@
 import { GameManager } from "../managers/GameManager";
 import { config } from "../config";
+import { runTestSuite, runTestsByCategory } from "../testing/index";
 
 // Color to region mapping - matches scoreboard layout
 const COLOR_TO_REGION: Record<string, { region: string; name: string }> = {
@@ -15,7 +16,7 @@ export function registerChatCommands(): void {
   const gameManager = GameManager.getInstance();
   
   // Subscribe to chat messages
-  context.subscribe("network.chat", (e) => {
+  context.subscribe("network.chat", async (e) => {
     const message = e.message.toLowerCase().trim();
     
     // Check if it's a register command
@@ -77,14 +78,66 @@ export function registerChatCommands(): void {
       network.sendMessage(`📋 Registered players: ${playerList}`);
     }
     
+    // Test command - only available in debug mode
+    if (message.indexOf("/test ") === 0 && config.debug) {
+      const testTarget = message.substring(6).trim(); // Remove "/test " prefix
+      
+      if (!testTarget) {
+        network.sendMessage("🧪 Usage: /test <testname>");
+        network.sendMessage("📋 Available tests:");
+        network.sendMessage("  • gamemanager, buildingrestrictions, gamemode");
+        network.sendMessage("  • unit, integration, restrictions, all");
+        network.sendMessage("  • GameManager.test, BuildingRestrictions.test, GameModeIntegration.test");
+        return;
+      }
+      
+      network.sendMessage(`🧪 Running test: ${testTarget}`);
+      
+      try {
+        // Handle different test targets
+        if (testTarget === "all") {
+          await runTestsByCategory("all");
+        } else if (testTarget === "unit") {
+          await runTestsByCategory("unit");
+        } else if (testTarget === "integration") {
+          await runTestsByCategory("integration");
+        } else if (testTarget === "restrictions") {
+          await runTestsByCategory("restrictions");
+        } else if (testTarget === "GameManager.test" || testTarget === "gamemanager") {
+          await runTestSuite("gamemanager");
+        } else if (testTarget === "BuildingRestrictions.test" || testTarget === "buildingrestrictions") {
+          await runTestSuite("buildingrestrictions");
+        } else if (testTarget === "GameModeIntegration.test" || testTarget === "gamemode") {
+          await runTestSuite("gamemode");
+        } else {
+          // Try to run as a specific test suite
+          await runTestSuite(testTarget);
+        }
+        
+        network.sendMessage(`✅ Test '${testTarget}' completed! Check console for results.`);
+      } catch (error) {
+        network.sendMessage(`❌ Test '${testTarget}' failed: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+    
     // Help command
     if (message === "/help" || message === "/commands") {
       const currentMode = config.gameMode;
+      let helpMessage = "📋 Available commands:";
+      
       if (currentMode === "pvp" || currentMode === "lockout") {
-        network.sendMessage("📋 Available commands: /register <color> (red, green, blue, yellow)");
-      } else {
-        network.sendMessage("📋 No special commands available in Coop mode");
+        helpMessage += " /register <color> (red, green, blue, yellow)";
       }
+      
+      if (config.debug) {
+        helpMessage += " /test <testname> (see /test for full list)";
+      }
+      
+      if (helpMessage === "📋 Available commands:") {
+        helpMessage = "📋 No special commands available in this mode";
+      }
+      
+      network.sendMessage(helpMessage);
     }
   });
 }

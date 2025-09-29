@@ -8,6 +8,7 @@
 import type { GroundDivisionManager } from "./GroundDivisionManager";
 import type { PlayerManager } from "./PlayerManager";
 import type { Goal } from "../types";
+import { PlayerPersistenceManager, type PersistentPlayerState } from "./PlayerPersistenceManager";
 
 export interface PlayerStateManagerInstance {
     playerStates: { [key: string]: PlayerState };
@@ -40,6 +41,9 @@ export interface PlayerStateManagerInstance {
     getPlayerTotalProfit(playerId: string): number;
     getPlayerRideProperty(playerId: string, property: string): any[];
     getPlayerRidesByProperty(playerId: string, property: string, value: any): number[];
+    // Persistence methods
+    savePlayerStateToStorage(playerId: string): void;
+    saveAllPlayerStatesToStorage(): void;
 }
 
 export function PlayerStateManager(this: PlayerStateManagerInstance, ground: GroundDivisionManager, players: PlayerManager) {
@@ -69,18 +73,49 @@ export function PlayerStateManager(this: PlayerStateManagerInstance, ground: Gro
     this.initializePlayerStates = function(): void {
         var allPlayers = self.players.getAllPlayers();
         console.log("[PlayerStateManager] Initializing player states for " + allPlayers.length + " players");
+        
         for (var i = 0; i < allPlayers.length; i++) {
             var player = allPlayers[i];
             console.log("[PlayerStateManager] Creating state for player " + player.id + " (" + player.name + ") in region " + player.region);
-            self.playerStates[player.id] = {
-                playerId: player.id,
-                playerName: player.name,
-                region: player.region,
-                guests: {
-                    count: 0
-                },
-                rides: []  // Simple array of all rides
-            };
+            
+            // Try to load existing persistent state
+            var persistentState = PlayerPersistenceManager.loadPlayerState(player.id);
+            
+            if (persistentState) {
+                // Convert persistent state to in-memory state
+                self.playerStates[player.id] = {
+                    playerId: persistentState.playerId,
+                    playerName: persistentState.playerName,
+                    region: persistentState.region,
+                    guests: {
+                        count: persistentState.guests.count
+                    },
+                    rides: persistentState.rides
+                };
+                console.log("[PlayerStateManager] Loaded persistent state for player " + player.id);
+            } else {
+                // Create new state
+                self.playerStates[player.id] = {
+                    playerId: player.id,
+                    playerName: player.name,
+                    region: player.region,
+                    guests: {
+                        count: 0
+                    },
+                    rides: []
+                };
+                
+                // Save to persistent storage
+                PlayerPersistenceManager.savePlayerState(player.id, {
+                    playerId: player.id,
+                    playerName: player.name,
+                    region: player.region,
+                    guests: { count: 0, lastUpdated: Date.now() },
+                    rides: [],
+                    goals: { completed: [], progress: {} },
+                    stats: { totalProfit: 0, totalGuests: 0, ridesBuilt: 0, lastActivity: Date.now() }
+                });
+            }
         }
         console.log("[PlayerStateManager] Player states initialized. Total states: " + Object.keys(self.playerStates).length);
     };
@@ -487,6 +522,37 @@ export function PlayerStateManager(this: PlayerStateManagerInstance, ground: Gro
 
     this.getAllPlayerStates = function(): { [key: string]: PlayerState } {
         return self.playerStates;
+    };
+
+    /**
+     * Save player state to persistent storage
+     */
+    this.savePlayerStateToStorage = function(playerId: string): void {
+        var state = self.playerStates[playerId];
+        if (!state) return;
+
+        // Convert in-memory state to persistent state
+        var persistentState: Partial<PersistentPlayerState> = {
+            playerId: state.playerId,
+            playerName: state.playerName,
+            region: state.region as any, // Type assertion for compatibility
+            guests: {
+                count: state.guests.count,
+                lastUpdated: Date.now()
+            },
+            rides: state.rides
+        };
+
+        PlayerPersistenceManager.savePlayerState(playerId, persistentState);
+    };
+
+    /**
+     * Save all player states to persistent storage
+     */
+    this.saveAllPlayerStatesToStorage = function(): void {
+        for (var playerId in self.playerStates) {
+            self.savePlayerStateToStorage(playerId);
+        }
     };
 
     this.isGoalCompletedForPlayer = function(goal: Goal, playerId: string): boolean {

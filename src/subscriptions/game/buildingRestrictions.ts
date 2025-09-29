@@ -37,7 +37,9 @@ export function subscribeToBuildingRestrictions(
                                    e.action === "ridecreate" ||
                                    e.action === "ridedemolish" ||
                                    e.action === "ridesetname" ||
-                                   e.action === "trackdesign";
+                                   e.action === "trackdesign" ||
+                                   e.action === "landraise" ||
+                                   e.action === "landlower";
             
             if (!isBuildingAction) {
                 return;
@@ -84,11 +86,20 @@ export function subscribeToBuildingRestrictions(
                 const player = playerManager.getPlayer(playerId.toString());
                 const playerColor = player ? player.colour : "unknown";
                 
+                // Determine appropriate error message based on action type
+                let errorTitle = "Building Restricted";
+                let errorMessage = `You can only build in your ${playerColor} region. This tile belongs to another player's region.`;
+                
+                if (e.action === "landraise" || e.action === "landlower") {
+                    errorTitle = "Land Modification Restricted";
+                    errorMessage = `You can only modify land in your ${playerColor} region. This tile belongs to another player's region.`;
+                }
+                
                 // Player is trying to build in another player's region - deny the action
                 e.result = {
                     error: 1, // Generic error
-                    errorTitle: "Building Restricted",
-                    errorMessage: `You can only build in your ${playerColor} region. This tile belongs to another player's region.`
+                    errorTitle: errorTitle,
+                    errorMessage: errorMessage
                 };
                 return;
             }

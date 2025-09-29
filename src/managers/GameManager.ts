@@ -9,6 +9,7 @@ import { GroundDivisionManager, PlayerRegionKey } from "./GroundDivisionManager"
 import { PlayerManager, RegisteredPlayer } from "./PlayerManager";
 import { GoalManager } from "./GoalManager";
 import { PlayerStateManager, PlayerStateManagerInstance } from "./PlayerStateManager";
+import { PlayerPersistenceManager } from "./PlayerPersistenceManager";
 import { subscribeToBuildingRestrictions, unsubscribeFromBuildingRestrictions } from "../subscriptions/game/buildingRestrictions";
 import { config } from "../config";
 
@@ -20,8 +21,12 @@ export class GameManager {
     private playerStateManager: PlayerStateManagerInstance;
     private buildingRestrictionsActive: boolean = false;
     private isInitializing: boolean = false;
+    private currentGameMode: "coop" | "pvp" | "lockout" = "coop";
 
     private constructor() {
+        // Initialize persistence system first
+        PlayerPersistenceManager.runMigrationIfNeeded();
+        
         this.groundDivision = new GroundDivisionManager();
         this.playerManager = new PlayerManager();
         this.goalManager = new GoalManager(this.groundDivision, this.playerManager);
@@ -29,6 +34,8 @@ export class GameManager {
             this.groundDivision,
             this.playerManager
         );
+        
+        console.log("[GameManager] Initialized with persistent player data");
     }
 
     /**
@@ -83,7 +90,8 @@ export class GameManager {
      * Get player by ID
      */
     public getPlayer(id: string): RegisteredPlayer | undefined {
-        return this.playerManager.getPlayer(id);
+        const player = this.playerManager.getPlayer(id);
+        return player || undefined;
     }
 
     /**
@@ -162,9 +170,7 @@ export class GameManager {
      * Get the current game mode (helper method)
      */
     public getCurrentGameMode(): "coop" | "pvp" | "lockout" {
-        // This is a simple way to get the current mode - you might want to store this in the GameManager
-        // For now, we'll use the config
-        return config.gameMode;
+        return this.currentGameMode;
     }
 
     /**
@@ -172,6 +178,9 @@ export class GameManager {
      */
     public setGameMode(mode: "coop" | "pvp" | "lockout"): void {
         console.log(`[GameManager] setGameMode called with mode: ${mode}, isInitializing: ${this.isInitializing}, buildingRestrictionsActive: ${this.buildingRestrictionsActive}`);
+        
+        // Update the current game mode
+        this.currentGameMode = mode;
         
         // Don't override restrictions if we're still initializing
         if (this.isInitializing) {
@@ -238,6 +247,7 @@ export class GameManager {
         const groundState = this.groundDivision.getState();
         
         let info = "=== GameManager Debug Info ===\n";
+        info += `Game mode: ${this.currentGameMode}\n`;
         info += `Players registered: ${players.length}\n`;
         info += `Map size: ${groundState.mapWidthTiles}x${groundState.mapHeightTiles}\n`;
         info += `Building restrictions: ${this.buildingRestrictionsActive ? 'enabled' : 'disabled'}\n\n`;

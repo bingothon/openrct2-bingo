@@ -11,19 +11,49 @@
     "clean": "node --eval \"fs.rmSync('./dist', { recursive: true, force: true })\"",
     "publish:local": "npm run build && npm install --global",
     "version:prerelease": "npm version prerelease --preid=prerelease",
-    "publish:prerelease": "npm run build && release-it --prerelease=prerelease"
+    "publish:prerelease": "npm run build && release-it --prerelease=prerelease",
+    "test": "nyc ava",
+    "test:unit": "ava tests/unit/**/*.test.ts",
+    "test:integration": "ava tests/integration/**/*.test.ts",
+    "test:ig": "echo 'Run in-game tests using CTRL+ALT+T or /test command'",
+    "test:ig:unit": "echo 'Run in-game unit tests using CTRL+ALT+U'",
+    "test:ig:integration": "echo 'Run in-game integration tests using CTRL+ALT+I'",
+    "test:ig:restrictions": "echo 'Run in-game restrictions tests using CTRL+ALT+S'",
+    "test:watch": "ava --watch",
+    "test:coverage": "nyc ava && nyc report"
+  },
+  "ava": {
+    "extensions": {
+      "ts": "module"
+    },
+    "files": [
+      "tests/**/*.test.ts"
+    ],
+    "nodeArguments": [
+      "--import=tsx"
+    ],
+    "require": [
+      "./tests/_setup.cjs"
+    ],
+    "verbose": true,
+    "workerThreads": false
   },
   "devDependencies": {
+    "@ava/typescript": "^6.0.0",
     "@rollup/plugin-node-resolve": "^15.0.1",
     "@rollup/plugin-terser": "^0.4.0",
     "@rollup/plugin-typescript": "^11.1.6",
     "@types/openrct2": "^0.4.0",
     "@types/uuid": "^9.0.8",
+    "ava": "^6.4.1",
     "nodemon": "^2.0.22",
+    "nyc": "^17.1.0",
+    "openrct2-mocks": "^0.1.6",
     "release-it": "^17.10.0",
     "rollup": "^3.15.0",
     "rollup-plugin-dts": "^6.1.0",
-    "tslib": "^2.5.0"
+    "tslib": "^2.5.0",
+    "tsx": "^4.20.3"
   },
   "release-it": {
     "git": {

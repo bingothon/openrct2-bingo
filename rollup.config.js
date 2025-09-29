@@ -61,7 +61,22 @@ const config = [
     plugins: [
       typescript({
         target: "es5",
-        lib: ["es5"]
+        lib: ["ES2015", "ES2017", "ES2018", "ES2019", "ES2020", "DOM"],
+        module: "esnext",
+        moduleResolution: "node",
+        allowSyntheticDefaultImports: true,
+        esModuleInterop: true,
+        strict: true,
+        skipLibCheck: true,
+        forceConsistentCasingInFileNames: true,
+        declaration: false,
+        declarationMap: false,
+        sourceMap: false,
+        removeComments: true,
+        noEmitOnError: false,
+        experimentalDecorators: true,
+        emitDecoratorMetadata: true,
+        downlevelIteration: true
       }),
       terser({
         compress: {

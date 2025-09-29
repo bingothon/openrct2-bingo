@@ -1,5 +1,6 @@
 import { BingoManager } from "../bingo/BingoManager";
 import { GameManager } from "../managers/GameManager";
+import { PlayerPersistenceManager } from "../managers/PlayerPersistenceManager";
 
 export function registerDebugShortkeys(): void {
     if (typeof ui === 'undefined') return;
@@ -249,6 +250,16 @@ export function registerDebugShortkeys(): void {
       console.log("=== FORCE ENABLING BUILDING RESTRICTIONS ===");
       gameManager.setGameMode("lockout");
       console.log("=== END FORCE ENABLE ===");
+    }});
+
+    // Test persistent player system
+    ui.registerShortcut({ id: "debug.testPersistentPlayers", text: "Debug: Test Persistent Player System", bindings: ["CTRL+ALT+P"], callback: () => {
+      testPersistentPlayerSystem();
+    }});
+
+    // Clear persistent data
+    ui.registerShortcut({ id: "debug.clearPersistentData", text: "Debug: Clear Persistent Data", bindings: ["CTRL+ALT+SHIFT+C"], callback: () => {
+      clearPersistentData();
     }});
     
     
@@ -581,25 +592,7 @@ export function registerDebugShortkeys(): void {
       }
     });
     
-    ui.registerShortcut({ 
-      id: "debug.scanRides", 
-      text: "Debug: Scan for Rides", 
-      bindings: ["CTRL+ALT+R"], 
-      callback: () => {
-        console.log("=== MANUAL RIDE SCAN ===");
-        const gameManager = GameManager.getInstance();
-        const playerStateManager = gameManager.getPlayerStateManager();
-        
-        if (!playerStateManager) {
-          console.log("❌ PlayerStateManager not available");
-          return;
-        }
-        
-        console.log("🔍 Manually scanning for rides...");
-        playerStateManager.scanForExistingRides();
-        console.log("=== END MANUAL RIDE SCAN ===");
-      }
-    });
+    
     
     ui.registerShortcut({ 
       id: "debug.playerRides", 
@@ -650,53 +643,7 @@ export function registerDebugShortkeys(): void {
       }
     });
     
-    ui.registerShortcut({ 
-      id: "debug.rideProperties", 
-      text: "Show All Ride Properties (Player 1)", 
-      bindings: ["CTRL+SHIFT+PROP"], 
-      callback: () => {
-        console.log("=== RIDE PROPERTIES DEBUG ===");
-        const gameManager = GameManager.getInstance();
-        const playerStateManager = gameManager.getPlayerStateManager();
-        
-        if (!playerStateManager) {
-          console.log("❌ PlayerStateManager not available");
-          return;
-        }
-        
-        const playerId = "player1";
-        const rides = playerStateManager.getPlayerRides(playerId);
-        
-        if (rides.length === 0) {
-          console.log("No rides found for this player");
-          return;
-        }
-        
-        // Show all properties of the first ride
-        const firstRide = rides[0];
-        console.log(`All properties for ride: ${firstRide.name}`);
-        console.log("Properties:");
-        
-        for (const prop in firstRide) {
-          if (firstRide.hasOwnProperty(prop)) {
-            const value = firstRide[prop];
-            const valueType = typeof value;
-            let displayValue = value;
-            
-            if (valueType === 'object' && value !== null) {
-              displayValue = `[Object: ${Object.keys(value).length} properties]`;
-            } else if (valueType === 'function') {
-              displayValue = '[Function]';
-            } else if (valueType === 'undefined') {
-              displayValue = 'undefined';
-            }
-            
-            console.log(`  ${prop}: ${displayValue} (${valueType})`);
-          }
-        }
-        console.log("=== END RIDE PROPERTIES DEBUG ===");
-      }
-    });
+    
     
     ui.registerShortcut({ 
       id: "debug.playerStats", 
@@ -743,7 +690,47 @@ export function registerDebugShortkeys(): void {
         console.log("=== END PLAYER STATISTICS DEBUG ===");
       }
     });
+    // ES6 Transpilation Test - removed due to require() compatibility issues
+  }
+
+  function testPersistentPlayerSystem() {
+    console.log("=== TESTING PERSISTENT PLAYER SYSTEM ===");
     
+    // Test registering players to regions
+    console.log("1. Registering test players to regions...");
+    PlayerPersistenceManager.registerPlayerToRegion("test1", "Test Player 1", "red", "top-left");
+    PlayerPersistenceManager.registerPlayerToRegion("test2", "Test Player 2", "blue", "top-right");
     
+    // Test getting players for regions
+    console.log("2. Getting players for regions...");
+    const topLeftPlayer = PlayerPersistenceManager.getPlayerForRegion("top-left");
+    const topRightPlayer = PlayerPersistenceManager.getPlayerForRegion("top-right");
     
+    console.log("Top-left player:", topLeftPlayer);
+    console.log("Top-right player:", topRightPlayer);
+    
+    // Test saving player state
+    console.log("3. Testing player state persistence...");
+    PlayerPersistenceManager.savePlayerState("test1", {
+      guests: { count: 50, lastUpdated: Date.now() },
+      rides: [1, 2, 3],
+      stats: { totalProfit: 1000, totalGuests: 50, ridesBuilt: 3, lastActivity: Date.now() }
+    });
+    
+    // Test loading player state
+    const loadedState = PlayerPersistenceManager.loadPlayerState("test1");
+    console.log("Loaded state for test1:", loadedState);
+    
+    // Show debug info
+    console.log("4. Debug info:");
+    console.log(PlayerPersistenceManager.getDebugInfo());
+    
+    console.log("=== END PERSISTENT PLAYER SYSTEM TEST ===");
+  }
+
+  function clearPersistentData() {
+    console.log("=== CLEARING PERSISTENT DATA ===");
+    PlayerPersistenceManager.clearAllPlayerData();
+    console.log("All persistent player data cleared!");
+    console.log("=== END CLEAR PERSISTENT DATA ===");
   }

@@ -87,7 +87,7 @@ export function main(): void {
         try {
             if (!checkIfStarted()) {
                 console.log('Game not started, showing game duration dialog.');
-                showGameDurationDialog();
+                showGameModeDialog();
             } else {
                 const parkStorage = context.getParkStorage();
                 const duration = parkStorage.get('duration', 0);
@@ -121,5 +121,6 @@ export function main(): void {
     registerCommonShortkeys();
     if (config.debug) {
         registerDebugShortkeys();
+        // Test shortcuts are registered separately in the plugin
     }
 }
