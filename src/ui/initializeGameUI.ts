@@ -2,17 +2,17 @@ import { subscribeToInventions, subscribeToRenewRides } from "../subscriptions/g
 import { subscribeToServerInitialization } from "../subscriptions/server";
 import { getSeed } from "../utils";
 import { configureBoard } from "./helpers";
-import { subscribeToGoalChecks } from "../subscriptions/game";
+// Goal checking is now handled by GoalManager
 import { openBingoBoard } from "./openBingoBoard";
 import { showConnectDialog } from "./showConnectDialog";
 import { showGameDurationDialog } from "./showGameDurationDialog";
 import { initializeBingoSystem } from "../bingo/integration";
 
 /**
- * Initializes the game after mode and duration selection
+ * Sets up game UI and subscriptions after mode and duration selection
  */
-export function initializeLocalGame() {
-  console.log("Initializing game after mode and duration selection...");
+export function setupGameUI() {
+  console.log("Setting up game UI after mode and duration selection...");
   
   // Set up game systems
   subscribeToInventions();
@@ -26,7 +26,7 @@ export function initializeLocalGame() {
   // Initialize the BingoManager with the board
   initializeBingoSystem();
   
-  subscribeToGoalChecks(board);
+  // Goal checking is now handled by GoalManager in initializeBingoSystem()
   openBingoBoard(board);
   
   // Only show connect dialog in local/single-player mode
@@ -34,7 +34,7 @@ export function initializeLocalGame() {
     showConnectDialog();
   }
   
-  console.log("Game initialized successfully.");
+  console.log("Game UI setup completed successfully.");
 }
 
 

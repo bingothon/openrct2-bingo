@@ -243,19 +243,31 @@ export class PlayerPersistenceManager {
         const playerStates = this.getAllPlayerStates();
         
         let info = "=== Player Persistence Debug Info ===\n";
-        info += `Registered players: ${Object.keys(regionMappings).length}\n`;
-        info += `Player states: ${Object.keys(playerStates).length}\n\n`;
+        
+        // Count region mappings
+        var regionCount = 0;
+        for (var region in regionMappings) {
+            regionCount++;
+        }
+        info += "Registered players: " + regionCount + "\n";
+        
+        // Count player states
+        var stateCount = 0;
+        for (var playerId in playerStates) {
+            stateCount++;
+        }
+        info += "Player states: " + stateCount + "\n\n";
         
         info += "Region Mappings:\n";
         for (var region in regionMappings) {
             var player = regionMappings[region];
-            info += `  ${region}: ${player.name} (${player.id}) - ${player.isActive ? 'Active' : 'Inactive'}\n`;
+            info += "  " + region + ": " + player.name + " (" + player.id + ") - " + (player.isActive ? 'Active' : 'Inactive') + "\n";
         }
         
         info += "\nPlayer States:\n";
         for (var playerId in playerStates) {
             var state = playerStates[playerId];
-            info += `  ${playerId}: ${state.playerName} - ${state.rides.length} rides, ${state.guests.count} guests\n`;
+            info += "  " + playerId + ": " + state.playerName + " - " + state.rides.length + " rides, " + state.guests.count + " guests\n";
         }
         
         return info;
@@ -264,23 +276,23 @@ export class PlayerPersistenceManager {
     /**
      * Run migration if needed
      */
-    public static runMigrationIfNeeded(): void {
-        const parkStorage = context.getParkStorage();
-        const currentVersion = parkStorage.get(this.STORAGE_KEYS.MIGRATION_VERSION, "0.0.0");
+    // public static runMigrationIfNeeded(): void {
+    //     const parkStorage = context.getParkStorage();
+    //     const currentVersion = parkStorage.get(this.STORAGE_KEYS.MIGRATION_VERSION, "0.0.0");
         
-        if (currentVersion !== this.CURRENT_VERSION) {
-            console.log("[PlayerPersistence] Running migration from " + currentVersion + " to " + this.CURRENT_VERSION);
-            this.migrateFromOldSystem();
-            parkStorage.set(this.STORAGE_KEYS.MIGRATION_VERSION, this.CURRENT_VERSION);
-        }
-    }
+    //     if (currentVersion !== this.CURRENT_VERSION) {
+    //         console.log("[PlayerPersistence] Running migration from " + currentVersion + " to " + this.CURRENT_VERSION);
+    //         this.migrateFromOldSystem();
+    //         parkStorage.set(this.STORAGE_KEYS.MIGRATION_VERSION, this.CURRENT_VERSION);
+    //     }
+    // }
 
     /**
      * Migrate from old system (if any)
      */
-    private static migrateFromOldSystem(): void {
-        // This would handle migration from any previous system
-        // For now, just ensure we have the right structure
-        console.log("[PlayerPersistence] Migration completed");
-    }
+    // private static migrateFromOldSystem(): void {
+    //     // This would handle migration from any previous system
+    //     // For now, just ensure we have the right structure
+    //     console.log("[PlayerPersistence] Migration completed");
+    // }
 }

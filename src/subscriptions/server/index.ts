@@ -26,6 +26,7 @@ export function subscribeToServerInitialization(showGameDurationCallback?: () =>
     let dayCounter = 0;
     let noPlayersDayCounter = 0;
 
+    // Subscribe to daily events for game progression
     subscriptions.upsert("server-initialization", () => context.subscribe("interval.day", () => {
         // Get game state
         const parkStorage = context.getParkStorage();
@@ -48,7 +49,14 @@ export function subscribeToServerInitialization(showGameDurationCallback?: () =>
         
         // Handle multiplayer-specific logic
         noPlayersDayCounter = handleMultiplayerDialog(noPlayersDayCounter, showGameDurationCallback);
-    }))
+    }));
+
+    // Subscribe to tick events for immediate game state detection
+    subscriptions.upsert("server-tick-initialization", () => context.subscribe("interval.tick", () => {
+        // Check for game state changes every tick (much more frequent)
+        const parkStorage = context.getParkStorage();
+        handleGameInitialization(parkStorage);
+    }));
 }
 
 

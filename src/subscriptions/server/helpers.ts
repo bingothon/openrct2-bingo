@@ -64,11 +64,26 @@ export function handleEndGameWarnings(duration: number): void {
  */
 export function handleGameInitialization(parkStorage: any): void {
     const startRequest = parkStorage.get("started", false);
+    const gameMode = parkStorage.get("gameMode", "coop"); // Default to coop if not set
     console.log('Game started status:', config.started);
+    console.log('Game mode from storage:', gameMode);
+    console.log('Start request from storage:', startRequest);
+    console.log('Is restarting:', isRestarting);
     
     if (startRequest && !config.started && !isRestarting) {
+        console.log('✅ All conditions met - proceeding with initialization');
         config.started = true;
+        
+        // Update config with the game mode from storage
+        config.gameMode = gameMode;
+        console.log(`Server initializing with game mode: ${gameMode}`);
+        
         initializeGame();
+    } else {
+        console.log('❌ Initialization conditions not met:');
+        console.log(`  - startRequest: ${startRequest}`);
+        console.log(`  - !config.started: ${!config.started}`);
+        console.log(`  - !isRestarting: ${!isRestarting}`);
     }
 }
 

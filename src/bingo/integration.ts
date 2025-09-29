@@ -24,9 +24,17 @@ export function initializeBingoSystem(): { bingoManager: BingoManager; gameManag
   // Set the game mode to configure building restrictions
   gameManager.setGameMode(config.gameMode);
   
+  // Initialize goal checking with the new GoalManager
+  console.log("[Integration] Getting GoalManager instance...");
+  const goalManager = gameManager.getGoalManager();
+  console.log("[Integration] GoalManager instance obtained, initializing goal checking...");
+  goalManager.initializeGoalChecking(board);
+  console.log("[Integration] GoalManager initialization completed");
+  
   console.log("[Integration] Bingo system initialized with managers");
   console.log("[Integration] Game mode:", config.gameMode);
   console.log("[Integration] Debug info:", gameManager.getDebugInfo());
+  console.log("[Integration] Goal manager debug info:", goalManager.getDebugInfo());
   
   return { bingoManager, gameManager };
 }

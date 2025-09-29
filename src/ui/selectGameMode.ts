@@ -9,6 +9,10 @@ export function selectGameMode(mode: "coop" | "pvp" | "lockout") {
     config.gameMode = mode;
     console.log(`Selected ${mode.toUpperCase()} mode`);
     
+    // Store game mode in synchronized game state so server can read it
+    context.executeAction('setStorage', { args: { key: 'gameMode', value: mode } });
+    console.log(`Game mode ${mode} stored in game state for server synchronization`);
+    
     // Update the GameManager with the new game mode
     const gameManager = GameManager.getInstance();
     gameManager.setGameMode(mode);

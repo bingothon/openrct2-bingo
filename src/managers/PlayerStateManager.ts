@@ -117,7 +117,12 @@ export function PlayerStateManager(this: PlayerStateManagerInstance, ground: Gro
                 });
             }
         }
-        console.log("[PlayerStateManager] Player states initialized. Total states: " + Object.keys(self.playerStates).length);
+        // Count player states (ES5 compatible)
+        var stateCount = 0;
+        for (var playerId in self.playerStates) {
+            stateCount++;
+        }
+        console.log("[PlayerStateManager] Player states initialized. Total states: " + stateCount);
     };
 
     this.subscribeToEvents = function(): void {

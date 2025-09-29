@@ -30,7 +30,12 @@ export class PlayerManager {
         // Register persistently
         PlayerPersistenceManager.registerPlayerToRegion(id, name, colour, region);
         
-        console.log(`[PlayerManager] Player registered. Total players: ${Object.keys(this.players).length}`);
+        // Count players (ES5 compatible)
+        var playerCount = 0;
+        for (var playerId in this.players) {
+            playerCount++;
+        }
+        console.log("[PlayerManager] Player registered. Total players: " + playerCount);
     }
 
     public getPlayer(id: string): RegisteredPlayer | null {
@@ -72,7 +77,12 @@ export class PlayerManager {
             }
         }
         
-        console.log(`[PlayerManager] Loaded ${Object.keys(this.players).length} persistent players`);
+        // Count players (ES5 compatible)
+        var playerCount = 0;
+        for (var playerId in this.players) {
+            playerCount++;
+        }
+        console.log("[PlayerManager] Loaded " + playerCount + " persistent players");
     }
 
     /**

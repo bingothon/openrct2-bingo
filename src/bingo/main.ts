@@ -3,6 +3,7 @@ import { config } from "../config";
 import { logger } from "../logger";
 import type { BingoBoard, Goal } from "../types";
 import { GameManager } from "../managers/GameManager";
+import { ScoreManager } from "../managers/ScoreManager";
 
 /**
  * Updates the UI to reflect a completed goal without refreshing the entire Bingo board.
@@ -199,39 +200,43 @@ export function triggerBingo(lineKey: string, callback?: Function) {
 export function checkGoals(board: BingoBoard) {
         logger.info("Goal check interval running...");
 
-    try {
+    // Only run goal checks on server - clients will get updates via game state synchronization
+    if (network.mode === "client") {
+        // Clients just read completed goals from game state
         board.forEach((goal, index) => {
             const goalKey = `goal_${goal.slot}`;
-
-            if (network.mode === "client") {
-                // console.log(`Getting goal status for ${goalKey}...`);
-                const isCompleted = context.getParkStorage().get(goalKey, false);
-                if (isCompleted && goal.status !== "completed") {
-                    goal.status = "completed";
-                    
-                    // Check for stored colors
-                    const colorsKey = `${goalKey}_colors`;
-                    const storedColorsData = context.getParkStorage().get(colorsKey, "[]");
-                    if (storedColorsData && storedColorsData !== "[]") {
-                        try {
-                            const storedColorsArray = JSON.parse(storedColorsData);
-                            if (Array.isArray(storedColorsArray) && storedColorsArray.length > 0) {
-                                goal.colors = storedColorsArray.join(" ");
-                                console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed with colors: [${storedColorsArray.join(", ")}]`);
-                            } else {
-                                console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
-                            }
-                        } catch (e) {
-                            // Fallback to old string format
-                            goal.colors = storedColorsData;
-                            console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed with colors: ${storedColorsData}`);
+            const isCompleted = context.getParkStorage().get(goalKey, false);
+            if (isCompleted && goal.status !== "completed") {
+                goal.status = "completed";
+                
+                // Check for stored colors
+                const colorsKey = `${goalKey}_colors`;
+                const storedColorsData = context.getParkStorage().get(colorsKey, "[]");
+                if (storedColorsData && storedColorsData !== "[]") {
+                    try {
+                        const storedColorsArray = JSON.parse(storedColorsData);
+                        if (Array.isArray(storedColorsArray) && storedColorsArray.length > 0) {
+                            goal.colors = storedColorsArray.join(" ");
+                            console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed with colors: [${storedColorsArray.join(", ")}]`);
+                        } else {
+                            console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
                         }
-                    } else {
-                        console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
+                    } catch (e) {
+                        // Fallback to old string format
+                        goal.colors = storedColorsData;
+                        console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed with colors: ${storedColorsData}`);
                     }
-                    updateGoalUI(index, board);
+                } else {
+                    console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed from parkStorage.`);
                 }
-            } else if (network.mode === "server" || network.mode === "none") {
+                updateGoalUI(index, board);
+            }
+        });
+        return;
+    }
+
+    // Server-side goal checking
+    if (network.mode === "server" || network.mode === "none") {
                 try {
                     if (goal.status === "incomplete" && goal.checkCondition()) {
                         if (config.gameMode === "coop") {
@@ -288,6 +293,28 @@ function completeGoal(goal: Goal, goalKey: string, index: number, board: BingoBo
     setGoalCompletionStatus(goalKey, true, goal.name, () => {
         checkForBingo(board);
     });
+    
+    // Update player scores using ScoreManager (server-only)
+    const scoreManager = ScoreManager.getInstance();
+    const gameManager = GameManager.getInstance();
+    const allPlayers = gameManager.getAllPlayers();
+    
+    // Award points to all players in coop mode, or specific player in PVP/Lockout
+    if (config.gameMode === "coop") {
+        // Coop mode - all players get points
+        for (const player of allPlayers) {
+            scoreManager.updatePlayerScore(player.id, 1);
+        }
+    } else {
+        // PVP/Lockout mode - find which player completed the goal
+        const stateManager = gameManager.getPlayerStateManager();
+        for (const player of allPlayers) {
+            if (stateManager.isGoalCompletedForPlayer(goal, player.id)) {
+                scoreManager.updatePlayerScore(player.id, 1);
+                break; // Only one player can complete a goal in PVP/Lockout
+            }
+        }
+    }
     
     console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);
     updateGoalUI(index, board);

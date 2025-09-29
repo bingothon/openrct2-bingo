@@ -25,7 +25,7 @@ export class GameManager {
 
     private constructor() {
         // Initialize persistence system first
-        PlayerPersistenceManager.runMigrationIfNeeded();
+        // PlayerPersistenceManager.runMigrationIfNeeded();
         
         this.groundDivision = new GroundDivisionManager();
         this.playerManager = new PlayerManager();
@@ -55,7 +55,7 @@ export class GameManager {
         console.log("[GameManager] Initializing game...");
         
         // Set initialization state
-        this.isInitializing = true;
+        this.isInitializing = true; 
         
         // PlayerStateManager is already initialized in constructor
         console.log("[GameManager] PlayerStateManager ready to track player state");

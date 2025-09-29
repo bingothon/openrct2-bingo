@@ -229,7 +229,12 @@ export function registerDebugShortkeys(): void {
       }
       
       const allStates = playerStateManager.getAllPlayerStates();
-      console.log(`Found ${Object.keys(allStates).length} player states:`);
+      // Count player states (ES5 compatible)
+      var stateCount = 0;
+      for (var playerId in allStates) {
+          stateCount++;
+      }
+      console.log("Found " + stateCount + " player states:");
       console.log("Player states object:", allStates);
       
       for (const playerId in allStates) {
@@ -272,7 +277,13 @@ export function registerDebugShortkeys(): void {
         console.log(`Debug: Completing goal ${slot} using BingoManager...`);
         
         // Parse the colors string into an array
-        const colorArray = colors.split(/[ ,]+/).filter(Boolean);
+        const colorArray = colors.split(/[ ,]+/);
+        // Filter out empty strings (ES5 compatible)
+        for (var i = colorArray.length - 1; i >= 0; i--) {
+            if (!colorArray[i]) {
+                colorArray.splice(i, 1);
+            }
+        }
         console.log(`Debug: Colors to add: [${colorArray.join(", ")}]`);
         
         // Use ONLY the new BingoManager approach
@@ -578,7 +589,12 @@ export function registerDebugShortkeys(): void {
         }
         
         const allStates = playerStateManager.getAllPlayerStates();
-        console.log(`Found ${Object.keys(allStates).length} player states:`);
+        // Count player states (ES5 compatible)
+      var stateCount = 0;
+      for (var playerId in allStates) {
+          stateCount++;
+      }
+      console.log("Found " + stateCount + " player states:");
         console.log("Player states object:", allStates);
         
         for (const playerId in allStates) {
@@ -683,8 +699,13 @@ export function registerDebugShortkeys(): void {
           // Show excitement ratings
           const excitementRatings = playerStateManager.getPlayerRideProperty(playerId, 'excitement');
           if (excitementRatings.length > 0) {
-            const avgExcitement = excitementRatings.reduce((sum: number, rating: any) => sum + (rating || 0), 0) / excitementRatings.length;
-            console.log(`Average Excitement: ${(avgExcitement / 100).toFixed(2)}`);
+            // ES5 compatible sum calculation
+            var sum = 0;
+            for (var j = 0; j < excitementRatings.length; j++) {
+              sum += (excitementRatings[j] || 0);
+            }
+            const avgExcitement = sum / excitementRatings.length;
+            console.log("Average Excitement: " + (avgExcitement / 100).toFixed(2));
           }
         }
         console.log("=== END PLAYER STATISTICS DEBUG ===");
@@ -730,7 +751,7 @@ export function registerDebugShortkeys(): void {
 
   function clearPersistentData() {
     console.log("=== CLEARING PERSISTENT DATA ===");
-    PlayerPersistenceManager.clearAllPlayerData();
+    PlayerPersistenceManager.clearAllPlayerData(); 
     console.log("All persistent player data cleared!");
     console.log("=== END CLEAR PERSISTENT DATA ===");
   }

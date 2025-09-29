@@ -23,6 +23,8 @@ import { config } from './config';
 import { subscribeIfStarted } from './subscriptions/server';
 import { initializeBingoSystem } from './bingo/integration';
 import { registerChatCommands } from './commands/chatCommands';
+import { ServerManager } from './managers/ServerManager';
+import { ScoreManager } from './managers/ScoreManager';
 
 export function main(): void {
     registerActions();
@@ -32,6 +34,20 @@ export function main(): void {
     // Shortkeys are registered below per mode
 
     if (network.mode === 'server') {
+        console.log('Server mode detected - starting ServerManager');
+        console.log('About to create ServerManager instance');
+        
+        // Start the ServerManager to monitor game state changes
+        const serverManager = ServerManager.getInstance();
+        console.log('ServerManager instance created, calling startServer()');
+        serverManager.startServer();
+        console.log('ServerManager startServer() completed');
+        
+        // Initialize ScoreManager for server-side score management
+        const scoreManager = ScoreManager.getInstance();
+        scoreManager.initialize();
+        console.log('ScoreManager initialized for server-side score management');
+        
         if (typeof ui !== 'undefined') {
             subscribeToInventions();
             subscribeToRenewRides();
@@ -97,7 +113,7 @@ export function main(): void {
                 console.log("Game already started, skipping game duration's dialog.");
             }
             subscribeIfStarted();
-            subscribeToGoalChecks(board);
+            // Goal checking is now handled by GoalManager in initializeBingoSystem()
             showWelcomeDialog();
             openBingoBoard(board);
         } catch (error) {
@@ -109,6 +125,13 @@ export function main(): void {
     } else if (network.mode === 'none') {
         console.log('Single-player mode detected.');
         setSeed();
+        
+        // Initialize the bingo system for single-player mode
+        const seed = getSeed();
+        console.log(`Single-player seed: ${seed}`);
+        const managers = initializeBingoSystem();
+        console.log('Bingo system initialized for single-player mode', managers);
+        
         if (typeof ui !== 'undefined') {
             registerServerOrNoneShortkeys();
 
@@ -120,7 +143,7 @@ export function main(): void {
 
     registerCommonShortkeys();
     if (config.debug) {
-        registerDebugShortkeys();
+        registerDebugShortkeys(); 
         // Test shortcuts are registered separately in the plugin
     }
 }
