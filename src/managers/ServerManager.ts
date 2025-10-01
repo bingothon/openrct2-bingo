@@ -34,6 +34,7 @@ export class ServerManager {
         });
     }
 
+
     private checkForGameInitialization(): void {
         const parkStorage = context.getParkStorage();
         const startRequest = parkStorage.get("started", false);

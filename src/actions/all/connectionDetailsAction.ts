@@ -6,8 +6,8 @@ export function connectionDetailsAction() {
       return { error: 0 };
     },
     execute: (event: GameActionEventArgs<{ roomUrl: string; roomPassword: string }>): GameActionResult => {
-      context.getParkStorage().set('roomUrl', event.args.roomUrl);
-      context.getParkStorage().set('roomPassword', event.args.roomPassword);
+      context.executeAction('setStorage', { args: { key: 'roomUrl', value: event.args.roomUrl } });
+      context.executeAction('setStorage', { args: { key: 'roomPassword', value: event.args.roomPassword } });
       return { error: 0 };
     }
   };

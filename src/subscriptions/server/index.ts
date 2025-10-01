@@ -45,18 +45,13 @@ export function subscribeToServerInitialization(showGameDurationCallback?: () =>
         handleYearProgression(remainingYears);
         handleGameStatusUpdates(remainingYears, dayCounter);
         handleEndGameWarnings(duration);
-        handleGameInitialization(parkStorage);
+        // Note: Game initialization is now handled by ServerManager to avoid duplicate initialization
         
         // Handle multiplayer-specific logic
         noPlayersDayCounter = handleMultiplayerDialog(noPlayersDayCounter, showGameDurationCallback);
     }));
 
-    // Subscribe to tick events for immediate game state detection
-    subscriptions.upsert("server-tick-initialization", () => context.subscribe("interval.tick", () => {
-        // Check for game state changes every tick (much more frequent)
-        const parkStorage = context.getParkStorage();
-        handleGameInitialization(parkStorage);
-    }));
+    // Note: Game state detection is now handled by ServerManager to avoid duplicate initialization
 }
 
 

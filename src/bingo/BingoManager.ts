@@ -105,7 +105,7 @@ export class BingoManager {
     setGoalCompletionStatus(goalKey, true, goal.name, () => {
       // Store colors in park storage for persistence
       const colorsKey = `${goalKey}_colors`;
-      context.getParkStorage().set(colorsKey, JSON.stringify(allColors));
+      context.executeAction('setStorage', { args: { key: colorsKey, value: JSON.stringify(allColors) } });
 
       // Update UI
       const goalIndex = this.bingo.getState().board.indexOf(goal);
@@ -246,8 +246,8 @@ export class BingoManager {
       const goalKey = `goal_${i}`;
       const colorsKey = `${goalKey}_colors`;
       
-      context.getParkStorage().set(goalKey, false);
-      context.getParkStorage().set(colorsKey, "[]");
+      context.executeAction('setStorage', { args: { key: goalKey, value: false } });
+      context.executeAction('setStorage', { args: { key: colorsKey, value: "[]" } });
     }
   }
 

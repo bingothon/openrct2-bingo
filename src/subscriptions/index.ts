@@ -15,7 +15,7 @@ export {
 
 export {
     subscribeIfStarted,
-    subscribeToServerInitialization,
-    unsubscribeFromServerInitialization,
+    // subscribeToServerInitialization, // LEGACY - removed to prevent duplicate initialization
+    // unsubscribeFromServerInitialization, // LEGACY - removed to prevent duplicate initialization
     unsubscribeFromIfStarted
 } from './server';

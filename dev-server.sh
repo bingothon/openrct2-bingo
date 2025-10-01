@@ -2,11 +2,13 @@
 
 # OpenRCT2 Bingo Development Server Manager
 # This script watches for changes to the plugin file and restarts the OpenRCT2 server
+# Usage: ./dev-server.sh [--headless|--no-headless]
 
 PLUGIN_FILE="$HOME/.config/OpenRCT2/plugin/bingo.js"
 SCENARIO_FILE="$HOME/.config/OpenRCT2/scenario/bingothon-map.park"
 PORT="11753"
 SERVER_PID=""
+HEADLESS_MODE="true"  # Default to headless mode
 
 # Colors for output
 RED='\033[0;31m'
@@ -56,8 +58,14 @@ start_server() {
     pkill -f "openrct2 host.*$PORT" 2>/dev/null || true
     sleep 1
     
-    # Start OpenRCT2 in headless mode
-    openrct2 host "$SCENARIO_FILE" --headless --port "$PORT" &
+    # Build the command based on headless mode
+    if [ "$HEADLESS_MODE" = "true" ]; then
+        log "Starting in headless mode"
+        openrct2 host "$SCENARIO_FILE" --headless --port "$PORT" &
+    else
+        log "Starting with GUI"
+        openrct2 host "$SCENARIO_FILE" --port "$PORT" &
+    fi
     SERVER_PID=$!
     
     # Wait a moment to see if the server started successfully
@@ -91,13 +99,20 @@ restart_server() {
 stop_server() {
     if is_server_running; then
         log "Stopping OpenRCT2 server (PID: $SERVER_PID)..."
-        kill "$SERVER_PID" 2>/dev/null || true
-        wait "$SERVER_PID" 2>/dev/null || true
+        # Kill the entire process group to ensure all children die
+        kill -TERM -$SERVER_PID 2>/dev/null || true
+        sleep 1
+        kill -KILL -$SERVER_PID 2>/dev/null || true
         SERVER_PID=""
-        log_success "Server stopped"
-    else
-        log "No server running"
     fi
+    
+    # Nuclear option: kill any remaining openrct2 processes on our port
+    log "Cleaning up any remaining OpenRCT2 processes..."
+    pkill -f "openrct2 host.*$PORT" 2>/dev/null || true
+    sleep 1
+    pkill -9 -f "openrct2 host.*$PORT" 2>/dev/null || true
+    
+    log_success "Server stopped"
 }
 
 # Function to handle cleanup on exit
@@ -110,12 +125,41 @@ cleanup() {
 # Set up signal handlers
 trap cleanup SIGINT SIGTERM
 
+# Parse command line arguments
+parse_args() {
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --headless)
+                HEADLESS_MODE="true"
+                shift
+                ;;
+            --no-headless)
+                HEADLESS_MODE="false"
+                shift
+                ;;
+            --help|-h)
+                echo "Usage: $0 [--headless|--no-headless]"
+                echo "  --headless     Start OpenRCT2 in headless mode (default)"
+                echo "  --no-headless  Start OpenRCT2 with GUI"
+                echo "  --help, -h     Show this help message"
+                exit 0
+                ;;
+            *)
+                log_error "Unknown option: $1"
+                log "Use --help for usage information"
+                exit 1
+                ;;
+        esac
+    done
+}
+
 # Main function
 main() {
     log "OpenRCT2 Bingo Development Server Manager"
     log "Watching: $PLUGIN_FILE"
     log "Scenario: $SCENARIO_FILE"
     log "Port: $PORT"
+    log "Mode: $([ "$HEADLESS_MODE" = "true" ] && echo "Headless" || echo "GUI")"
     echo
     
     # Check if plugin file exists
@@ -156,5 +200,10 @@ if ! command -v openrct2 &> /dev/null; then
     exit 1
 fi
 
+# Parse command line arguments first
+parse_args "$@"
+
 # Run the main function
 main
+
+

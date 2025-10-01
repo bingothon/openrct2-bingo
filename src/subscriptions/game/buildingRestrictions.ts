@@ -3,11 +3,11 @@ import { GroundDivisionManager } from "../../managers/GroundDivisionManager";
 import { PlayerManager } from "../../managers/PlayerManager";
 import { GameManager } from "../../managers/GameManager";
 
-// Building actions that should be restricted by player regions
-// (checked individually in the subscription function)
+// Actions that should be restricted by player regions
+// Any action with coordinates will be checked against player region ownership
 
-// Interface for building action arguments that have x, y coordinates
-interface BuildingActionArgs {
+// Interface for action arguments that have x, y coordinates
+interface ActionArgs {
     x: number;
     y: number;
     z?: number;
@@ -26,44 +26,39 @@ export function subscribeToBuildingRestrictions(
                 return; // Allow all actions during initialization
             }
             
-            // Only intercept building actions
-            const isBuildingAction = e.action === "smallsceneryplace" ||
-                                   e.action === "largesceneryplace" ||
-                                   e.action === "wallplace" ||
-                                   e.action === "trackplace" ||
-                                   e.action === "footpathplace" ||
-                                   e.action === "footpathadditionplace" ||
-                                   e.action === "bannerplace" ||
-                                   e.action === "ridecreate" ||
-                                   e.action === "ridedemolish" ||
-                                   e.action === "ridesetname" ||
-                                   e.action === "trackdesign" ||
-                                   e.action === "landraise" ||
-                                   e.action === "landlower";
-            
-            if (!isBuildingAction) {
-                return;
-            }
-
-            // Get coordinates from the action arguments
-            const args = e.args as BuildingActionArgs;
+            // Check if action has coordinates - if not, allow it to proceed
+            const args = e.args as ActionArgs;
             if (!args || typeof args.x !== 'number' || typeof args.y !== 'number') {
-                return;
+                return; // Action doesn't have coordinates, allow it
             }
 
             // Convert world coordinates to tile coordinates
             const tileX = Math.floor(args.x / 32);
             const tileY = Math.floor(args.y / 32);
             
+            // Get the player who is trying to perform the action
+            const playerId = e.player;
+            
             // Check if tile is in a player region
             const region = groundDivisionManager.getRegionForTile({ x: tileX, y: tileY });
             if (!region) {
-                // Tile is outside divided area or in neutral area - allow building
+                // Check if this is a server action (player: -1) - allow server actions outside regions
+                if (playerId === -1) {
+                    // Server action - allow it to proceed (for scoreboard, etc.)
+                    return;
+                }
+                
+                // Player action outside divided area - block it
+                console.log(`[BuildingRestrictions] BLOCKED: Action ${e.action} at (${tileX}, ${tileY}) is outside the divided area`);
+                e.result = {
+                    error: 1, // Generic error
+                    errorTitle: "Action Restricted",
+                    errorMessage: `Actions are only allowed within the divided player regions (1-128 x 1-128). This location is outside the play area.`
+                };
                 return;
             }
 
-            // Get the player who is trying to build
-            const playerId = e.player;
+            // Get the player's assigned region
             const playerRegion = playerManager.getPlayerRegion(playerId);
             
             // If no players are registered, block all building
@@ -78,24 +73,19 @@ export function subscribeToBuildingRestrictions(
                 return;
             }
             
-            // Check if player is trying to build in their assigned region
+            // Check if player is trying to perform action in their assigned region
             if (playerRegion !== region) {
-                console.log(`[BuildingRestrictions] BLOCKED: Player ${playerId} (${playerRegion}) trying to build in ${region}`);
+                console.log(`[BuildingRestrictions] BLOCKED: Player ${playerId} (${playerRegion}) trying to perform ${e.action} in ${region}`);
                 
                 // Get player's color for the error message
                 const player = playerManager.getPlayer(playerId.toString());
                 const playerColor = player ? player.colour : "unknown";
                 
-                // Determine appropriate error message based on action type
-                let errorTitle = "Building Restricted";
-                let errorMessage = `You can only build in your ${playerColor} region. This tile belongs to another player's region.`;
+                // Generic error message for any action in another player's region
+                const errorTitle = "Action Restricted";
+                const errorMessage = `You can only perform actions in your ${playerColor} region. This tile belongs to another player's region.`;
                 
-                if (e.action === "landraise" || e.action === "landlower") {
-                    errorTitle = "Land Modification Restricted";
-                    errorMessage = `You can only modify land in your ${playerColor} region. This tile belongs to another player's region.`;
-                }
-                
-                // Player is trying to build in another player's region - deny the action
+                // Player is trying to perform action in another player's region - deny the action
                 e.result = {
                     error: 1, // Generic error
                     errorTitle: errorTitle,
@@ -104,7 +94,7 @@ export function subscribeToBuildingRestrictions(
                 return;
             }
             
-            // Player is building in their own region - allow the action
+            // Player is performing action in their own region - allow the action
         })
     );
 }

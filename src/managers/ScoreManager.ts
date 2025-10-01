@@ -151,6 +151,7 @@ export class ScoreManager {
         
         for (const player of allPlayers) {
             const scoreKey = `player_${player.id}_score`;
+            // Note: Reading from storage - this is acceptable for read operations
             const storedScore = context.getParkStorage().get(scoreKey, 0);
             this.playerScores[player.id] = storedScore;
             

@@ -20,6 +20,7 @@ export function assignSlotsWithCompletionStatus(board: BingoBoard, isNewBoard: b
         const goalKey = `goal_${slot}`;
         console.log("Goal key:", goalKey);
         // Check if the goal is marked as completed in parkStorage
+        // Note: Reading from storage - this is acceptable for read operations
         const isCompleted = context.getParkStorage().get(goalKey, false);
 
         return {

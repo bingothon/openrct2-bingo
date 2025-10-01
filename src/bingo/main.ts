@@ -205,12 +205,14 @@ export function checkGoals(board: BingoBoard) {
         // Clients just read completed goals from game state
         board.forEach((goal, index) => {
             const goalKey = `goal_${goal.slot}`;
+            // Note: Reading from storage - this is acceptable for read operations
             const isCompleted = context.getParkStorage().get(goalKey, false);
             if (isCompleted && goal.status !== "completed") {
                 goal.status = "completed";
                 
                 // Check for stored colors
                 const colorsKey = `${goalKey}_colors`;
+                // Note: Reading from storage - this is acceptable for read operations
                 const storedColorsData = context.getParkStorage().get(colorsKey, "[]");
                 if (storedColorsData && storedColorsData !== "[]") {
                     try {

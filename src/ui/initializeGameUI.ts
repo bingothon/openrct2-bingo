@@ -1,11 +1,11 @@
 import { subscribeToInventions, subscribeToRenewRides } from "../subscriptions/game";
-import { subscribeToServerInitialization } from "../subscriptions/server";
+// import { subscribeToServerInitialization } from "../subscriptions/server"; // LEGACY - removed to prevent duplicate initialization
 import { getSeed } from "../utils";
 import { configureBoard } from "./helpers";
 // Goal checking is now handled by GoalManager
 import { openBingoBoard } from "./openBingoBoard";
 import { showConnectDialog } from "./showConnectDialog";
-import { showGameDurationDialog } from "./showGameDurationDialog";
+// import { showGameDurationDialog } from "./showGameDurationDialog"; // LEGACY - no longer used
 import { initializeBingoSystem } from "../bingo/integration";
 
 /**
@@ -17,7 +17,7 @@ export function setupGameUI() {
   // Set up game systems
   subscribeToInventions();
   subscribeToRenewRides();
-  subscribeToServerInitialization(showGameDurationDialog); // Handles map initialization (trees, paths, etc.)
+  // subscribeToServerInitialization(showGameDurationDialog); // LEGACY - removed to prevent duplicate initialization
 
   // Initialize game board and UI
   const seed = getSeed();
