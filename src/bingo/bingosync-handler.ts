@@ -4,6 +4,7 @@ import { BingoBoard, BingoSyncBoardData } from "../types";
 import { config } from "../config";
 import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui/helpers";
 import type { ManagedServer } from "../utils/managedServer";
+import { copyableTextWidgets } from "../ui/copyableText";
 // import { restart } from "src/subscriptions";
 // Created on the first connection, so games that never connect (every client) don't open one
 let socket: Socket | null = null;
@@ -57,18 +58,34 @@ export function updateUIOnConnect(roomUrl: string, roomPassphrase: string) {
 }
 
 export function bingosyncUI() {
+    const roomUrl: string = context.getParkStorage().get("roomUrl", "");
+    const roomPassword: string = context.getParkStorage().get("roomPassword", "");
+    const width = 540; // wide enough for the full room link
+
+    const widgets: WidgetDesc[] = roomUrl
+        ? [
+              { type: "label", text: "This game's BingoSync room:", x: 10, y: 20, width: width - 20, height: 14 },
+              ...copyableTextWidgets("Room URL:", roomUrl, 10, 40, width - 20),
+              ...copyableTextWidgets("Password:", roomPassword, 10, 60, width - 20),
+          ]
+        : [
+              {
+                  type: "label",
+                  text: "No BingoSync room yet - the server creates one when the game starts.",
+                  x: 10,
+                  y: 20,
+                  width: width - 20,
+                  height: 14,
+              },
+          ];
+
+    ui.getWindow("bingosync-connection")?.close();
     ui.openWindow({
         classification: "bingosync-connection",
         title: "BingoSync Connection",
-        width: 200,
-        height: 130,
-        widgets: [
-            { type: "label", text: "Connected to BingoSync!", x: 35, y: 22, width: 160, height: 20 },
-            { type: "label", text: "Room URL:", x: 10, y: 40, width: 80, height: 20 },
-            { type: "textbox", x: 100, y: 40, width: 90, height: 20, text: context.getParkStorage().get('roomUrl') },
-            { type: "label", text: "Password:", x: 10, y: 70, width: 80, height: 20 },
-            { type: "textbox", x: 100, y: 70, width: 90, height: 20, text: context.getParkStorage().get('roomPassword') },
-        ],
+        width,
+        height: roomUrl ? 85 : 45,
+        widgets,
     });
 }
 /**

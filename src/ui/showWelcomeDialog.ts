@@ -1,5 +1,9 @@
 import { bingosyncUI } from "../bingo/bingosync-handler";
 import { openBingoBoardDialog } from "./openBingoBoardDialog";
+import { copyableTextWidgets } from "./copyableText";
+
+/** Wide enough for the full Discord links */
+const WIDTH = 520;
 
 /**
  * Displays the Welcome dialog with general information and interactive buttons.
@@ -9,8 +13,8 @@ export function showWelcomeDialog() {
         id: 1,
         classification: "welcome-dialog",
         title: "OpenRCT2 Bingo",
-        width: 355,
-        height: 300,
+        width: WIDTH,
+        height: 260,
         widgets: [
             // Section: Instructions
             {
@@ -80,58 +84,28 @@ export function showWelcomeDialog() {
                 text: "for BingoSync connection details.",
                 x: 180,
                 y: 120,
-                width: 165,
+                width: WIDTH - 190,
                 height: 20,
             },
 
-            // Section: Copyable Discord Links
+            // Section: Discord links (copyable)
             {
                 type: "label",
-                text: "Join the Discord communities: (Ctrl+C to copy)",
+                text: "Join the Discord communities:",
                 x: 10,
                 y: 150,
-                width: 330,
+                width: WIDTH - 20,
                 height: 20,
             },
-            {
-                type: "label",
-                text: "Bingothon Discord:",
-                x: 10,
-                y: 180,
-                width: 100,
-                height: 20,
-            },
-            {
-                type: "textbox",
-                x: 120,
-                y: 180,
-                width: 200,
-                height: 20,
-                text: "https://discord.gg/wY4pBEAjBb",
-            },
-            {
-                type: "label",
-                text: "OpenRCT2 Discord:",
-                x: 10,
-                y: 210,
-                width: 100,
-                height: 20,
-            },
-            {
-                type: "textbox",
-                x: 120,
-                y: 210,
-                width: 200,
-                height: 20,
-                text: "https://discord.com/invite/openrct2-264137540670324737",
-            },
+            ...copyableTextWidgets("Bingothon:", "https://discord.gg/wY4pBEAjBb", 10, 172, WIDTH - 20),
+            ...copyableTextWidgets("OpenRCT2:", "https://discord.com/invite/openrct2-264137540670324737", 10, 192, WIDTH - 20),
 
             // Close Button
             {
                 type: "button",
                 text: "Close",
-                x: 125,
-                y: 250,
+                x: (WIDTH - 100) / 2,
+                y: 220,
                 width: 100,
                 height: 30,
                 onClick: () => ui.getWindow("welcome-dialog")?.close(),
