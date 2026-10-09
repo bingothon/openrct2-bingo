@@ -27,6 +27,7 @@ import { ServerManager } from './managers/ServerManager';
 import { GameManager } from './managers/GameManager';
 import { subscribeToPlayerReconnects } from './subscriptions/server/playerReconnect';
 import { subscribeToStaffNaming } from './subscriptions/server/staffNaming';
+import { subscribeToAutoOpenStalls } from './subscriptions/server/autoOpenStalls';
 import { subscribeToBudgetTracking } from './bingo/budgets';
 import { subscribeToBannerRegions } from './bingo/bannerRegions';
 import { subscribeToSetupLock } from './subscriptions/game/buildingRestrictions';
@@ -61,6 +62,8 @@ export function main(): void {
         subscribeToBudgetTracking();
         // Players wait while the game is being set up
         subscribeToSetupLock();
+        // Stalls open as soon as they are placed
+        subscribeToAutoOpenStalls();
 
         // Started by the server manager (openrct2-bingosync): this server always runs one mode,
         // so start it right away - players only pick their colour
