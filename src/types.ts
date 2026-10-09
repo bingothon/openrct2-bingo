@@ -1,10 +1,23 @@
+import type { GoalScope } from "./bingo/goalScopes";
+
 export type Goal = {
     name: string;
     slot: string | undefined;
     colors: string;
     status: "completed" | "incomplete";
+    /** Coop check: the whole park */
     checkCondition: () => boolean;
     currentCondition?: () => string | number | undefined;
+    /** PvP/Lockout check: only the player's region. Goals without it are coop-only. */
+    checkPlayer?: (scope: GoalScope) => boolean;
+    /** PvP/Lockout progress in the player's region (shown when clicking the goal) */
+    playerProgress?: (scope: GoalScope) => string | number;
+    /** Name shown in PvP/Lockout when it differs from the coop name */
+    playerName?: string;
+    /** Only offered in PvP/Lockout */
+    playerOnly?: boolean;
+    /** PvP: colours of the players that completed the goal */
+    completedBy?: string[];
   };
   
 export type BingoSyncBoardData = {
@@ -86,6 +99,10 @@ export interface Config {
   socket: Socket | undefined;
   gameMode: "coop" | "pvp" | "lockout";
   playerColors: PlayerColors;
+  /** Coop: park cash at the start of a game (money units, tenths of a dollar) */
+  startingCash: number;
+  /** PvP/Lockout: budget per player (money units, tenths); the park starts with one per colour */
+  playerStartingBudget: number;
   playerColorNames: PlayerColorNames;
   debug: boolean;
 }

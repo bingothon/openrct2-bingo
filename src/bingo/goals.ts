@@ -1,5 +1,6 @@
 import { INVENTION_ITEMS } from "src/constants";
 import { Goal } from "../types";
+import { buildParkScope, GoalScope } from "./goalScopes";
 import { createSeededRandom } from "../utils";
 
 type ThoughtKey = keyof typeof thoughtTypes;
@@ -53,6 +54,95 @@ const awardTypes = {
 
 const rideCategories = ["Transport", "Gentle", "Water", "Thrill", "Shop"]; // Ride categories
 
+// Helpers for PvP/Lockout checks (see goalScopes.ts). Money values are in tenths, like park.cash.
+const isRide = (ride: Ride) => ride.classification !== "stall" && ride.classification !== "facility";
+const countRides = (rides: Ride[], predicate: (ride: Ride) => boolean) => rides.filter(predicate).length;
+const anyRide = (rides: Ride[], predicate: (ride: Ride) => boolean) => countRides(rides, predicate) > 0;
+const countGuestsWithItem = (guests: Guest[], item: GuestItemType) =>
+    guests.filter((guest) => guest.hasItem({ type: item })).length;
+
+function countUniqueStallTypes(rides: Ride[]): number {
+    const uniqueStallTypes: number[] = [];
+    rides
+        .filter((ride) => ride.classification === "stall")
+        .forEach((stall) => {
+            if (uniqueStallTypes.indexOf(stall.object.index) === -1) {
+                uniqueStallTypes.push(stall.object.index);
+            }
+        });
+    return uniqueStallTypes.length;
+}
+
+function countUniqueUmbrellaColours(guests: Guest[]): number {
+    const uniqueColours: number[] = [];
+    guests.forEach((guest) => {
+        const colour = guest.umbrellaColour;
+        if (colour !== 0 && uniqueColours.indexOf(colour) === -1) {
+            uniqueColours.push(colour);
+        }
+    });
+    return uniqueColours.length;
+}
+
+const ONRIDE_PHOTOS: GuestItemType[] = ["photo1", "photo2", "photo3", "photo4"];
+
+/**
+ * A goal that works in every mode with one check: coop runs it against the whole park,
+ * PvP/Lockout against the player's region
+ */
+function sharedGoal(definition: {
+    name: string;
+    playerName?: string;
+    check: (scope: GoalScope) => boolean;
+    progress: (scope: GoalScope) => string | number;
+}): Goal {
+    return {
+        name: definition.name,
+        playerName: definition.playerName,
+        slot: undefined,
+        colors: "blank",
+        status: "incomplete",
+        checkCondition: () => definition.check(buildParkScope()),
+        currentCondition: () => definition.progress(buildParkScope()),
+        checkPlayer: definition.check,
+        playerProgress: definition.progress,
+    };
+}
+
+/**
+ * "Create all rides in the X category": every ride type of the category built, and enough of
+ * them profitable (half for gentle/thrill, all otherwise)
+ */
+function getCategoryRideTypes(category: string): number[] {
+    const categoryRideTypes: number[] = [];
+    INVENTION_ITEMS.forEach((ride) => {
+        if (
+            ride.type === "ride" &&
+            ride.category === category &&
+            ride.rideType !== undefined &&
+            categoryRideTypes.indexOf(ride.rideType) === -1
+        ) {
+            categoryRideTypes.push(ride.rideType);
+        }
+    });
+    return categoryRideTypes;
+}
+
+function isCategoryComplete(rides: Ride[], category: string): boolean {
+    const categoryRideTypes = getCategoryRideTypes(category);
+    let profitableCount = 0;
+    for (let i = 0; i < categoryRideTypes.length; i++) {
+        const ofType = rides.filter((ride) => ride.type === categoryRideTypes[i]);
+        if (ofType.length === 0) return false; // not all built
+        if (anyRide(ofType, (ride) => ride.totalProfit > 0)) profitableCount++;
+    }
+    const requiredProfitableCount =
+        category === "gentle" || category === "thrill"
+            ? Math.ceil(categoryRideTypes.length / 2)
+            : categoryRideTypes.length;
+    return profitableCount >= requiredProfitableCount;
+}
+
 export const goals = (seed: number) => {
     let startMonth = date.monthsElapsed;
     let consecutiveCleanMonths = 0;
@@ -72,12 +162,15 @@ export const goals = (seed: number) => {
 
 
     const randomThoughtKey = thoughtKeys[Math.floor(rng() * thoughtKeys.length)];
+    const cleanMonthsByRegion: { [region: string]: { lastMonth: number; months: number } } = {};
     const randomThought = thoughtTypes[randomThoughtKey];
 
 
     let goals: Goal[] = [
         {
             name: "Have 3 coasters with a (6+) high nausea rating, must have profits",
+            playerProgress: (scope) => countRides(scope.rides, (ride) => ride.nausea > 600 && ride.totalProfit > 0),
+            checkPlayer: (scope) => countRides(scope.rides, (ride) => ride.nausea > 600 && ride.totalProfit > 0) >= 3,
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -85,6 +178,8 @@ export const goals = (seed: number) => {
         },
         {
             name: "Have 3 coasters with a (8+) high excitement rating, must have profits",
+            playerProgress: (scope) => countRides(scope.rides, (ride) => ride.excitement > 800 && ride.totalProfit > 0),
+            checkPlayer: (scope) => countRides(scope.rides, (ride) => ride.excitement > 800 && ride.totalProfit > 0) >= 3,
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -93,6 +188,8 @@ export const goals = (seed: number) => {
         },
         {
             name: "Have 3 coasters with a (8+) high intensity rating, must have profits",
+            playerProgress: (scope) => countRides(scope.rides, (ride) => ride.intensity > 800 && ride.totalProfit > 0),
+            checkPlayer: (scope) => countRides(scope.rides, (ride) => ride.intensity > 800 && ride.totalProfit > 0) >= 3,
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -109,6 +206,9 @@ export const goals = (seed: number) => {
         },
         {
             name: "Umbrella Pride (in 9 different colors)",
+            playerProgress: (scope) => countUniqueUmbrellaColours(scope.guests),
+            playerName: "Umbrella Pride (9 different colors in your region)",
+            checkPlayer: (scope) => countUniqueUmbrellaColours(scope.guests) >= 9,
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -186,6 +286,8 @@ export const goals = (seed: number) => {
         },
         {
             name: "Ride with more than 1000 guests",
+            playerProgress: (scope) => scope.rides.filter((ride) => isRide(ride)).reduce((max, ride) => Math.max(max, ride.totalCustomers), 0),
+            checkPlayer: (scope) => anyRide(scope.rides, (ride) => isRide(ride) && ride.totalCustomers >= 1000),
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -201,6 +303,9 @@ export const goals = (seed: number) => {
         },
         {
             name: "Dirty (+100 litter)",
+            playerProgress: (scope) => scope.litterCount,
+            playerName: "Dirty (100+ litter in your region)",
+            checkPlayer: (scope) => scope.litterCount >= 100,
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -211,6 +316,21 @@ export const goals = (seed: number) => {
         },
         {
             name: "Clean AF (Max 16 litter for 3 months)",
+            playerProgress: (scope) => {
+                const state = cleanMonthsByRegion[scope.region];
+                return `Litter: ${scope.litterCount}, guests: ${scope.guests.length}, clean months: ${state ? state.months : 0}`;
+            },
+            playerName: "Clean AF (max 16 litter in your region for 3 months, 100+ guests)",
+            // An empty region has no litter, so a month only counts with 100+ guests
+            checkPlayer: (scope) => {
+                const month = date.monthsElapsed;
+                const state = cleanMonthsByRegion[scope.region] || (cleanMonthsByRegion[scope.region] = { lastMonth: month, months: 0 });
+                if (month !== state.lastMonth) {
+                    state.lastMonth = month;
+                    state.months = scope.litterCount <= 16 && scope.guests.length >= 100 ? state.months + 1 : 0;
+                }
+                return state.months >= 3;
+            },
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -244,6 +364,8 @@ export const goals = (seed: number) => {
 
         {
             name: "Long track (2500m+)",
+            playerProgress: (scope) => scope.rides.reduce((max, ride) => Math.max(max, ride.rideLength), 0),
+            checkPlayer: (scope) => anyRide(scope.rides, (ride) => ride.rideLength >= 2500 && ride.totalProfit > 0),
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -263,6 +385,8 @@ export const goals = (seed: number) => {
         },
         {
             name: "Create 25 unique stalls",
+            playerProgress: (scope) => countUniqueStallTypes(scope.rides),
+            checkPlayer: (scope) => countUniqueStallTypes(scope.rides) >= 25,
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -302,6 +426,8 @@ export const goals = (seed: number) => {
         },
         {
             name: "Create 10 rides",
+            playerProgress: (scope) => countRides(scope.rides, (ride) => isRide(ride) && ride.totalProfit > 0),
+            checkPlayer: (scope) => countRides(scope.rides, (ride) => isRide(ride) && ride.totalProfit > 0) >= 10,
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -310,6 +436,8 @@ export const goals = (seed: number) => {
         },
         {
             name: "Airtime (10+ sec)",
+            playerProgress: (scope) => scope.rides.reduce((max, ride) => Math.max(max, ride.totalAirTime), 0),
+            checkPlayer: (scope) => anyRide(scope.rides, (ride) => ride.totalAirTime >= 10 && ride.totalProfit > 0),
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -325,6 +453,7 @@ export const goals = (seed: number) => {
         },
         {
             name: "Get 1000 guests in the park",
+            // Coop only: how many guests reach a region is luck, not skill
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -333,6 +462,7 @@ export const goals = (seed: number) => {
         },
         {
             name: "Get 500 guests in the park",
+            // Coop only: how many guests reach a region is luck, not skill
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -341,6 +471,7 @@ export const goals = (seed: number) => {
         },
         {
             name: "Get 250 guests in the park",
+            // Coop only: how many guests reach a region is luck, not skill
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -349,6 +480,7 @@ export const goals = (seed: number) => {
         },
         {
             name: "Get 100 guests in the park",
+            // Coop only: how many guests reach a region is luck, not skill
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -357,6 +489,8 @@ export const goals = (seed: number) => {
         },
         {
             name: "Ride with >$1000 profit",
+            playerProgress: (scope) => scope.rides.filter(isRide).reduce((max, ride) => Math.max(max, ride.totalProfit), 0) / 10,
+            checkPlayer: (scope) => anyRide(scope.rides, (ride) => isRide(ride) && ride.totalProfit >= 1000 * 10),
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -371,6 +505,8 @@ export const goals = (seed: number) => {
         },
         {
             name: "Long Ride Time (4+S min)",
+            playerProgress: (scope) => scope.rides.reduce((max, ride) => Math.max(max, ride.rideTime), 0),
+            checkPlayer: (scope) => anyRide(scope.rides, (ride) => ride.rideTime >= 60 * 4 && ride.totalProfit > 0),
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -409,6 +545,9 @@ export const goals = (seed: number) => {
         },
         {
             name: `${randomThought} (25+ times)`,
+            playerProgress: (scope) => scope.guests.filter((guest) => guest.thoughts.some((thought) => thought.type === randomThoughtKey)).length,
+            playerName: `${randomThought} (25+ guests in your region)`,
+            checkPlayer: (scope) => scope.guests.filter((guest) => guest.thoughts.some((thought) => thought.type === randomThoughtKey)).length >= 25,
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -423,6 +562,19 @@ export const goals = (seed: number) => {
         },
         {
             name: "White Castle (Burger Stall Highest Possible, with Profit)",
+            playerProgress: (scope) => {
+                const stall = scope.rides.filter((ride) => ride.classification === "stall" && ride.type === 28 && ride.stations.some((station) => station.start && station.start.z >= 2000))[0];
+                return stall ? stall.name : "No White Castle";
+            },
+            checkPlayer: (scope) =>
+                anyRide(
+                    scope.rides,
+                    (ride) =>
+                        ride.classification === "stall" &&
+                        ride.type === 28 &&
+                        ride.totalProfit > 0 &&
+                        ride.stations.some((station) => station.start && station.start.z >= 2000),
+                ),
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -446,6 +598,11 @@ export const goals = (seed: number) => {
         },
         {
             name: `Create all rides in the ${randomCategory} category`,
+            playerProgress: (scope) => {
+                const types = getCategoryRideTypes(randomCategory.toLowerCase());
+                return `${types.filter((type) => anyRide(scope.rides, (ride) => ride.type === type)).length}/${types.length} built`;
+            },
+            checkPlayer: (scope) => isCategoryComplete(scope.rides, randomCategory.toLowerCase()),
             slot: undefined,
             colors: "blank",
             status: "incomplete",
@@ -567,6 +724,101 @@ export const goals = (seed: number) => {
                 return allBuilt && profitableCount >= requiredProfitableCount;
             },
         },
+        // Goals for every mode: coop checks the whole park, PvP/Lockout the player's region
+        sharedGoal({
+            name: "Rides and stalls earn $10,000 profit",
+            playerName: "Your rides and stalls earn $10,000 profit",
+            check: (scope) => scope.rides.reduce((total, ride) => total + ride.totalProfit, 0) >= 10_000 * 10,
+            progress: (scope) => scope.rides.reduce((total, ride) => total + ride.totalProfit, 0) / 10,
+        }),
+        sharedGoal({
+            name: "A stall with 500+ customers",
+            check: (scope) => anyRide(scope.rides, (ride) => ride.classification === "stall" && ride.totalCustomers >= 500),
+            progress: (scope) => scope.rides.filter((ride) => ride.classification === "stall").reduce((max, ride) => Math.max(max, ride.totalCustomers), 0),
+        }),
+        sharedGoal({
+            name: "Smooth operator (ride with 7+ excitement and under 5 intensity, with profit)",
+            check: (scope) =>
+                anyRide(scope.rides, (ride) => ride.excitement >= 700 && ride.intensity < 500 && ride.totalProfit > 0),
+            progress: (scope) => countRides(scope.rides, (ride) => ride.excitement >= 700 && ride.intensity < 500 && ride.totalProfit > 0),
+        }),
+        sharedGoal({
+            name: "Hat trick (25 guests wearing hats)",
+            playerName: "Hat trick (25 guests wearing hats in your region)",
+            check: (scope) => countGuestsWithItem(scope.guests, "hat") >= 25,
+            progress: (scope) => countGuestsWithItem(scope.guests, "hat"),
+        }),
+        sharedGoal({
+            name: "Tourist season (50 guests carrying a park map)",
+            playerName: "Tourist season (50 guests carrying a park map in your region)",
+            check: (scope) => countGuestsWithItem(scope.guests, "map") >= 50,
+            progress: (scope) => countGuestsWithItem(scope.guests, "map"),
+        }),
+        sharedGoal({
+            name: "Balloon party (25 guests with balloons)",
+            playerName: "Balloon party (25 guests with balloons in your region)",
+            check: (scope) => countGuestsWithItem(scope.guests, "balloon") >= 25,
+            progress: (scope) => countGuestsWithItem(scope.guests, "balloon"),
+        }),
+        sharedGoal({
+            name: "Money pit (a ride losing $500)",
+            check: (scope) => anyRide(scope.rides, (ride) => isRide(ride) && ride.totalProfit <= -500 * 10),
+            progress: (scope) => scope.rides.filter(isRide).reduce((min, ride) => Math.min(min, ride.totalProfit), 0) / 10,
+        }),
+        sharedGoal({
+            name: "Build 15 rides (with profit)",
+            check: (scope) => countRides(scope.rides, (ride) => isRide(ride) && ride.totalProfit > 0) >= 15,
+            progress: (scope) => countRides(scope.rides, (ride) => isRide(ride) && ride.totalProfit > 0),
+        }),
+        sharedGoal({
+            name: "Big crowd (a ride with 2000+ customers)",
+            check: (scope) => anyRide(scope.rides, (ride) => isRide(ride) && ride.totalCustomers >= 2000),
+            progress: (scope) => scope.rides.filter(isRide).reduce((max, ride) => Math.max(max, ride.totalCustomers), 0),
+        }),
+        sharedGoal({
+            name: "Crowd pleasers (3 rides with 90%+ satisfaction)",
+            check: (scope) => countRides(scope.rides, (ride) => isRide(ride) && ride.satisfaction >= 90) >= 3,
+            progress: (scope) => countRides(scope.rides, (ride) => isRide(ride) && ride.satisfaction >= 90),
+        }),
+        sharedGoal({
+            name: "Thrill seekers (5 rides with 6+ excitement, with profit)",
+            check: (scope) => countRides(scope.rides, (ride) => ride.excitement >= 600 && ride.totalProfit > 0) >= 5,
+            progress: (scope) => countRides(scope.rides, (ride) => ride.excitement >= 600 && ride.totalProfit > 0),
+        }),
+        sharedGoal({
+            name: "Food court (10 stalls with profit)",
+            check: (scope) => countRides(scope.rides, (ride) => ride.classification === "stall" && ride.totalProfit > 0) >= 10,
+            progress: (scope) => countRides(scope.rides, (ride) => ride.classification === "stall" && ride.totalProfit > 0),
+        }),
+        sharedGoal({
+            name: "Cash cow (a stall with $2,000 profit)",
+            check: (scope) => anyRide(scope.rides, (ride) => ride.classification === "stall" && ride.totalProfit >= 2_000 * 10),
+            progress: (scope) => scope.rides.filter((ride) => ride.classification === "stall").reduce((max, ride) => Math.max(max, ride.totalProfit), 0) / 10,
+        }),
+        sharedGoal({
+            name: "Long haul (3 rides of 1000m+, with profit)",
+            check: (scope) => countRides(scope.rides, (ride) => ride.rideLength >= 1000 && ride.totalProfit > 0) >= 3,
+            progress: (scope) => countRides(scope.rides, (ride) => ride.rideLength >= 1000 && ride.totalProfit > 0),
+        }),
+        sharedGoal({
+            name: "Merch drop (50 guests wearing park t-shirts)",
+            playerName: "Merch drop (50 guests wearing park t-shirts in your region)",
+            check: (scope) => countGuestsWithItem(scope.guests, "tshirt") >= 50,
+            progress: (scope) => countGuestsWithItem(scope.guests, "tshirt"),
+        }),
+        sharedGoal({
+            name: "Shades on (50 guests wearing sunglasses)",
+            playerName: "Shades on (50 guests wearing sunglasses in your region)",
+            check: (scope) => countGuestsWithItem(scope.guests, "sunglasses") >= 50,
+            progress: (scope) => countGuestsWithItem(scope.guests, "sunglasses"),
+        }),
+        sharedGoal({
+            name: "Say cheese (25 guests with an on-ride photo)",
+            playerName: "Say cheese (25 guests with an on-ride photo in your region)",
+            check: (scope) =>
+                scope.guests.filter((guest) => ONRIDE_PHOTOS.some((photo) => guest.hasItem({ type: photo }))).length >= 25,
+            progress: (scope) => scope.guests.filter((guest) => ONRIDE_PHOTOS.some((photo) => guest.hasItem({ type: photo }))).length,
+        }),
         // {
         //     name: "Place 5 Litter Bins",
         //     slot: undefined,

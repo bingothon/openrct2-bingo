@@ -1,6 +1,9 @@
 import { BingoBoard, Goal } from "../types";
 import { addLineBreak } from "./helpers";
 import { config } from "../config";
+import { GameManager } from "../managers/GameManager";
+import { buildRegionScopes } from "../bingo/goalScopes";
+import { getLocalRegistration } from "./showRegionPicker";
 
 /**
  * Displays the Bingo board dialog with a 5x5 grid of buttons representing each Bingo slot.
@@ -18,6 +21,19 @@ export function showBingoBoardDialog(board: BingoBoard) {
 
     // Helper function to handle button clicks
     const handleButtonClick = (goal: Goal) => {
+        // PvP/Lockout: show the progress in the clicking player's own region
+        if (config.gameMode !== "coop" && goal.playerProgress) {
+            const registration = getLocalRegistration();
+            if (!registration) {
+                network.sendMessage(`[Goal: ${goal.name}] Pick your region first to see your progress.`);
+                return;
+            }
+            const ground = GameManager.getInstance().getGroundDivisionManager();
+            const scope = buildRegionScopes(ground)[registration.region];
+            network.sendMessage(`[Goal: ${goal.name}] ${registration.colour.toUpperCase()}: ${goal.playerProgress(scope)}`);
+            return;
+        }
+
         if (goal.currentCondition) {
             const currentValue = goal.currentCondition();
             network.sendMessage(`[Goal: ${goal.name}] Current Value: ${currentValue}`);

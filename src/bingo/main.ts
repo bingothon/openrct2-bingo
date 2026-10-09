@@ -79,7 +79,7 @@ function buildColoredText(colors: string | undefined, text: string): string {
     return `{${colorToken}}${text}{BLACK}`;
 }
 
-function colourTokenForName(name: string): string | null {
+export function colourTokenForName(name: string): string | null {
     switch (name) {
         case "red": return "RED";
         case "blue": return "BABYBLUE"; // Using OpenRCT2's BABYBLUE token
@@ -237,26 +237,19 @@ export function checkGoals(board: BingoBoard) {
         return;
     }
 
-    // Server-side goal checking
-    if (network.mode === "server" || network.mode === "none") {
+    // Server-side goal checking. PvP/Lockout goals are checked per player by GoalManager.
+    if (config.gameMode !== "coop") {
+        return;
+    }
+
+    try {
+        board.forEach((goal, index) => {
+            const goalKey = `goal_${goal.slot}`;
+
+            if (network.mode === "server" || network.mode === "none") {
                 try {
                     if (goal.status === "incomplete" && goal.checkCondition()) {
-                        if (config.gameMode === "coop") {
-                            // Coop mode - complete immediately
-                            completeGoal(goal, goalKey, index, board);
-                        } else {
-                            // PVP/Lockout: check if any player can complete
-                            const stateManager = GameManager.getInstance().getPlayerStateManager();
-                            const allPlayers = GameManager.getInstance().getAllPlayers();
-                            
-                            for (let i = 0; i < allPlayers.length; i++) {
-                                const player = allPlayers[i];
-                                if (stateManager.isGoalCompletedForPlayer(goal, player.id)) {
-                                    completeGoal(goal, goalKey, index, board);
-                                    break;
-                                }
-                            }
-                        }
+                        completeGoal(goal, goalKey, index, board);
                     }
                 } catch (error) {
                     console.log(`Error checking goal ${goal.slot || "unslotted"} - ${goal.name}:`, error);
@@ -281,7 +274,7 @@ function completeGoal(goal: Goal, goalKey: string, index: number, board: BingoBo
         action: "selectGoal",
         slot: goal.slot,
         color: "red",
-        room: config.roomNameInput
+        room: config.roomIdInput
     }) + "\n";
     
     if (config.socket) {
@@ -301,21 +294,9 @@ function completeGoal(goal: Goal, goalKey: string, index: number, board: BingoBo
     const gameManager = GameManager.getInstance();
     const allPlayers = gameManager.getAllPlayers();
     
-    // Award points to all players in coop mode, or specific player in PVP/Lockout
-    if (config.gameMode === "coop") {
-        // Coop mode - all players get points
-        for (const player of allPlayers) {
-            scoreManager.updatePlayerScore(player.id, 1);
-        }
-    } else {
-        // PVP/Lockout mode - find which player completed the goal
-        const stateManager = gameManager.getPlayerStateManager();
-        for (const player of allPlayers) {
-            if (stateManager.isGoalCompletedForPlayer(goal, player.id)) {
-                scoreManager.updatePlayerScore(player.id, 1);
-                break; // Only one player can complete a goal in PVP/Lockout
-            }
-        }
+    // Coop mode - all players get points
+    for (const player of allPlayers) {
+        scoreManager.updatePlayerScore(player.id, 1);
     }
     
     console.log(`Goal ${goal.slot || "unslotted"} - ${goal.name} marked as completed.`);

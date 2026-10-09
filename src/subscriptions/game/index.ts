@@ -1,7 +1,8 @@
 // Goal-related subscriptions
 export {
     subscribeToGoalChecks,
-    unsubscribeFromGoalChecks
+    unsubscribeFromGoalChecks,
+    subscribeToClientBoardSync
 } from './goals';
 
 // Inventions-related subscriptions

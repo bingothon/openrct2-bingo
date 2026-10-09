@@ -1,5 +1,5 @@
 // UI Helpers module exports
-export { configureBoard } from "./configureBoard";
+export { configureBoard, getBoardGameMode } from "./configureBoard";
 export { generateBingoBoard } from "./generateBingoBoard";
 export { assignSlotsWithCompletionStatus } from "./assignSlotsWithCompletionStatus";
 export { addLineBreak } from "./addLineBreak";
