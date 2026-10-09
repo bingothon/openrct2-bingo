@@ -1,3 +1,4 @@
+import { config } from "src/config";
 import { addRandomTrees, debugMode, setFootPaths } from "src/utils";
 import { GameManager } from "../../managers/GameManager";
 
@@ -23,7 +24,7 @@ export function initializeCoopGame(): void {
                             // Step 7: Set loan
                             context.executeAction("parksetloan", { value: 0 }, () => {
                                 // Step 8: Set cash
-                                context.executeAction("setCash", { args: { cash: 1000000 } }, () => {
+                                context.executeAction("setCash", { args: { cash: config.startingCash } }, () => {
                                     // Step 9: Set date
                                     context.executeAction("parksetdate", { day: 0, month: 0, year: 0 }, () => {
                                         // Step 10: Disable debug mode

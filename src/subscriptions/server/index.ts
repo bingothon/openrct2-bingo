@@ -2,7 +2,7 @@
 import { subscriptions } from "../manager";
 import { config } from "src/config";
 import { checkIfStarted } from "src/utils";
-import { handleYearProgression, handleGameStatusUpdates, handleEndGameWarnings, handleGameInitialization, handleMultiplayerDialog } from "./helpers";
+import { handleYearProgression, handleGameStatusUpdates, handleEndGameWarnings, handleMultiplayerDialog } from "./helpers";
 
 // Re-export restart for external use
 export function subscribeIfStarted(showGameDurationCallback?: () => void) {

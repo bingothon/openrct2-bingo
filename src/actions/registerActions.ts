@@ -20,71 +20,138 @@ import {
   createScoreboardAction,
   clearScoreboardAction,
   updateScoreAction,
+  registerPlayerAction,
 } from "./index";
+
+type ActionHandler = (event: GameActionEventArgs<any>) => GameActionResult;
+
+/**
+ * Callers pass custom action data as `{ args: {...} }`. Since API 68 (see targetApiVersion in
+ * plugin.ts) handlers receive GameActionEventArgs whose `args` is that whole object, so unwrap it
+ * here: handlers keep reading `event.args.<field>` and also get the acting `event.player`.
+ */
+function unwrapArgs(handler: ActionHandler): ActionHandler {
+  return (event) => {
+    const data: any = event.args;
+    const args = data && typeof data === "object" && "args" in data ? data.args : data;
+    return handler({
+      action: event.action,
+      args,
+      player: event.player,
+      type: event.type,
+      isClientOnly: event.isClientOnly,
+      result: event.result,
+    });
+  };
+}
+
+/*
+ * Custom actions have no permission checks in OpenRCT2, and any player could run them with a
+ * script. Players may only register themselves and store the game setup choices before the game
+ * starts; everything else (goals, scores, cash, clearing the map, ...) is server-only.
+ */
+const PLAYER_ACTIONS = ["registerPlayer", "setStorage"];
+const PLAYER_STORAGE_KEYS = ["gameMode", "duration", "gameOver", "gameResult", "started"];
+
+/** Actions that send further game actions: only the server does that, not every client again */
+const SERVER_SIDE_EFFECT_ACTIONS = ["createScoreboard", "clearScoreboard", "updateScore", "clearAllRides", "connectionDetails"];
+
+const isServerPlayer = (player: number) => player === 0 || player === -1;
+
+function checkPermission(name: string, event: GameActionEventArgs<any>): GameActionResult | null {
+  if (isServerPlayer(event.player)) return null;
+
+  const denied = (message: string): GameActionResult => ({ error: 1, errorTitle: "Not allowed", errorMessage: message });
+  if (PLAYER_ACTIONS.indexOf(name) === -1) {
+    return denied("Only the server can do this.");
+  }
+  if (name === "setStorage") {
+    const key = event.args && event.args.key;
+    if (PLAYER_STORAGE_KEYS.indexOf(key) === -1 || context.getParkStorage().get("started", false)) {
+      return denied("The game settings can only be chosen before the game starts.");
+    }
+  }
+  return null;
+}
+
+function registerAction(name: string, query: ActionHandler, execute: ActionHandler): void {
+  const guard = (handler: ActionHandler, isExecute: boolean): ActionHandler => (event) => {
+    const denied = checkPermission(name, event);
+    if (denied) return denied;
+    if (isExecute && network.mode === "client" && SERVER_SIDE_EFFECT_ACTIONS.indexOf(name) !== -1) {
+      return { error: 0 }; // the server sends the resulting actions to everyone
+    }
+    return handler(event);
+  };
+  context.registerAction(name, unwrapArgs(guard(query, false)), unwrapArgs(guard(execute, true)));
+}
 
 export function registerActions() {
   const seedAction = updateBoardSeedAction();
-  context.registerAction(seedAction.name, seedAction.query, seedAction.execute);
+  registerAction(seedAction.name, seedAction.query, seedAction.execute);
 
   const dataAction = updateBoardDataAction();
-  context.registerAction(dataAction.name, dataAction.query, dataAction.execute);
+  registerAction(dataAction.name, dataAction.query, dataAction.execute);
 
   const seedSetAction = setSeedAction();
-  context.registerAction(seedSetAction.name, seedSetAction.query, seedSetAction.execute);
+  registerAction(seedSetAction.name, seedSetAction.query, seedSetAction.execute);
 
   const goalCompletionAction = setGoalCompletionAction();
-  context.registerAction(goalCompletionAction.name, goalCompletionAction.query, goalCompletionAction.execute);
+  registerAction(goalCompletionAction.name, goalCompletionAction.query, goalCompletionAction.execute);
 
   const bingoAction = notifyBingoAction();
-  context.registerAction(bingoAction.name, bingoAction.query, bingoAction.execute);
+  registerAction(bingoAction.name, bingoAction.query, bingoAction.execute);
 
   const cashAction = addCashAction();
-  context.registerAction(cashAction.name, cashAction.query, cashAction.execute);
+  registerAction(cashAction.name, cashAction.query, cashAction.execute);
 
   const moveAction = moveToAction();
-  context.registerAction(moveAction.name, moveAction.query, moveAction.execute);
+  registerAction(moveAction.name, moveAction.query, moveAction.execute);
 
   const connectionAction = connectionDetailsAction();
-  context.registerAction(connectionAction.name, connectionAction.query, connectionAction.execute);
+  registerAction(connectionAction.name, connectionAction.query, connectionAction.execute);
 
   const clearAllTiles = clearAllTilesAction();
-  context.registerAction(clearAllTiles.name, clearAllTiles.query, clearAllTiles.execute);
+  registerAction(clearAllTiles.name, clearAllTiles.query, clearAllTiles.execute);
 
   const setCash = setCashAction();
-  context.registerAction(setCash.name, setCash.query, setCash.execute);
+  registerAction(setCash.name, setCash.query, setCash.execute);
 
   const inventAction = inventNextItemAction();
-  context.registerAction(inventAction.name, inventAction.query, inventAction.execute);
+  registerAction(inventAction.name, inventAction.query, inventAction.execute);
 
   const resetResearch = resetResearchAction();
-  context.registerAction(resetResearch.name, resetResearch.query, resetResearch.execute);
+  registerAction(resetResearch.name, resetResearch.query, resetResearch.execute);
 
   const parkMessage = parkMessageAction();
-  context.registerAction(parkMessage.name, parkMessage.query, parkMessage.execute);
+  registerAction(parkMessage.name, parkMessage.query, parkMessage.execute);
 
   const networkMessage = networkMessageAction();
-  context.registerAction(networkMessage.name, networkMessage.query, networkMessage.execute);
+  registerAction(networkMessage.name, networkMessage.query, networkMessage.execute);
 
   const flatLand = flatAllLandAction();
-  context.registerAction(flatLand.name, flatLand.query, flatLand.execute);
+  registerAction(flatLand.name, flatLand.query, flatLand.execute);
 
   const clearAllRides = clearAllRidesAction();
-  context.registerAction(clearAllRides.name, clearAllRides.query, clearAllRides.execute);
+  registerAction(clearAllRides.name, clearAllRides.query, clearAllRides.execute);
 
   const removeAllLitter = removeAllLitterAction();
-  context.registerAction(removeAllLitter.name, removeAllLitter.query, removeAllLitter.execute);
+  registerAction(removeAllLitter.name, removeAllLitter.query, removeAllLitter.execute);
 
   const setStorage = setStorageAction();
-  context.registerAction(setStorage.name, setStorage.query, setStorage.execute);
+  registerAction(setStorage.name, setStorage.query, setStorage.execute);
 
   const createScoreboard = createScoreboardAction();
-  context.registerAction(createScoreboard.name, createScoreboard.query, createScoreboard.execute);
+  registerAction(createScoreboard.name, createScoreboard.query, createScoreboard.execute);
 
   const clearScoreboard = clearScoreboardAction();
-  context.registerAction(clearScoreboard.name, clearScoreboard.query, clearScoreboard.execute);
+  registerAction(clearScoreboard.name, clearScoreboard.query, clearScoreboard.execute);
 
   const updateScore = updateScoreAction();
-  context.registerAction(updateScore.name, updateScore.query, updateScore.execute);
+  registerAction(updateScore.name, updateScore.query, updateScore.execute);
+
+  const registerPlayer = registerPlayerAction();
+  registerAction(registerPlayer.name, registerPlayer.query, registerPlayer.execute);
 
 
   console.log("Actions registered.");

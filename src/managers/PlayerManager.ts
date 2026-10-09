@@ -12,6 +12,8 @@ export interface RegisteredPlayer {
     name: string;
     colour: string; // semantic colour name e.g. "red", "blue"
     region: PlayerRegionKey;
+    /** Stable identity of the person (see getPlayerIdentity) - network ids change on reconnect */
+    identity?: string;
 }
 
 export class PlayerManager {
@@ -21,20 +23,16 @@ export class PlayerManager {
         this.loadPersistentPlayers();
     }
 
-    public registerPlayer(id: string, name: string, colour: string, region: PlayerRegionKey): void {
+    public registerPlayer(id: string, name: string, colour: string, region: PlayerRegionKey, identity?: string): void {
         console.log(`[PlayerManager] Registering player: id="${id}", name="${name}", colour="${colour}", region="${region}"`);
         
         // Register in memory
-        this.players[id] = { id, name, colour, region };
+        this.players[id] = { id, name, colour, region, identity };
         
         // Register persistently
-        PlayerPersistenceManager.registerPlayerToRegion(id, name, colour, region);
+        PlayerPersistenceManager.registerPlayerToRegion(id, name, colour, region, identity);
         
-        // Count players (ES5 compatible)
-        var playerCount = 0;
-        for (var playerId in this.players) {
-            playerCount++;
-        }
+        var playerCount = Object.keys(this.players).length;
         console.log("[PlayerManager] Player registered. Total players: " + playerCount);
     }
 
@@ -72,17 +70,52 @@ export class PlayerManager {
                     id: persistentPlayer.id,
                     name: persistentPlayer.name,
                     colour: persistentPlayer.colour,
-                    region: persistentPlayer.region
+                    region: persistentPlayer.region,
+                    identity: persistentPlayer.identity
                 };
             }
         }
         
-        // Count players (ES5 compatible)
-        var playerCount = 0;
-        for (var playerId in this.players) {
-            playerCount++;
-        }
+        var playerCount = Object.keys(this.players).length;
         console.log("[PlayerManager] Loaded " + playerCount + " persistent players");
+    }
+
+    public getPlayerByIdentity(identity: string): RegisteredPlayer | null {
+        for (const id in this.players) {
+            if (this.players[id].identity === identity) return this.players[id];
+        }
+        return null;
+    }
+
+    /**
+     * A person joined with network id newId. Network ids aren't stable (they change on reconnect
+     * and get reused), so:
+     * - a registration still holding newId from an earlier connection is detached, so the new
+     *   person doesn't inherit someone else's region
+     * - if this person registered before, their registration moves to newId
+     * Returns the old id when a registration was moved.
+     */
+    public reconnectPlayer(newId: string, identity: string): string | null {
+        const holder = this.players[newId];
+        if (holder && holder.identity !== identity) {
+            this.changePlayerId(newId, `offline:${holder.identity || newId}`);
+        }
+
+        const registered = this.getPlayerByIdentity(identity);
+        if (!registered || registered.id === newId) {
+            return null;
+        }
+
+        const oldId = registered.id;
+        this.changePlayerId(oldId, newId);
+        return oldId;
+    }
+
+    private changePlayerId(oldId: string, newId: string): void {
+        this.players[newId] = { ...this.players[oldId], id: newId };
+        delete this.players[oldId];
+        PlayerPersistenceManager.changePlayerId(oldId, newId);
+        console.log(`[PlayerManager] Registration of ${this.players[newId].colour} moved from id ${oldId} to ${newId}`);
     }
 
     /**

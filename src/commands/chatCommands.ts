@@ -2,14 +2,23 @@ import { GameManager } from "../managers/GameManager";
 import { ScoreManager } from "../managers/ScoreManager";
 import { config } from "../config";
 import { runTestSuite, runTestsByCategory } from "../testing/index";
+import { updateScore } from "../bingo/notifications/scoreboard";
+import { COLOR_TO_REGION } from "../bingo/playerColours";
+import { formatMoney, getBudget } from "../bingo/budgets";
+import { canRequestServerRestart, requestServerRestart } from "../bingo/bingosync-handler";
 
-// Color to region mapping - matches scoreboard layout
-const COLOR_TO_REGION: Record<string, { region: string; name: string }> = {
-  "red": { region: "top-left", name: "Player 1" },    // Green in top-left
-  "blue": { region: "top-right", name: "Player 2" }, // Yellow in top-right  
-  "green": { region: "bottom-left", name: "Player 3" },  // Red in bottom-left
-  "yellow": { region: "bottom-right", name: "Player 4" } // Blue in bottom-right
-};
+
+const RESTART_DELAY_MS = 10_000;
+
+/** Admins: players in a group that may kick players (the Admin group) */
+function isAdmin(playerId: number): boolean {
+  try {
+    const group = network.getGroup(network.getPlayer(playerId).group);
+    return !!group && group.permissions.indexOf("kick_player") !== -1;
+  } catch (error) {
+    return false;
+  }
+}
 
 export function registerChatCommands(): void {
   if (typeof context === 'undefined') return;
@@ -22,64 +31,52 @@ export function registerChatCommands(): void {
     const message = e.message.toLowerCase().trim();
     
     // Check if it's a register command
-    if (message.indexOf("/register ") === 0) {
+    if (message.indexOf("/register ") === 0 && network.mode === "server") {
       const color = message.substring(9).trim(); // Remove "/register " prefix
-      
-      // Only allow in PVP or Lockout modes
-      const currentMode = config.gameMode;
-      if (currentMode !== "pvp" && currentMode !== "lockout") {
-        network.sendMessage("❌ Player registration is only available in PVP or Lockout modes!");
-        return;
-      }
-      
-      // Validate color
-      if (!COLOR_TO_REGION[color]) {
-        const availableColors = Object.keys(COLOR_TO_REGION).join(", ");
-        network.sendMessage(`❌ Invalid color! Available colors: ${availableColors}`);
-        return;
-      }
-      
-      // Check if color is already taken
-      const allPlayers = gameManager.getAllPlayers();
-      let existingPlayer = null;
-      for (let i = 0; i < allPlayers.length; i++) {
-        if (allPlayers[i].colour === color) {
-          existingPlayer = allPlayers[i];
-          break;
+
+      // Same action the region picker uses, run by the server on behalf of the chatting player
+      context.executeAction("registerPlayer", { args: { colour: color, playerId: e.player } }, (result) => {
+        if (result.error) {
+          network.sendMessage(`❌ ${result.errorMessage}`);
         }
-      }
-      
-      if (existingPlayer) {
-        network.sendMessage(`❌ Color ${color} is already taken by ${existingPlayer.name}!`);
-        return;
-      }
-      
-      // Check if player is already registered
-      const playerId = e.player.toString();
-      const existingRegistration = gameManager.getPlayer(playerId);
-      
-      if (existingRegistration) {
-        network.sendMessage(`❌ You are already registered as ${existingRegistration.name} (${existingRegistration.colour})!`);
-        return;
-      }
-      
-      // Register the player
-      const regionData = COLOR_TO_REGION[color];
-      gameManager.registerPlayer(playerId, regionData.name, color, regionData.region as any);
-      
-      // Send success message
-      network.sendMessage(`✅ ${regionData.name} (${color}) registered in ${regionData.region} region!`);
-      
-      // Show updated player list to all players
-      const updatedPlayers = gameManager.getAllPlayers();
-      let playerList = "";
-      for (let i = 0; i < updatedPlayers.length; i++) {
-        if (i > 0) playerList += ", ";
-        playerList += `${updatedPlayers[i].name} (${updatedPlayers[i].colour})`;
-      }
-      network.sendMessage(`📋 Registered players: ${playerList}`);
+      });
     }
     
+    // Budget of the chatting player (PvP/Lockout)
+    if (message === "/budget" && network.mode === "server") {
+      const player = gameManager.getPlayer(e.player.toString());
+      if (!player) {
+        network.sendMessage("💰 Pick your region first to get a budget.", [e.player]);
+        return;
+      }
+      const budget = getBudget(player.colour);
+      network.sendMessage(
+        `💰 ${player.colour.toUpperCase()}: ${formatMoney(budget.left)} left ` +
+        `(share ${formatMoney(budget.share)} + your rides' profit ${formatMoney(budget.income)} - spent ${formatMoney(budget.spent)})`,
+        [e.player]
+      );
+      return;
+    }
+
+    // Restart this server with a fresh game (admins only, needs the server manager)
+    if (message === "/restart" && network.mode === "server") {
+      if (!isAdmin(e.player)) {
+        network.sendMessage("❌ Only admins can restart the server.", [e.player]);
+        return;
+      }
+      if (!canRequestServerRestart()) {
+        network.sendMessage("❌ This server isn't run by the server manager - restart it by hand.", [e.player]);
+        return;
+      }
+      network.sendMessage(`♻️ Restarting the server for a new game in ${RESTART_DELAY_MS / 1000} seconds - rejoin afterwards!`);
+      context.setTimeout(() => {
+        if (!requestServerRestart()) {
+          network.sendMessage("❌ Lost the connection to the server manager - restart the server by hand.");
+        }
+      }, RESTART_DELAY_MS);
+      return;
+    }
+
     // Test command - only available in debug mode
     if (message.indexOf("/test ") === 0 && config.debug) {
       const testTarget = message.substring(6).trim(); // Remove "/test " prefix
@@ -87,9 +84,10 @@ export function registerChatCommands(): void {
       if (!testTarget) {
         network.sendMessage("🧪 Usage: /test <testname>");
         network.sendMessage("📋 Available tests:");
-        network.sendMessage("  • gamemanager, buildingrestrictions, gamemode");
-        network.sendMessage("  • unit, integration, restrictions, all");
-        network.sendMessage("  • GameManager.test, BuildingRestrictions.test, GameModeIntegration.test");
+
+        network.sendMessage("  • gamemanager, buildingrestrictions, gamemode, scoremanager");
+        network.sendMessage("  • unit, integration, restrictions, scores, all");
+        network.sendMessage("  • GameManager.test, BuildingRestrictions.test, GameModeIntegration.test, ScoreManager.test");
         return;
       }
       
@@ -111,6 +109,8 @@ export function registerChatCommands(): void {
           runTestSuite("buildingrestrictions");
         } else if (testTarget === "GameModeIntegration.test" || testTarget === "gamemode") {
           runTestSuite("gamemode");
+        } else if (testTarget === "ScoreManager.test" || testTarget === "scoremanager") {
+          runTestSuite("scoremanager");
         } else {
           // Try to run as a specific test suite
           runTestSuite(testTarget);
@@ -129,6 +129,10 @@ export function registerChatCommands(): void {
       
       if (currentMode === "pvp" || currentMode === "lockout") {
         helpMessage += " /register <color> (red, green, blue, yellow)";
+        helpMessage += " /budget";
+      }
+      if (isAdmin(e.player)) {
+        helpMessage += " /restart (admins)";
       }
       
       if (config.debug) {
@@ -136,6 +140,7 @@ export function registerChatCommands(): void {
         helpMessage += " /addscore <target> <delta>";
         helpMessage += " /setscore <target> <score>";
         helpMessage += " /getscore <target>";
+        helpMessage += " /clearscore <color>";
       }
       
       if (helpMessage === "📋 Available commands:") {
@@ -143,6 +148,47 @@ export function registerChatCommands(): void {
       }
       
       network.sendMessage(helpMessage);
+    }
+
+    // Clear score command (server-only; available when debug enabled)
+    if (config.debug && message.indexOf("/clearscore ") === 0) {
+      if (network.mode !== 'server') {
+        network.sendMessage("❌ Score commands can only be used on the server.");
+        return;
+      }
+
+      const color = message.substring(12).trim();
+      const slot = ScoreManager.getScoreboardSlotForColour(color);
+
+      if (slot === null) {
+        network.sendMessage(`🧹 Usage: /clearscore <color> (${Object.keys(COLOR_TO_REGION).join(", ")})`);
+        return;
+      }
+
+      try {
+        // If someone is registered with this color, reset their stored score too -
+        // otherwise the next /addscore would continue from the old value
+        const all = gameManager.getAllPlayers();
+        let playerId: string | null = null;
+        for (let i = 0; i < all.length; i++) {
+          if (all[i].colour === color) {
+            playerId = all[i].id;
+            break;
+          }
+        }
+
+        if (playerId) {
+          // updatePlayerScore also redraws the scoreboard and stores the score
+          scoreManager.updatePlayerScore(playerId, -scoreManager.getPlayerScore(playerId));
+          network.sendMessage(`✅ ${color} score reset to 0 and scoreboard cleared!`);
+        } else {
+          updateScore(slot, 0);
+          network.sendMessage(`✅ ${color} scoreboard region cleared (no ${color} player registered).`);
+        }
+      } catch (error) {
+        network.sendMessage(`❌ Failed to clear ${color} score: ${error instanceof Error ? error.message : String(error)}`);
+      }
+      return;
     }
 
     // Score commands (server-only; available when debug enabled)

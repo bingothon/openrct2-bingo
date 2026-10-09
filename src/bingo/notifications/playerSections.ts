@@ -522,7 +522,8 @@ function createPlayerEntrancesAndFootpaths(_mapSize: any, scale: number, callbac
                             direction: 0, // Default direction
                             object: footpathObject!.index,
                             railingsObject: 0,
-                            slope: 0,
+                            slopeType: 0,
+                            slopeDirection: 0,
                             constructFlags: 0,
                             flags: 0
                         }, (footpathResult) => {
@@ -552,21 +553,21 @@ function createGuestSpawners(_mapSize: any, scale: number, callback: () => void)
     // Define spawner positions for each player section
     const spawners = [
         {
-            name: "Player 2 Spawner (GREEN)",
+            name: "Player 3 Spawner (GREEN)",
             x: 1,
             y: 99,
             z: 112,
             direction: 3 // Facing east
         },
         {
-            name: "Player 3 Spawner (YELLOW)", 
+            name: "Player 2 Spawner (BLUE)", 
             x: 128,
             y: 30,
             z: 112,
             direction: 1 // Facing west
         },
         {
-            name: "Player 4 Spawner (BLUE)",
+            name: "Player 4 Spawner (YELLOW)",
             x: 128,
             y: 99,
             z: 112,

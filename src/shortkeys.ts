@@ -6,6 +6,11 @@ export function registerCommonShortkeys(): void {
   if (typeof ui === 'undefined') return;
 
   ui.registerShortcut({ id: "bingoSync.openBingoBoardDialog", text: "Open Bingo Board", bindings: ["B"], callback: openBingoBoardDialog });
+}
+
+export function registerServerOrNoneShortkeys(): void {
+  if (typeof ui === 'undefined') return;
+  // Game management - host only (players could otherwise reset or rig a running game)
   ui.registerShortcut({ id: "bingoSync.openGameModeDialog", text: "Open Game Mode Dialog", bindings: ["CTRL+SHIFT+M"], callback: showGameModeDialog });
   ui.registerShortcut({ id: "bingoSync.resetGame", text: "Reset Game State", bindings: ["CTRL+SHIFT+R"], callback: () => {
     resetGame();
@@ -24,10 +29,6 @@ export function registerCommonShortkeys(): void {
       }
     });
   }});
-}
-
-export function registerServerOrNoneShortkeys(): void {
-  if (typeof ui === 'undefined') return;
   ui.registerShortcut({ id: "bingoSync.openConnectionDialog", text: "Open BingoSync Connection Dialog", bindings: ["CTRL+SHIFT+C"], callback: showConnectDialog });
 }
 

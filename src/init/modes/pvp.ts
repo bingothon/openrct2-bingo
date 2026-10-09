@@ -1,3 +1,4 @@
+import { getPvpStartingCash } from "src/bingo/budgets";
 import { clearAllTiles, debugMode, setPVPFootPaths } from "src/utils";
 import { unlockEntireMap } from "./shared";
 import { GameManager } from "../../managers/GameManager";
@@ -28,7 +29,7 @@ export function initializePvpGame(): void {
                                 // Step 8: Set loan
                                 context.executeAction("parksetloan", { value: 0 }, () => {
                                     // Step 9: Set cash
-                                    context.executeAction("setCash", { args: { cash: 1000000 } }, () => {
+                                    context.executeAction("setCash", { args: { cash: getPvpStartingCash() } }, () => {
                                         // Step 10: Set date
                                         context.executeAction("parksetdate", { day: 0, month: 0, year: 0 }, () => {
                                             // Step 11: Disable debug mode

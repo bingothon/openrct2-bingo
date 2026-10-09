@@ -1,3 +1,4 @@
+import { getPvpStartingCash } from "src/bingo/budgets";
 import { clearAllTiles, debugMode, setPVPFootPaths } from "src/utils";
 import { unlockEntireMap } from "./shared";
 import { GameManager } from "../../managers/GameManager";
@@ -58,7 +59,7 @@ export function initializeLockoutGame(): void {
                                         console.log("✅ Step 8: Loan set");
                                     }
                                     // Step 9: Set cash
-                                    context.executeAction("setCash", { args: { cash: 1000000 } }, (result) => {
+                                    context.executeAction("setCash", { args: { cash: getPvpStartingCash() } }, (result) => {
                                         if (result.error) {
                                             console.log("❌ Step 9 FAILED: Set cash failed:", result.errorMessage);
                                         } else {

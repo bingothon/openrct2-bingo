@@ -7,7 +7,6 @@
 
 import type { GroundDivisionManager } from "./GroundDivisionManager";
 import type { PlayerManager } from "./PlayerManager";
-import type { Goal } from "../types";
 import { PlayerPersistenceManager, type PersistentPlayerState } from "./PlayerPersistenceManager";
 
 export interface PlayerStateManagerInstance {
@@ -19,21 +18,18 @@ export interface PlayerStateManagerInstance {
     onRideBuilt(rideId: number): void;
     onRideRemoved(rideId: number): void;
     onRideRenamed(rideId: number): void;
-    onRideRatingsCalculated(e: any): void;
     onBuildingPlaced(e: any): void;
     onTrackPlaced(e: any): void;
     onFootpathPlaced(e: any): void;
     onFootpathAdditionPlaced(e: any): void;
     onBannerPlaced(e: any): void;
     onTrackDesignPlaced(e: any): void;
-    onActionLocation(e: any): void;
     updateGuestCounts(): void;
     getRideRegion(rideId: number): string | null;
     getGuestRegion(guest: Guest): string | null;
     getPlayerIdByRegion(region: string): string | null;
     getPlayerState(playerId: string): PlayerState | null;
     getAllPlayerStates(): { [key: string]: PlayerState };
-    isGoalCompletedForPlayer(goal: Goal, playerId: string): boolean;
     // Helper methods for rides array
     getPlayerRides(playerId: string): number[];
     getPlayerRidesByType(playerId: string, rideType: number): number[];
@@ -117,11 +113,7 @@ export function PlayerStateManager(this: PlayerStateManagerInstance, ground: Gro
                 });
             }
         }
-        // Count player states (ES5 compatible)
-        var stateCount = 0;
-        for (var playerId in self.playerStates) {
-            stateCount++;
-        }
+        var stateCount = Object.keys(self.playerStates).length;
         console.log("[PlayerStateManager] Player states initialized. Total states: " + stateCount);
     };
 
@@ -175,15 +167,6 @@ export function PlayerStateManager(this: PlayerStateManagerInstance, ground: Gro
             }
         });
 
-        // Track ride ratings and stats
-        context.subscribe("ride.ratings.calculate", function(e: any) {
-            self.onRideRatingsCalculated(e);
-        });
-
-        // Track location-based actions
-        context.subscribe("action.location", function(e: any) {
-            self.onActionLocation(e);
-        });
 
         // Track guest movement
         context.subscribe("interval.tick", function() {
@@ -246,23 +229,6 @@ export function PlayerStateManager(this: PlayerStateManagerInstance, ground: Gro
                 }
             }
         }
-    };
-
-    this.onRideRatingsCalculated = function(e: any): void {
-        var rideId = e.rideId;
-        if (!rideId) return;
-
-        var region = self.getRideRegion(rideId);
-        if (!region) return;
-
-        var playerId = self.getPlayerIdByRegion(region);
-        if (!playerId) return;
-
-        var playerState = self.playerStates[playerId];
-        if (!playerState) return;
-
-        // Just log that ratings were calculated - we don't store ride properties anymore
-        console.log("[PlayerStateManager] Ride ratings calculated for ride " + rideId + " in region " + region);
     };
 
     this.onRideRenamed = function(rideId: number): void {
@@ -398,61 +364,6 @@ export function PlayerStateManager(this: PlayerStateManagerInstance, ground: Gro
         logAction("trackdesignplaced", "[PlayerStateManager] Track design placed by player " + playerId + " in region " + region);
     };
 
-    this.onActionLocation = function(e: any): void {
-        var args = e.args;
-        if (!args || typeof args.x !== 'number' || typeof args.y !== 'number') return;
-
-        var tileX = Math.floor(args.x / 32);
-        var tileY = Math.floor(args.y / 32);
-        var region = self.ground.getRegionForTile({ x: tileX, y: tileY });
-        if (!region) return;
-
-        var playerId = self.getPlayerIdByRegion(region);
-        if (!playerId) return;
-
-        var playerState = self.playerStates[playerId];
-        if (!playerState) return;
-
-        // Track location-based actions for potential bingo goals
-        // This can include actions like:
-        // - Staff hiring/firing at specific locations
-        // - Park entrance/exit modifications
-        // - Land purchases
-        // - Water/landscaping changes
-        // - Guest interactions at specific locations
-        console.log("[PlayerStateManager] Location action '" + e.action + "' by player " + playerId + " at (" + args.x + ", " + args.y + ") in region " + region);
-        
-        // You can add specific tracking for different action types here
-        switch (e.action) {
-            case "staffhire":
-                console.log("[PlayerStateManager] Staff hired by player " + playerId);
-                break;
-            case "stafffire":
-                console.log("[PlayerStateManager] Staff fired by player " + playerId);
-                break;
-            case "parkentranceplace":
-                logAction("parkentranceplaced", "[PlayerStateManager] Park entrance placed by player " + playerId);
-                break;
-            case "landbuy":
-                console.log("[PlayerStateManager] Land purchased by player " + playerId);
-                break;
-            case "landsetrights":
-                console.log("[PlayerStateManager] Land rights set by player " + playerId);
-                break;
-            case "waterlower":
-            case "waterraise":
-                console.log("[PlayerStateManager] Water level changed by player " + playerId);
-                break;
-            case "landlower":
-            case "landraise":
-                console.log("[PlayerStateManager] Land level changed by player " + playerId);
-                break;
-            default:
-                // Generic location action tracking
-                break;
-        }
-    };
-
     this.updateGuestCounts = function(): void {
         var allGuests = map.getAllEntities("guest");
         var regionGuestCounts: { [key: string]: number } = {};
@@ -558,31 +469,6 @@ export function PlayerStateManager(this: PlayerStateManagerInstance, ground: Gro
         for (var playerId in self.playerStates) {
             self.savePlayerStateToStorage(playerId);
         }
-    };
-
-    this.isGoalCompletedForPlayer = function(goal: Goal, playerId: string): boolean {
-        var state = self.getPlayerState(playerId);
-        if (!state) return false;
-
-        if (goal.name.indexOf("guests") !== -1) {
-            var required = goal.name.indexOf("100") !== -1 ? 100 : 500;
-            return state.guests.count >= required;
-        }
-
-        if (goal.name.indexOf("coaster") !== -1) {
-            // Count roller coasters from rides array
-            var coasterCount = 0;
-            for (var i = 0; i < state.rides.length; i++) {
-                var rideId = state.rides[i];
-                var ride = map.getRide(rideId);
-                if (ride && ride.type === 0) { // Roller coaster type
-                    coasterCount++;
-                }
-            }
-            return coasterCount >= 3;
-        }
-
-        return false;
     };
 
     // Helper methods for working with rides array

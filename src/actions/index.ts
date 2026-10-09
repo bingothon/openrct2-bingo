@@ -22,3 +22,4 @@ export { updateScoreAction } from "./all/updateScoreAction";
 
 
 
+export { registerPlayerAction } from "./all/registerPlayerAction";

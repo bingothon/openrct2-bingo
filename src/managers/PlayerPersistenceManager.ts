@@ -15,6 +15,8 @@ export interface PersistentPlayer {
     registeredAt: number; // timestamp
     lastSeen: number; // timestamp
     isActive: boolean;
+    /** Stable identity of the person (see getPlayerIdentity) - network ids change on reconnect */
+    identity?: string;
 }
 
 export interface PersistentPlayerState {
@@ -47,8 +49,6 @@ export class PlayerPersistenceManager {
         MIGRATION_VERSION: "bingo_migration_version"
     };
 
-    private static readonly CURRENT_VERSION = "1.0.0";
-
     /**
      * Register a player to a region with persistence
      */
@@ -56,7 +56,8 @@ export class PlayerPersistenceManager {
         playerId: string, 
         playerName: string, 
         colour: string, 
-        region: PlayerRegionKey
+        region: PlayerRegionKey,
+        identity?: string
     ): void {
         const parkStorage = context.getParkStorage();
         
@@ -78,7 +79,8 @@ export class PlayerPersistenceManager {
             region: region,
             registeredAt: now,
             lastSeen: now,
-            isActive: true
+            isActive: true,
+            identity: identity
         };
 
         // Update region mappings
@@ -142,7 +144,21 @@ export class PlayerPersistenceManager {
         const parkStorage = context.getParkStorage();
         const playerStates = this.getAllPlayerStates();
         
-        const existingState = playerStates[playerId] || this.createEmptyPlayerState(playerId, "Unknown", "top-left");
+        let existingState = playerStates[playerId];
+        if (!existingState) {
+            // First save for this player - seed name/region from their registration
+            const players = this.getAllPlayers();
+            let registered: PersistentPlayer | null = null;
+            for (let i = 0; i < players.length; i++) {
+                if (players[i].id === playerId) {
+                    registered = players[i];
+                    break;
+                }
+            }
+            existingState = registered
+                ? this.createEmptyPlayerState(playerId, registered.name, registered.region)
+                : this.createEmptyPlayerState(playerId, "Unknown", "top-left");
+        }
         const updatedState: PersistentPlayerState = {
             ...existingState,
             ...state,
@@ -210,6 +226,29 @@ export class PlayerPersistenceManager {
             },
             lastSaved: now
         };
+    }
+
+    /**
+     * Move a registration to a new network id (the player reconnected, or the old id was
+     * handed to someone else)
+     */
+    public static changePlayerId(oldId: string, newId: string): void {
+        const parkStorage = context.getParkStorage();
+
+        const regionMappings = this.getRegionMappings();
+        for (const region in regionMappings) {
+            if (regionMappings[region].id === oldId) {
+                regionMappings[region].id = newId;
+            }
+        }
+        parkStorage.set(this.STORAGE_KEYS.REGION_MAPPINGS, regionMappings);
+
+        const playerStates = this.getAllPlayerStates();
+        if (playerStates[oldId]) {
+            playerStates[newId] = { ...playerStates[oldId], playerId: newId };
+            delete playerStates[oldId];
+            parkStorage.set(this.STORAGE_KEYS.PLAYER_STATES, playerStates);
+        }
     }
 
     /**

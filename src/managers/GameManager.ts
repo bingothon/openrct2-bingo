@@ -9,9 +9,7 @@ import { GroundDivisionManager, PlayerRegionKey } from "./GroundDivisionManager"
 import { PlayerManager, RegisteredPlayer } from "./PlayerManager";
 import { GoalManager } from "./GoalManager";
 import { PlayerStateManager, PlayerStateManagerInstance } from "./PlayerStateManager";
-import { PlayerPersistenceManager } from "./PlayerPersistenceManager";
 import { subscribeToBuildingRestrictions, unsubscribeFromBuildingRestrictions } from "../subscriptions/game/buildingRestrictions";
-import { config } from "../config";
 
 export class GameManager {
     private static instance: GameManager;
@@ -63,15 +61,15 @@ export class GameManager {
         // Building restrictions will be handled by setGameMode() after initialization
         
         console.log("[GameManager] Game initialized successfully");
-        console.log("[GameManager] Players must register manually using /register COLOR command");
+        console.log("[GameManager] Players register with the region picker or /register COLOR");
     }
 
 
     /**
      * Register a player with a specific region
      */
-    public registerPlayer(id: string, name: string, color: string, region: PlayerRegionKey): void {
-        this.playerManager.registerPlayer(id, name, color, region);
+    public registerPlayer(id: string, name: string, color: string, region: PlayerRegionKey, identity?: string): void {
+        this.playerManager.registerPlayer(id, name, color, region, identity);
         console.log(`[GameManager] Registered ${name} (${color}) in ${region} region`);
         
         // Reinitialize PlayerStateManager to include the new player
