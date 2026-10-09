@@ -17,7 +17,7 @@ export function updateScoreAction() {
                 console.log(`Player ${playerNumber} score updated to ${newScore} successfully`);
                 return { error: 0 };
             } catch (error) {
-                console.log("Failed to update score:", error);
+                console.log("Failed to update score:", String(error), error instanceof Error ? error.stack : "");
                 return { error: 1, errorMessage: "Failed to update score" };
             }
         }

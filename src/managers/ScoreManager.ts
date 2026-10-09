@@ -1,9 +1,11 @@
-import { updateScore } from "../bingo/notifications/scoreboard";
+import { updateScore, getScoreboardSlotForColour } from "../bingo/notifications/scoreboard";
 import { GameManager } from "./GameManager";
 
 export class ScoreManager {
     private static instance: ScoreManager;
     private playerScores: { [playerId: string]: number } = {};
+    // Number currently drawn on the scoreboard per colour, so unchanged boxes aren't repainted
+    private shownScores: { [colour: string]: number } = {};
     private isServer: boolean = false;
 
     private constructor() {
@@ -53,6 +55,44 @@ export class ScoreManager {
     }
 
     /**
+     * Set every colour's score from its claimed goals (PvP/Lockout: the board is the source of
+     * truth). Only boxes whose number changes are repainted.
+     */
+    public setScoresFromClaims(claims: { [colour: string]: number }): void {
+        if (!this.isServer) {
+            return;
+        }
+
+        const allPlayers = GameManager.getInstance().getAllPlayers();
+        ["red", "blue", "green", "yellow"].forEach((colour) => {
+            const score = claims[colour] || 0;
+            for (const player of allPlayers) {
+                if (player.colour === colour && this.playerScores[player.id] !== score) {
+                    this.playerScores[player.id] = score;
+                    this.storeScoreInGameState(player.id, score);
+                }
+            }
+
+            const slot = getScoreboardSlotForColour(colour);
+            if (slot !== null && this.shownScores[colour] !== score) {
+                this.shownScores[colour] = score;
+                updateScore(slot, score);
+            }
+        });
+    }
+
+    /**
+     * A registration moved to a new network id (reconnect) - keep its score
+     */
+    public changePlayerId(oldId: string, newId: string): void {
+        if (oldId in this.playerScores) {
+            this.playerScores[newId] = this.playerScores[oldId];
+            delete this.playerScores[oldId];
+            this.storeScoreInGameState(newId, this.playerScores[newId]);
+        }
+    }
+
+    /**
      * Get a player's current score
      */
     public getPlayerScore(playerId: string): number {
@@ -97,6 +137,8 @@ export class ScoreManager {
             const playerNumber = this.getPlayerNumber(playerId);
             if (playerNumber !== null) {
                 updateScore(playerNumber, score);
+                const player = GameManager.getInstance().getPlayer(playerId);
+                if (player) this.shownScores[player.colour] = score;
             }
         } catch (error) {
             console.log(`[ScoreManager] Error updating scoreboard for player ${playerId}:`, error);
@@ -122,19 +164,23 @@ export class ScoreManager {
     }
 
     /**
-     * Convert player ID to player number for scoreboard display
+     * Convert player ID to scoreboard slot - by the player's colour, not by
+     * registration order (the scoreboard layout is defined in scoreboard.ts)
      */
     private getPlayerNumber(playerId: string): number | null {
-        const gameManager = GameManager.getInstance();
-        const allPlayers = gameManager.getAllPlayers();
-        
-        for (let i = 0; i < allPlayers.length; i++) {
-            if (allPlayers[i].id === playerId) {
-                return i;
-            }
+        const player = GameManager.getInstance().getPlayer(playerId);
+        if (!player) {
+            return null;
         }
-        
-        return null;
+
+        return ScoreManager.getScoreboardSlotForColour(player.colour);
+    }
+
+    /**
+     * Scoreboard slot for a colour (red, green, blue, yellow), or null if unknown
+     */
+    public static getScoreboardSlotForColour(colour: string): number | null {
+        return getScoreboardSlotForColour(colour);
     }
 
     /**
