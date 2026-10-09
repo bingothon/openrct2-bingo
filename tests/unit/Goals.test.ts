@@ -147,3 +147,14 @@ test("goal progress counts the player's region, not the whole park", (t) => {
     t.is(goal.playerProgress!(scopes["top-left"]), 40);
     t.is(goal.playerProgress!(scopes["bottom-right"]), 60);
 });
+
+test("a rebuilt board shows who completed each goal", async (t) => {
+    const { configureBoard } = await import("../../src/ui/helpers/configureBoard");
+    parkStorage.data = { gameMode: "lockout", goal_1: true, goal_1_colors: '["green"]', goal_2: true, goal_2_colors: '["red","blue"]' };
+    const board = configureBoard(1234, false, "lockout");
+    t.is(board[0].status, "completed");
+    t.is(board[0].colors, "green", "not the default red");
+    t.deepEqual(board[1].completedBy, ["red", "blue"]);
+    t.is(board[2].colors, "blank");
+    parkStorage.data = {};
+});
