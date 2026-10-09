@@ -1,14 +1,14 @@
-import { configureBoard } from './ui/helpers';
+import { configureBoard, getBoardGameMode } from './ui/helpers';
 import { registerActions } from './actions/registerActions';
 import {
     openBingoBoard,
-    showGameDurationDialog,
     showGameModeDialog,
     showWelcomeDialog,
 } from './ui';
-import { checkIfStarted, getSeed, setSeed } from './utils';
+import { checkIfStarted, getManagedServer, getSeed, setSeed, startGame } from './utils';
+import { connectToManager } from './bingo/bingosync-handler';
 import {
-    subscribeToGoalChecks,
+    subscribeToClientBoardSync,
     subscribeToInventions,
     subscribeToRenewRides,
 } from './subscriptions/game';
@@ -24,11 +24,23 @@ import { subscribeIfStarted } from './subscriptions/server';
 import { initializeBingoSystem } from './bingo/integration';
 import { registerChatCommands } from './commands/chatCommands';
 import { ServerManager } from './managers/ServerManager';
+import { GameManager } from './managers/GameManager';
+import { subscribeToPlayerReconnects } from './subscriptions/server/playerReconnect';
+import { subscribeToStaffNaming } from './subscriptions/server/staffNaming';
+import { subscribeToBudgetTracking } from './bingo/budgets';
+import { subscribeToBannerRegions } from './bingo/bannerRegions';
+import { subscribeToSetupLock } from './subscriptions/game/buildingRestrictions';
+import { subscribeToRegionPicker } from './ui/showRegionPicker';
+import { subscriptions } from './subscriptions/manager';
 import { ScoreManager } from './managers/ScoreManager';
 
 export function main(): void {
     registerActions();
     registerChatCommands();
+    // Which region each banner/sign is in (renaming them only passes a banner index)
+    subscribeToBannerRegions(GameManager.getInstance().getGroundDivisionManager());
+    // PvP/Lockout: let players pick their colour/region in a window (clients and a GUI host)
+    subscriptions.upsert("regionPicker", () => subscribeToRegionPicker() || { dispose: () => {} });
     network.defaultGroup = 3;
 
     // Shortkeys are registered below per mode
@@ -41,6 +53,27 @@ export function main(): void {
         const serverManager = ServerManager.getInstance();
         console.log('ServerManager instance created, calling startServer()');
         serverManager.startServer();
+        // Keep registrations working when players reconnect with a new network id
+        subscribeToPlayerReconnects();
+        // PvP/Lockout: hired staff get their player's colour in their name
+        subscribeToStaffNaming();
+        // PvP/Lockout: each player can only spend their share of the park's cash
+        subscribeToBudgetTracking();
+        // Players wait while the game is being set up
+        subscribeToSetupLock();
+
+        // Started by the server manager (openrct2-bingosync): this server always runs one mode,
+        // so start it right away - players only pick their colour
+        const managed = getManagedServer();
+        if (managed) {
+            connectToManager(managed);
+            if (!checkIfStarted()) {
+                console.log(`Managed server "${managed.id}": starting ${managed.mode.toUpperCase()} for ${managed.durationYears} years`);
+                config.gameMode = managed.mode;
+                context.executeAction('setStorage', { args: { key: 'gameMode', value: managed.mode } });
+                startGame(managed.durationYears);
+            }
+        }
         console.log('ServerManager startServer() completed');
         
         // Initialize ScoreManager for server-side score management
@@ -94,6 +127,7 @@ export function main(): void {
         console.log('Client mode detected.');
         const seed = getSeed();
         console.log(`Seed received from host: ${seed}`);
+        config.gameMode = getBoardGameMode();
         const board = configureBoard(seed);
 
         // Initialize the BingoManager and GameManager with the board
@@ -116,6 +150,8 @@ export function main(): void {
             // Goal checking is now handled by GoalManager in initializeBingoSystem()
             showWelcomeDialog();
             openBingoBoard(board);
+            // Rebuild on game mode changes and show completions stored by the server
+            subscribeToClientBoardSync(seed, board);
         } catch (error) {
             console.log('Error opening Bingo board:', error);
         }

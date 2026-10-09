@@ -3,10 +3,39 @@ import { getSeed, setSeed } from "../utils";
 import { BingoBoard, BingoSyncBoardData } from "../types";
 import { config } from "../config";
 import { configureBoard, updateBoardWithData, updateBoardWithSeed } from "src/ui/helpers";
+import type { ManagedServer } from "../utils/managedServer";
 // import { restart } from "src/subscriptions";
-config.socket = network.createSocket();
-const socket = config.socket;
+// Created on the first connection, so games that never connect (every client) don't open one
+let socket: Socket | null = null;
+
+function getSocket(): Socket {
+    if (!socket) {
+        socket = network.createSocket();
+        config.socket = socket;
+    }
+    return socket;
+}
 let isSocketConnected = false; // Track connection state globally
+let dataHandlerAttached = false;
+
+/** Set on servers started by the server manager: they link their BingoSync room automatically */
+let managedLink: { serverId: string; mode: string } | null = null;
+/** Board waiting for the manager connection before its room can be created */
+let pendingBoard: BingoBoard | null = null;
+
+function send(message: object): void {
+    try {
+        getSocket().write(JSON.stringify(message) + "\n");
+    } catch (error) {
+        console.log("Error writing to the server manager:", error);
+    }
+}
+
+function attachDataHandler(): void {
+    if (dataHandlerAttached) return;
+    dataHandlerAttached = true;
+    setupSocketDataHandler(getSocket());
+}
 /**
  * Updates the UI after a successful connection.
  */
@@ -58,7 +87,7 @@ export function connectToServer() {
 
 
     try {
-        socket.connect(12414, "127.0.0.1", () => {
+        getSocket().connect(12414, "127.0.0.1", () => {
             isSocketConnected = true;
             console.log("Connected to server");
             const creationRequest = JSON.stringify({
@@ -69,14 +98,72 @@ export function connectToServer() {
                 roomPassword: config.roomPasswordInput,
                 boardData: bingoSyncFormat,
             }) + "\n";
-            socket.write(creationRequest);
+            getSocket().write(creationRequest);
         });
 
     } catch (connectError) {
         console.log("Error during connection:", connectError);
     }
 
-    setupSocketDataHandler(socket);
+    attachDataHandler();
+}
+
+/**
+ * Managed server: connect to the server manager and tell it which server this is
+ */
+export function connectToManager(server: ManagedServer): void {
+    managedLink = { serverId: server.id, mode: server.mode };
+    attachDataHandler();
+    try {
+        getSocket().connect(server.managerPort, "127.0.0.1", () => {
+            isSocketConnected = true;
+            console.log(`[BingoSync] Connected to the server manager as "${server.id}"`);
+            send({ action: "hello", serverId: server.id });
+            if (pendingBoard) {
+                sendBoard(pendingBoard);
+                pendingBoard = null;
+            }
+        });
+    } catch (error) {
+        console.log("[BingoSync] Couldn't connect to the server manager:", error);
+    }
+}
+
+/**
+ * Managed server: create the BingoSync room for this game's board (keeps the board as it is)
+ */
+export function linkBingoSyncRoom(board: BingoBoard): void {
+    if (!managedLink) return;
+    if (!isSocketConnected) {
+        pendingBoard = board;
+        return;
+    }
+    sendBoard(board);
+}
+
+function sendBoard(board: BingoBoard): void {
+    if (!managedLink) return;
+    send({
+        action: "connectOrCreate",
+        room_name: `${config.roomNameInput} (${managedLink.mode.toUpperCase()})`,
+        username: config.userNameInput,
+        boardData: convertForBingoSync(board),
+        mode: managedLink.mode,
+    });
+}
+
+/**
+ * Managed server: ask the manager to restart this server (fresh scenario). False when this
+ * server isn't run by the manager or the manager can't be reached.
+ */
+export function canRequestServerRestart(): boolean {
+    return managedLink !== null && isSocketConnected;
+}
+
+export function requestServerRestart(): boolean {
+    if (!managedLink || !isSocketConnected) return false;
+    send({ action: "restart" });
+    return true;
 }
 /**
  * Sets up data handling and goal-check interval on server socket connection
@@ -95,7 +182,10 @@ export function setupSocketDataHandler(socket: Socket) {
     });
 
     socket.on("error", (error) => console.log("Socket error:", error));
-    socket.on("close", (hadError) => console.log("Connection closed", hadError ? "with error" : "without error"));
+    socket.on("close", (hadError) => {
+        isSocketConnected = false;
+        console.log("Connection closed", hadError ? "with error" : "without error");
+    });
 }
 
 /**
@@ -117,11 +207,24 @@ export function processMessage(message: string) {
             return;
         }
 
+        if (response.error) {
+            console.log("[BingoSync] Server manager error:", response.error);
+            return;
+        }
+
         // Retain existing logic for handling `roomUrl`
         if (response.roomUrl) {
             // Extract room ID from the URL
             const roomId = response.roomUrl.split("/").pop();
             config.roomIdInput = roomId;
+
+            // Managed server: the room was created for the running game - only share the details,
+            // don't rebuild the board (that would reset its goals)
+            if (managedLink) {
+                console.log(`[BingoSync] Room linked: ${response.roomUrl}`);
+                context.executeAction("connectionDetails", { args: { roomUrl: response.roomUrl, roomPassword: response.passphrase } });
+                return;
+            }
 
             // Check and process board data if it exists
             if (response.boardData) {
@@ -159,48 +262,3 @@ export function processMessage(message: string) {
 
 
 
-/**
- * Sends a reset message to the server.
- */
-export function resetServer() {
-    if (!isSocketConnected) {
-        console.log("Socket is not connected. Reconnecting...");
-        socket.connect(12414, "127.0.0.1", () => {
-            isSocketConnected = true;
-            console.log("Reconnected to server");
-
-            // Send the reset message after reconnection
-            const resetMessage = JSON.stringify({
-                action: "restart",
-            }) + "\n";
-
-            try {
-                socket.write(resetMessage);
-                console.log("Sent reset message to the server");
-            } catch (error) {
-                console.log("Error while sending reset message:", error);
-            }
-        });
-
-        socket.on("error", (error) => {
-            isSocketConnected = false;
-            console.log("Socket error:", error);
-        });
-
-        socket.on("close", () => {
-            isSocketConnected = false;
-            console.log("Socket connection closed");
-        });
-    } else {
-        const resetMessage = JSON.stringify({
-            action: "restart",
-        }) + "\n";
-
-        try {
-            socket.write(resetMessage);
-            console.log("Sent reset message to the server");
-        } catch (error) {
-            console.log("Error while sending reset message:", error);
-        }
-    }
-}

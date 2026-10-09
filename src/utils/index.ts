@@ -13,3 +13,5 @@ export { checkIfStarted, startGame, resetGame } from "./gameState";
 export { getRandomItemsByRideType } from "./research";
 
 
+export { getPlayerIdentity } from './playerIdentity';
+export { getManagedServer } from './managedServer';

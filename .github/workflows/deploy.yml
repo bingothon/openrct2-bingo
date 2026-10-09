@@ -1,0 +1,49 @@
+# Deploys the plugin to the game server (self-hosted runner) on every push to main: tests, builds
+# the production bingo.js, installs it for all servers and restarts them (new games start).
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "lib/**"
+      - "package.json"
+      - "package-lock.json"
+      - "rollup.config.js"
+      - "tsconfig.json"
+      - ".github/workflows/deploy.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: game-server
+  cancel-in-progress: false
+
+env:
+  ROOT: /opt/openrct2-bingo
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, openrct2-bingo-server]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - run: npm ci
+      - run: npm test
+
+      - name: Build the production plugin
+        run: npm run build
+
+      - name: Install
+        run: |
+          install -m 664 dist/bingo.js "$ROOT/plugin/bingo.js.new"
+          mv "$ROOT/plugin/bingo.js.new" "$ROOT/plugin/bingo.js"
+
+      - name: Restart the servers
+        run: sudo -n systemctl restart openrct2-bingo

@@ -1,3 +1,4 @@
+import { resetBudgets } from "../bingo/budgets";
 import { config } from "../config";
 import { initializeGame } from "../init";
 import { initializeBingoSystem } from "../bingo/integration";
@@ -6,7 +7,7 @@ export class ServerManager {
     private static instance: ServerManager;
     private isInitialized = false;
     private tickSubscription: IDisposable | null = null;
-    private tickCounter = 0;
+    private logTickCounter = 0;
 
     private constructor() {}
 
@@ -25,11 +26,20 @@ export class ServerManager {
     }
 
     private setupGameStateMonitoring(): void {
-        // Monitor game state changes every 1000 ticks to avoid spam
+        // Monitor game state changes every tick for immediate responsiveness
         this.tickSubscription = context.subscribe("interval.tick", () => {
-            this.tickCounter++;
-            if (this.tickCounter % 1000 === 0) {
+            // Early exit if already initialized - no need to keep checking
+            if (this.isInitialized) {
+                return;
+            }
+            
+            this.logTickCounter++;
+            // Only log every 1000 ticks to avoid spam, but check every tick for responsiveness
+            if (this.logTickCounter % 1000 === 0) {
                 this.checkForGameInitialization();
+            } else {
+                // Silent check - no logging
+                this.silentCheckForGameInitialization();
             }
         });
     }
@@ -45,6 +55,21 @@ export class ServerManager {
         if (startRequest && !this.isInitialized) {
             console.log(`[ServerManager] ✅ Game initialization requested - proceeding with ${gameMode} mode`);
             this.initializeGame(gameMode);
+            // Stop monitoring once initialization is complete
+            this.stopMonitoring();
+        }
+    }
+
+    private silentCheckForGameInitialization(): void {
+        const parkStorage = context.getParkStorage();
+        const startRequest = parkStorage.get("started", false);
+        const gameMode = parkStorage.get("gameMode", "coop");
+        
+        if (startRequest && !this.isInitialized) {
+            console.log(`[ServerManager] ✅ Game initialization requested - proceeding with ${gameMode} mode`);
+            this.initializeGame(gameMode);
+            // Stop monitoring once initialization is complete
+            this.stopMonitoring();
         }
     }
 
@@ -55,6 +80,7 @@ export class ServerManager {
         }
 
         this.isInitialized = true;
+        resetBudgets();
         config.started = true;
         config.gameMode = gameMode as "coop" | "pvp" | "lockout";
         
@@ -71,6 +97,14 @@ export class ServerManager {
         console.log("[ServerManager] Bingo system initialization completed");
         
         console.log("[ServerManager] Game initialization completed");
+    }
+
+    private stopMonitoring(): void {
+        if (this.tickSubscription) {
+            this.tickSubscription.dispose();
+            this.tickSubscription = null;
+        }
+        console.log("[ServerManager] Tick monitoring stopped - game initialized");
     }
 
     public stopServer(): void {
