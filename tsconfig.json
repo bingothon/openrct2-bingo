@@ -15,7 +15,8 @@
     "strict": true,
     "target": "ES2020",
     "lib": ["ES2015", "ES2017", "ES2018", "ES2019", "ES2020", "DOM"],
-    "downlevelIteration": true
+    "downlevelIteration": true,
+    "types": []
   },
   "include": ["./lib/**/*.ts", "./src/**/*.ts"],
   "exclude": ["./dist/**/*"],

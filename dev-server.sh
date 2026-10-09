@@ -7,6 +7,11 @@
 PLUGIN_FILE="$HOME/.config/OpenRCT2/plugin/bingo.js"
 SCENARIO_FILE="$HOME/.config/OpenRCT2/scenario/bingothon-map.park"
 PORT="11753"
+# OpenRCT2 to run: OPENRCT2_BIN, else the newest AppImage in ~/Downloads, else "openrct2" from PATH
+OPENRCT2_BIN="${OPENRCT2_BIN:-$(ls -1 "$HOME"/Downloads/OpenRCT2-v*-linux-x86_64.AppImage 2>/dev/null | sort -V | tail -n 1)}"
+OPENRCT2_BIN="${OPENRCT2_BIN:-openrct2}"
+# Matches this dev server's OpenRCT2 process (installed binary or AppImage) and nothing else
+PROCESS_PATTERN="[Oo]pen[Rr][Cc][Tt]2.* host .*--port $PORT"
 SERVER_PID=""
 HEADLESS_MODE="true"  # Default to headless mode
 
@@ -55,21 +60,38 @@ start_server() {
     fi
     
     # Kill any existing OpenRCT2 processes on the same port
-    pkill -f "openrct2 host.*$PORT" 2>/dev/null || true
+    log "Ensuring port $PORT is free..."
+    pkill -f "$PROCESS_PATTERN" 2>/dev/null || true
+    sleep 2
+    pkill -9 -f "$PROCESS_PATTERN" 2>/dev/null || true
     sleep 1
+    
+    # Verify port is actually free
+    local port_check_count=0
+    while [ $port_check_count -lt 5 ]; do
+        local remaining_processes=$(pgrep -f "$PROCESS_PATTERN" 2>/dev/null | wc -l)
+        if [ "$remaining_processes" -eq 0 ]; then
+            log "Port $PORT is free"
+            break
+        else
+            log "Port $PORT still has $remaining_processes processes, waiting..."
+            sleep 1
+            port_check_count=$((port_check_count + 1))
+        fi
+    done
     
     # Build the command based on headless mode
     if [ "$HEADLESS_MODE" = "true" ]; then
         log "Starting in headless mode"
-        openrct2 host "$SCENARIO_FILE" --headless --port "$PORT" &
+        "$OPENRCT2_BIN" host "$SCENARIO_FILE" --headless --port "$PORT" &
     else
         log "Starting with GUI"
-        openrct2 host "$SCENARIO_FILE" --port "$PORT" &
+        "$OPENRCT2_BIN" host "$SCENARIO_FILE" --port "$PORT" &
     fi
     SERVER_PID=$!
     
     # Wait a moment to see if the server started successfully
-    sleep 2
+    sleep 3
     if is_server_running; then
         log_success "OpenRCT2 server started (PID: $SERVER_PID) on port $PORT"
         return 0
@@ -86,9 +108,46 @@ restart_server() {
     # Stop the server if it's running
     if is_server_running; then
         log "Stopping current server (PID: $SERVER_PID)..."
-        kill "$SERVER_PID" 2>/dev/null || true
-        wait "$SERVER_PID" 2>/dev/null || true
+        local current_pid="$SERVER_PID"
+        
+        # Send first SIGINT (like first Ctrl+C)
+        kill -INT "$current_pid" 2>/dev/null || true
+        sleep 2
+        
+        # Check if still running and send second SIGINT
+        if kill -0 "$current_pid" 2>/dev/null; then
+            log "Process still running, sending second SIGINT..."
+            kill -INT "$current_pid" 2>/dev/null || true
+            sleep 2
+        fi
+        
+        # Force kill if still running
+        if kill -0 "$current_pid" 2>/dev/null; then
+            log "Process still running, force killing..."
+            kill -KILL "$current_pid" 2>/dev/null || true
+            sleep 1
+        fi
+        
+        # Wait for the process to actually terminate
+        log "Waiting for process to terminate..."
+        local wait_count=0
+        while kill -0 "$current_pid" 2>/dev/null && [ $wait_count -lt 10 ]; do
+            sleep 1
+            wait_count=$((wait_count + 1))
+            log "Still waiting for PID $current_pid to terminate... ($wait_count/10)"
+        done
+        
+        # Clear the PID
         SERVER_PID=""
+        
+        # Additional cleanup for any remaining OpenRCT2 processes
+        log "Cleaning up any remaining OpenRCT2 processes on port $PORT..."
+        pkill -f "$PROCESS_PATTERN" 2>/dev/null || true
+        sleep 2
+        pkill -9 -f "$PROCESS_PATTERN" 2>/dev/null || true
+        sleep 1
+        
+        log "Server shutdown complete"
     fi
     
     # Start the server again
@@ -99,25 +158,65 @@ restart_server() {
 stop_server() {
     if is_server_running; then
         log "Stopping OpenRCT2 server (PID: $SERVER_PID)..."
-        # Kill the entire process group to ensure all children die
-        kill -TERM -$SERVER_PID 2>/dev/null || true
-        sleep 1
-        kill -KILL -$SERVER_PID 2>/dev/null || true
+        local current_pid="$SERVER_PID"
+        
+        # Send first SIGINT (like first Ctrl+C)
+        kill -INT "$current_pid" 2>/dev/null || true
+        sleep 2
+        
+        # Check if still running and send second SIGINT
+        if kill -0 "$current_pid" 2>/dev/null; then
+            log "Process still running, sending second SIGINT..."
+            kill -INT "$current_pid" 2>/dev/null || true
+            sleep 2
+        fi
+        
+        # Force kill if still running
+        if kill -0 "$current_pid" 2>/dev/null; then
+            log "Process still running, force killing..."
+            kill -KILL "$current_pid" 2>/dev/null || true
+            sleep 1
+        fi
+        
+        # Wait for the process to actually terminate
+        log "Waiting for process to terminate..."
+        local wait_count=0
+        while kill -0 "$current_pid" 2>/dev/null && [ $wait_count -lt 10 ]; do
+            sleep 1
+            wait_count=$((wait_count + 1))
+            log "Still waiting for PID $current_pid to terminate... ($wait_count/10)"
+        done
+        
+        # Clear the PID
         SERVER_PID=""
     fi
     
     # Nuclear option: kill any remaining openrct2 processes on our port
-    log "Cleaning up any remaining OpenRCT2 processes..."
-    pkill -f "openrct2 host.*$PORT" 2>/dev/null || true
+    log "Cleaning up any remaining OpenRCT2 processes on port $PORT..."
+    pkill -f "$PROCESS_PATTERN" 2>/dev/null || true
+    sleep 2
+    pkill -9 -f "$PROCESS_PATTERN" 2>/dev/null || true
     sleep 1
-    pkill -9 -f "openrct2 host.*$PORT" 2>/dev/null || true
     
-    log_success "Server stopped"
+    # Final verification - check if any OpenRCT2 processes are still running on our port
+    local remaining_processes=$(pgrep -f "$PROCESS_PATTERN" 2>/dev/null | wc -l)
+    if [ "$remaining_processes" -gt 0 ]; then
+        log_warning "Warning: $remaining_processes OpenRCT2 processes may still be running on port $PORT"
+    else
+        log_success "All OpenRCT2 processes on port $PORT have been terminated"
+    fi
 }
 
 # Function to handle cleanup on exit
 cleanup() {
     log "Shutting down development server..."
+    
+    # Cancel any pending restart timer
+    if [ ! -z "$RESTART_TIMER" ]; then
+        log "Cancelling pending restart..."
+        kill "$RESTART_TIMER" 2>/dev/null || true
+    fi
+    
     stop_server
     exit 0
 }
@@ -159,6 +258,7 @@ main() {
     log "Watching: $PLUGIN_FILE"
     log "Scenario: $SCENARIO_FILE"
     log "Port: $PORT"
+    log "OpenRCT2: $OPENRCT2_BIN ($("$OPENRCT2_BIN" --version 2>/dev/null | head -n 1))"
     log "Mode: $([ "$HEADLESS_MODE" = "true" ] && echo "Headless" || echo "GUI")"
     echo
     
@@ -178,10 +278,26 @@ main() {
     log "Development server is running. Press Ctrl+C to stop."
     echo
     
-    # Watch for changes to the plugin file
+    # Watch for changes to the plugin file with debouncing
+    # This prevents multiple restarts when files change rapidly
+    RESTART_DELAY=2  # Wait 2 seconds after last change before restarting
+    RESTART_TIMER=""
+    
     inotifywait -m -e modify,create,close_write "$PLUGIN_FILE" 2>/dev/null | while read path action file; do
-        log "Plugin file changed, restarting server..."
-        restart_server
+        log "Plugin file changed, scheduling restart in ${RESTART_DELAY}s..."
+        
+        # Cancel any existing restart timer
+        if [ ! -z "$RESTART_TIMER" ]; then
+            kill "$RESTART_TIMER" 2>/dev/null || true
+        fi
+        
+        # Set a new timer for restart
+        (
+            sleep "$RESTART_DELAY"
+            log "Restarting server after file changes settled..."
+            restart_server
+        ) &
+        RESTART_TIMER=$!
     done
 }
 

@@ -6,6 +6,7 @@ registerPlugin({
     authors: ["Tr1cks"],
     type: "remote",
     licence: "MIT",
-    targetApiVersion: 34,
+    // 77+: custom actions get the acting player (68) and network APIs take player ids (77)
+    targetApiVersion: 77,
     main: main,
 });

@@ -1,7 +1,8 @@
 import { Config } from './types';
 
 const config: Config = {
-  debug: true,
+  // Debug commands (/setscore, /test, ...) and debug logs only exist in development builds
+  debug: __BUILD_CONFIGURATION__ === "development",
   pluginVersion: "1.0.1",
   defaultSeed: 12345,
   userNameInput: "openrct2",
@@ -20,6 +21,8 @@ const config: Config = {
   gameMode: "pvp", // "coop", "pvp", or "lockout"
   
   // Player colors for PVP scoreboard (OpenRCT2 color values)
+  startingCash: 1000000, // $100,000
+  playerStartingBudget: 250_000 * 10, // $250,000 per player
   playerColors: {
     player1: 28, // COLOUR_BRIGHT_RED
     player2: 6,  // COLOUR_BRIGHT_BLUE (changed from LIGHT_BLUE)

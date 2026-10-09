@@ -2,12 +2,16 @@
 
 import test from "ava";
 import Mock from "openrct2-mocks";
+import { createParkStorage } from "../_mocks";
 import { PlayerManager } from "../../src/managers/PlayerManager";
+
+const parkStorage = createParkStorage();
 
 test.before(() => {
     // Mock OpenRCT2 globals
     globalThis.context = Mock.context({
         getTypeIdForAction: () => 80,
+        getParkStorage: (() => parkStorage) as any,
     });
     
     globalThis.network = Mock.network({
@@ -17,7 +21,12 @@ test.before(() => {
     globalThis.map = Mock.map({ entities: [] });
 });
 
-test("PlayerManager initialization", t => {
+test.beforeEach(() => {
+    // Each test starts from an empty park
+    parkStorage.data = {};
+});
+
+test.serial("PlayerManager initialization", t => {
     const playerManager = new PlayerManager();
     
     t.truthy(playerManager, "PlayerManager should be initialized");
@@ -26,7 +35,7 @@ test("PlayerManager initialization", t => {
     t.is(typeof playerManager.registerPlayer, "function", "Should have registerPlayer method");
 });
 
-test("PlayerManager player registration", t => {
+test.serial("PlayerManager player registration", t => {
     const playerManager = new PlayerManager();
     
     // Start with no players
@@ -46,7 +55,7 @@ test("PlayerManager player registration", t => {
     t.is(player.region, "top-left", "Player region should match");
 });
 
-test("PlayerManager get player by ID", t => {
+test.serial("PlayerManager get player by ID", t => {
     const playerManager = new PlayerManager();
     
     // Register a player
@@ -59,7 +68,7 @@ test("PlayerManager get player by ID", t => {
     t.is(player?.region, "top-right", "Player region should match");
 });
 
-test("PlayerManager get player region", t => {
+test.serial("PlayerManager get player region", t => {
     const playerManager = new PlayerManager();
     
     // Register players in different regions
@@ -75,7 +84,7 @@ test("PlayerManager get player region", t => {
     t.is(playerManager.getPlayerRegion("3"), "bottom-right", "Player 3 should be in bottom-right region");
 });
 
-test("PlayerManager multiple players", t => {
+test.serial("PlayerManager multiple players", t => {
     const playerManager = new PlayerManager();
     
     // Register multiple players
@@ -92,7 +101,7 @@ test("PlayerManager multiple players", t => {
     t.is(uniqueIds.length, playerIds.length, "All player IDs should be unique");
 });
 
-test("PlayerManager get non-existent player", t => {
+test.serial("PlayerManager get non-existent player", t => {
     const playerManager = new PlayerManager();
     
     const player = playerManager.getPlayer("999");
@@ -102,7 +111,7 @@ test("PlayerManager get non-existent player", t => {
     t.is(region, null, "Should return null for non-existent player region");
 });
 
-test("PlayerManager player validation", t => {
+test.serial("PlayerManager player validation", t => {
     const playerManager = new PlayerManager();
     
     // Test with valid data

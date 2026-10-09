@@ -2,12 +2,16 @@
 
 import test from "ava";
 import Mock from "openrct2-mocks";
+import { createParkStorage } from "../_mocks";
 import { GameManager } from "../../src/managers/GameManager";
+
+const parkStorage = createParkStorage();
 
 test.before(() => {
     // Mock OpenRCT2 globals
     globalThis.context = Mock.context({
         getTypeIdForAction: () => 80,
+        getParkStorage: (() => parkStorage) as any,
     });
     
     globalThis.network = Mock.network({

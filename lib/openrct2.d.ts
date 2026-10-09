@@ -821,7 +821,8 @@ declare global {
         direction: number; // direction or 0xFF
         object: number; // surface object
         railingsObject: number;
-        slope: number; // 0: flat, 4,5,6,7: slope direction + 4
+        slopeType: number; // 0: flat, 1: sloped (OpenRCT2 v0.4.32+, replaces "slope")
+        slopeDirection: number; // direction of the slope when sloped
         constructFlags: number;
     }
 
@@ -1204,7 +1205,7 @@ declare global {
     interface StaffHireArgs extends GameActionArgs {
         autoPosition: boolean;
         staffType: number; // 0: handyman, 1: mechanic, 2: security, 3: entertainer
-        entertainerType: number; // see EntertainerCostume in openrct2/entity/Staff.h
+        costumeIndex: number; // OpenRCT2 v0.4.32+ (was "entertainerType"), see EntertainerCostume in openrct2/entity/Staff.h
         staffOrders: number; // bit mask. See STAFF_ORDERS in openrct2/entity/Staff.h
     }
 

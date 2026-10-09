@@ -9,7 +9,7 @@ import { initializeBingoSystem } from "./integration";
 // Example 1: Basic initialization
 export function exampleBasicUsage() {
   // Initialize the bingo system
-  const bingoManager = initializeBingoSystem();
+  const { bingoManager } = initializeBingoSystem();
   
   // Register players
   bingoManager.registerPlayer("player1", "Alice", "red");

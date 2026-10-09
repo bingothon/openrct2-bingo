@@ -1,11 +1,10 @@
-import { BingoManager } from "../bingo/BingoManager";
 import { GameManager } from "../managers/GameManager";
 import { PlayerPersistenceManager } from "../managers/PlayerPersistenceManager";
 
 export function registerDebugShortkeys(): void {
     if (typeof ui === 'undefined') return;
     
-    const bingoManager = BingoManager.getInstance();
+    // const bingoManager = BingoManager.getInstance(); // only used by the disabled shortcuts below (re-add the BingoManager import)
     const gameManager = GameManager.getInstance();
     
     // COMMENTING OUT ALL SHORTCUTS EXCEPT BUILDING RESTRICTIONS DEBUG
@@ -229,11 +228,7 @@ export function registerDebugShortkeys(): void {
       }
       
       const allStates = playerStateManager.getAllPlayerStates();
-      // Count player states (ES5 compatible)
-      var stateCount = 0;
-      for (var playerId in allStates) {
-          stateCount++;
-      }
+      var stateCount = Object.keys(allStates).length;
       console.log("Found " + stateCount + " player states:");
       console.log("Player states object:", allStates);
       
@@ -268,6 +263,8 @@ export function registerDebugShortkeys(): void {
     }});
     
     
+    // Helpers for the shortcuts disabled above - re-enable together with that block
+    /*
     function completeGoalWithColor(colors: string) {
       completeGoalWithColorAndSlot(colors, "1");
     }
@@ -533,6 +530,7 @@ export function registerDebugShortkeys(): void {
       
       console.log("=== END PLAYER ASSIGNMENT DEBUG ===");
     }
+    */
     
     function testBuildingRestrictions() {
       console.log("=== BUILDING RESTRICTIONS DEBUG ===");
@@ -589,11 +587,7 @@ export function registerDebugShortkeys(): void {
         }
         
         const allStates = playerStateManager.getAllPlayerStates();
-        // Count player states (ES5 compatible)
-      var stateCount = 0;
-      for (var playerId in allStates) {
-          stateCount++;
-      }
+        var stateCount = Object.keys(allStates).length;
       console.log("Found " + stateCount + " player states:");
         console.log("Player states object:", allStates);
         

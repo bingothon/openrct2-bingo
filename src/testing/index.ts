@@ -6,18 +6,20 @@ import { testRunner } from "./TestRunner";
 import { gameManagerTests } from "./tests/GameManager.test";
 import { buildingRestrictionsTests } from "./tests/BuildingRestrictions.test";
 import { gameModeIntegrationTests } from "./tests/GameModeIntegration.test";
+import { scoreManagerTests } from "./tests/ScoreManager.test";
 
 /**
  * Run all tests
  */
 export async function runAllTests(): Promise<void> {
     console.log("🚀 Starting OpenRCT2 Bingo Plugin Test Suite");
-    console.log("=" * 60);
+    console.log("=".repeat(60));
     
     const allTests = [
         gameManagerTests,
         buildingRestrictionsTests,
-        gameModeIntegrationTests
+        gameModeIntegrationTests,
+        scoreManagerTests
     ];
     
     await testRunner.runSuites(allTests);
@@ -28,7 +30,7 @@ export async function runAllTests(): Promise<void> {
  */
 export async function runTestSuite(suiteName: string): Promise<void> {
     console.log(`🧪 Running test suite: ${suiteName}`);
-    console.log("=" * 40);
+    console.log("=".repeat(40));
     
     let suite;
     switch (suiteName.toLowerCase()) {
@@ -45,9 +47,13 @@ export async function runTestSuite(suiteName: string): Promise<void> {
         case "integration":
             suite = gameModeIntegrationTests;
             break;
+        case "scoremanager":
+        case "score-manager":
+            suite = scoreManagerTests;
+            break;
         default:
             console.error(`❌ Unknown test suite: ${suiteName}`);
-            console.log("Available suites: gamemanager, buildingrestrictions, gamemode");
+            console.log("Available suites: gamemanager, buildingrestrictions, gamemode, scoremanager");
             return;
     }
     
@@ -59,7 +65,7 @@ export async function runTestSuite(suiteName: string): Promise<void> {
  */
 export async function runTestsByCategory(category: string): Promise<void> {
     console.log(`🔍 Running tests by category: ${category}`);
-    console.log("=" * 40);
+    console.log("=".repeat(40));
     
     let suites;
     switch (category.toLowerCase()) {
@@ -72,12 +78,15 @@ export async function runTestsByCategory(category: string): Promise<void> {
         case "restrictions":
             suites = [buildingRestrictionsTests];
             break;
+        case "scores":
+            suites = [scoreManagerTests];
+            break;
         case "all":
-            suites = [gameManagerTests, buildingRestrictionsTests, gameModeIntegrationTests];
+            suites = [gameManagerTests, buildingRestrictionsTests, gameModeIntegrationTests, scoreManagerTests];
             break;
         default:
             console.error(`❌ Unknown category: ${category}`);
-            console.log("Available categories: unit, integration, restrictions, all");
+            console.log("Available categories: unit, integration, restrictions, scores, all");
             return;
     }
     
@@ -88,5 +97,6 @@ export async function runTestsByCategory(category: string): Promise<void> {
 export {
     gameManagerTests,
     buildingRestrictionsTests,
-    gameModeIntegrationTests
+    gameModeIntegrationTests,
+    scoreManagerTests
 };

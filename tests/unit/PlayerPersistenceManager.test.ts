@@ -22,7 +22,7 @@ test.beforeEach(() => {
     mockParkStorage.data = {};
 });
 
-test('PlayerPersistenceManager - Register player to region', t => {
+test.serial('PlayerPersistenceManager - Register player to region', t => {
     PlayerPersistenceManager.registerPlayerToRegion("player1", "Test Player", "red", "top-left");
     
     const player = PlayerPersistenceManager.getPlayerForRegion("top-left");
@@ -34,7 +34,7 @@ test('PlayerPersistenceManager - Register player to region', t => {
     t.true(player!.isActive);
 });
 
-test('PlayerPersistenceManager - Get all players', t => {
+test.serial('PlayerPersistenceManager - Get all players', t => {
     PlayerPersistenceManager.registerPlayerToRegion("player1", "Player 1", "red", "top-left");
     PlayerPersistenceManager.registerPlayerToRegion("player2", "Player 2", "blue", "top-right");
     
@@ -45,7 +45,7 @@ test('PlayerPersistenceManager - Get all players', t => {
     t.deepEqual(playerNames, ["Player 1", "Player 2"]);
 });
 
-test('PlayerPersistenceManager - Save and load player state', t => {
+test.serial('PlayerPersistenceManager - Save and load player state', t => {
     const playerId = "test-player";
     const playerName = "Test Player";
     const region = "top-left";
@@ -78,7 +78,7 @@ test('PlayerPersistenceManager - Save and load player state', t => {
     t.is(loadedState!.stats.totalProfit, 5000);
 });
 
-test('PlayerPersistenceManager - Region conflict handling', t => {
+test.serial('PlayerPersistenceManager - Region conflict handling', t => {
     // Register first player
     PlayerPersistenceManager.registerPlayerToRegion("player1", "Player 1", "red", "top-left");
     
@@ -91,7 +91,7 @@ test('PlayerPersistenceManager - Region conflict handling', t => {
     t.is(player!.name, "Player 1");
 });
 
-test('PlayerPersistenceManager - Unregister player from region', t => {
+test.serial('PlayerPersistenceManager - Unregister player from region', t => {
     PlayerPersistenceManager.registerPlayerToRegion("player1", "Player 1", "red", "top-left");
     
     // Verify player is registered
@@ -104,7 +104,7 @@ test('PlayerPersistenceManager - Unregister player from region', t => {
     t.is(PlayerPersistenceManager.getPlayerForRegion("top-left"), null);
 });
 
-test('PlayerPersistenceManager - Clear all data', t => {
+test.serial('PlayerPersistenceManager - Clear all data', t => {
     // Register some players
     PlayerPersistenceManager.registerPlayerToRegion("player1", "Player 1", "red", "top-left");
     PlayerPersistenceManager.registerPlayerToRegion("player2", "Player 2", "blue", "top-right");
@@ -124,7 +124,7 @@ test('PlayerPersistenceManager - Clear all data', t => {
     t.is(PlayerPersistenceManager.loadPlayerState("player1"), null);
 });
 
-test('PlayerPersistenceManager - Update player last seen', t => {
+test.serial('PlayerPersistenceManager - Update player last seen', t => {
     PlayerPersistenceManager.registerPlayerToRegion("player1", "Player 1", "red", "top-left");
     
     const initialTime = Date.now();
@@ -141,7 +141,7 @@ test('PlayerPersistenceManager - Update player last seen', t => {
     }, 10);
 });
 
-test('PlayerPersistenceManager - Debug info', t => {
+test.serial('PlayerPersistenceManager - Debug info', t => {
     PlayerPersistenceManager.registerPlayerToRegion("player1", "Player 1", "red", "top-left");
     PlayerPersistenceManager.savePlayerState("player1", { 
         guests: { count: 25, lastUpdated: Date.now() },

@@ -47,6 +47,20 @@ async function getOutput() {
 }
 
 /**
+ * Replaces __BUILD_CONFIGURATION__ in the plugin code with the build mode, so production
+ * builds can leave out debug features.
+ */
+function buildConfiguration() {
+  return {
+    name: "build-configuration",
+    transform(code) {
+      if (code.indexOf("__BUILD_CONFIGURATION__") === -1) return null;
+      return { code: code.split("__BUILD_CONFIGURATION__").join(JSON.stringify(build)), map: null };
+    },
+  };
+}
+
+/**
  * @type {import("rollup").RollupOptions}
  */
 const config = [
@@ -78,6 +92,7 @@ const config = [
         emitDecoratorMetadata: true,
         downlevelIteration: true
       }),
+      buildConfiguration(),
       terser({
         compress: {
           passes: 5,

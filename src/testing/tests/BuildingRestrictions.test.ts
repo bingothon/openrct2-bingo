@@ -9,7 +9,6 @@ import { GameManager } from "../../managers/GameManager";
 
 export const buildingRestrictionsTests = describe("Building Restrictions Tests", [
     it("should block landraise in other player's region", async () => {
-        const gameManager = GameManager.getInstance();
         
         // Setup PVP mode with test players
         TestHelpers.setupPvpMode();
@@ -17,7 +16,6 @@ export const buildingRestrictionsTests = describe("Building Restrictions Tests",
         
         // Get coordinates for different regions
         const topLeftCoords = TestHelpers.getRegionCoordinates("top-left");
-        const topRightCoords = TestHelpers.getRegionCoordinates("top-right");
         
         // Simulate landraise action in player 0's region (top-left) by player 1
         const landraiseAction = TestHelpers.simulateLandraise(
@@ -35,7 +33,6 @@ export const buildingRestrictionsTests = describe("Building Restrictions Tests",
     }),
 
     it("should allow landraise in player's own region", async () => {
-        const gameManager = GameManager.getInstance();
         
         // Setup PVP mode with test players
         TestHelpers.setupPvpMode();
@@ -57,7 +54,6 @@ export const buildingRestrictionsTests = describe("Building Restrictions Tests",
     }),
 
     it("should block building actions in other player's region", async () => {
-        const gameManager = GameManager.getInstance();
         
         // Setup PVP mode with test players
         TestHelpers.setupPvpMode();
@@ -65,7 +61,6 @@ export const buildingRestrictionsTests = describe("Building Restrictions Tests",
         
         // Get coordinates for different regions
         const topLeftCoords = TestHelpers.getRegionCoordinates("top-left");
-        const topRightCoords = TestHelpers.getRegionCoordinates("top-right");
         
         // Simulate building action in player 0's region by player 1
         const buildingAction = TestHelpers.simulateBuildingAction(
@@ -81,7 +76,6 @@ export const buildingRestrictionsTests = describe("Building Restrictions Tests",
     }),
 
     it("should allow building actions in player's own region", async () => {
-        const gameManager = GameManager.getInstance();
         
         // Setup PVP mode with test players
         TestHelpers.setupPvpMode();
@@ -137,7 +131,6 @@ export const buildingRestrictionsTests = describe("Building Restrictions Tests",
     }),
 
     it("should handle landlower actions", () => {
-        const gameManager = GameManager.getInstance();
         
         // Setup PVP mode with test players
         TestHelpers.setupPvpMode();
