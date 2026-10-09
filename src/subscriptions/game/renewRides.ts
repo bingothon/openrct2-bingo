@@ -1,4 +1,5 @@
 import { renewRides } from "src/utils";
+import { config } from "../../config";
 import { subscriptions } from "../manager";
 
 export function subscribeToRenewRides() {
@@ -6,7 +7,7 @@ export function subscribeToRenewRides() {
     subscriptions.upsert("renewRides", () =>
         context.subscribe("interval.day", () => {
             dayCounter++;
-            if (dayCounter % 100 === 0) {
+            if (dayCounter >= config.renewRidesIntervalDays) {
                 renewRides();
                 dayCounter = 0;
             }

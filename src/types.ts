@@ -103,6 +103,10 @@ export interface Config {
   startingCash: number;
   /** PvP/Lockout: budget per player (money units, tenths); the park starts with one per colour */
   playerStartingBudget: number;
+  /** Research: one new ride is invented every this many in-game days (a year has ~245 days) */
+  inventionIntervalDays: number;
+  /** Rides are renewed (reset to new) every this many in-game days, so they don't age */
+  renewRidesIntervalDays: number;
   playerColorNames: PlayerColorNames;
   debug: boolean;
 }

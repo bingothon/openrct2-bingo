@@ -81,9 +81,11 @@ export function main(): void {
         scoreManager.initialize();
         console.log('ScoreManager initialized for server-side score management');
         
+        // Faster research and rides that don't age - on every server, also headless ones
+        subscribeToInventions();
+        subscribeToRenewRides();
+
         if (typeof ui !== 'undefined') {
-            subscribeToInventions();
-            subscribeToRenewRides();
             console.log('Server mode with UI.');
             setSeed();
 

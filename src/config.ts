@@ -23,6 +23,9 @@ const config: Config = {
   // Player colors for PVP scoreboard (OpenRCT2 color values)
   startingCash: 1000000, // $100,000
   playerStartingBudget: 250_000 * 10, // $250,000 per player
+  // One new research item every 3 in-game days: the ~140 items take ~1.7 of the ~245-day years
+  inventionIntervalDays: 3,
+  renewRidesIntervalDays: 100,
   playerColors: {
     player1: 28, // COLOUR_BRIGHT_RED
     player2: 6,  // COLOUR_BRIGHT_BLUE (changed from LIGHT_BLUE)
