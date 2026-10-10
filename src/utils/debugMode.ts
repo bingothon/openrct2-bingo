@@ -47,7 +47,7 @@ export function debugMode(bool: 1 | 0, callback?: () => void) {
 export function renewRides(callback?: () => void) {
     // Define the arguments for renewing rides
     const renewRidesArgs: CheatSetArgs = {
-        type: 27, // Replace with the CheatType index for RenewRides (check the CheatType enum in OpenRCT2 source code)
+        type: 29, // CheatType::renewRides in OpenRCT2 (27 is removeLitter)
         param1: 0, // Enable the action (if required by the cheat)
         param2: 0, // No secondary parameter
     };

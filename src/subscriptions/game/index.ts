@@ -17,6 +17,12 @@ export {
     unsubscribeFromRenewRides
 } from './renewRides';
 
+// Weather: rain stops after a few days
+export {
+    subscribeToWeather,
+    unsubscribeFromWeather
+} from './weather';
+
 // Building Restrictions-related subscriptions
 export {
     subscribeToBuildingRestrictions,

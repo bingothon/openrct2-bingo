@@ -107,6 +107,10 @@ export interface Config {
   inventionIntervalDays: number;
   /** Rides are renewed (reset to new) every this many in-game days, so they don't age */
   renewRidesIntervalDays: number;
+  /** Rain/snow stops after this many in-game days */
+  maxRainDays: number;
+  /** Managed servers start a new game this many real-time minutes after a PvP/Lockout game ended */
+  newGameDelayMinutes: number;
   playerColorNames: PlayerColorNames;
   debug: boolean;
 }

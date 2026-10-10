@@ -173,6 +173,10 @@ function sendBoard(board: BingoBoard): void {
  * Managed server: ask the manager to restart this server (fresh scenario). False when this
  * server isn't run by the manager or the manager can't be reached.
  */
+export function isManagedServer(): boolean {
+    return managedLink !== null;
+}
+
 export function canRequestServerRestart(): boolean {
     return managedLink !== null && isSocketConnected;
 }

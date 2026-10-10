@@ -10,6 +10,7 @@ import { connectToManager } from './bingo/bingosync-handler';
 import {
     subscribeToClientBoardSync,
     subscribeToInventions,
+    subscribeToWeather,
     subscribeToRenewRides,
 } from './subscriptions/game';
 // Removed unused tileAnalyzer import
@@ -32,6 +33,7 @@ import { subscribeToBudgetTracking } from './bingo/budgets';
 import { subscribeToBannerRegions } from './bingo/bannerRegions';
 import { subscribeToSetupLock } from './subscriptions/game/buildingRestrictions';
 import { subscribeToRegionPicker } from './ui/showRegionPicker';
+import { subscribeToGameResult } from './ui/showGameResult';
 import { subscriptions } from './subscriptions/manager';
 import { ScoreManager } from './managers/ScoreManager';
 
@@ -42,6 +44,8 @@ export function main(): void {
     subscribeToBannerRegions(GameManager.getInstance().getGroundDivisionManager());
     // PvP/Lockout: let players pick their colour/region in a window (clients and a GUI host)
     subscriptions.upsert("regionPicker", () => subscribeToRegionPicker() || { dispose: () => {} });
+    // PvP/Lockout: show who won once the game is over
+    subscriptions.upsert("gameResult", () => subscribeToGameResult() || { dispose: () => {} });
     network.defaultGroup = 3;
 
     // Shortkeys are registered below per mode
@@ -87,6 +91,7 @@ export function main(): void {
         // Faster research and rides that don't age - on every server, also headless ones
         subscribeToInventions();
         subscribeToRenewRides();
+        subscribeToWeather();
 
         if (typeof ui !== 'undefined') {
             console.log('Server mode with UI.');

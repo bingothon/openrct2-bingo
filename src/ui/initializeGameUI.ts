@@ -1,4 +1,4 @@
-import { subscribeToInventions, subscribeToRenewRides } from "../subscriptions/game";
+import { subscribeToInventions, subscribeToRenewRides, subscribeToWeather } from "../subscriptions/game";
 // import { subscribeToServerInitialization } from "../subscriptions/server"; // LEGACY - removed to prevent duplicate initialization
 import { getSeed } from "../utils";
 import { configureBoard } from "./helpers";
@@ -17,6 +17,7 @@ export function setupGameUI() {
   // Set up game systems
   subscribeToInventions();
   subscribeToRenewRides();
+  subscribeToWeather();
   // subscribeToServerInitialization(showGameDurationDialog); // LEGACY - removed to prevent duplicate initialization
 
   // Initialize game board and UI

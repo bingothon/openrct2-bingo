@@ -18,6 +18,7 @@ import { countClaims, getClinchWinner, getLeaders, hasBingo } from "../bingo/loc
 import { sendGameMessage } from "../subscriptions/server/helpers";
 import { syncRegionSpawns } from "../bingo/regionSpawns";
 import { linkBingoSyncRoom } from "../bingo/bingosync-handler";
+import { scheduleNewGame } from "../subscriptions/server/newGame";
 
 export class GoalManager {
     private ground: GroundDivisionManager;
@@ -53,6 +54,7 @@ export class GoalManager {
             if (context.getParkStorage().get("gameOver", false)) {
                 this.gameOver = true;
                 console.log("[GoalManager] Game is already over - not checking goals");
+                scheduleNewGame();
                 return;
             }
 
@@ -150,14 +152,30 @@ export class GoalManager {
         if (this.gameOver) return;
         this.gameOver = true;
 
-        console.log(`[GoalManager] Game over: ${message}`);
+        const finalScores = this.formatFinalScores();
+        console.log(`[GoalManager] Game over: ${message} (${finalScores})`);
         context.executeAction("setStorage", { args: { key: "gameOver", value: true } });
+        context.executeAction("setStorage", { args: { key: "finalScores", value: finalScores } });
+        // Set last: players' result windows open once the result is there (showGameResult.ts)
         context.executeAction("setStorage", { args: { key: "gameResult", value: message } });
         this.stopGoalChecking();
 
         for (let i = 0; i < 3; i++) {
             sendGameMessage(message);
         }
+        scheduleNewGame();
+    }
+
+    /**
+     * "RED 13, BLUE 5, GREEN 2", highest first
+     */
+    private formatFinalScores(): string {
+        if (!this.board) return "";
+        const counts = countClaims(this.board);
+        return this.getPlayerColours()
+            .sort((a, b) => (counts[b] || 0) - (counts[a] || 0))
+            .map((colour) => `${colour.toUpperCase()} ${counts[colour] || 0}`)
+            .join(", ");
     }
 
     /**

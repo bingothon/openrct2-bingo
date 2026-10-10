@@ -26,6 +26,9 @@ const config: Config = {
   // One new research item every 3 in-game days: the ~140 items take ~1.7 of the ~245-day years
   inventionIntervalDays: 3,
   renewRidesIntervalDays: 100,
+  maxRainDays: 3,
+  // Managed servers start a new game this long (real time) after a PvP/Lockout game ended
+  newGameDelayMinutes: 5,
   playerColors: {
     player1: 28, // COLOUR_BRIGHT_RED
     player2: 6,  // COLOUR_BRIGHT_BLUE (changed from LIGHT_BLUE)
