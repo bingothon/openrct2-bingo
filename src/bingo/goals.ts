@@ -31,10 +31,9 @@ const thoughtTypes = {
     "very_clean": "Thought: Very clean here",
     "fountains": "Thought: Love the fountains",
     "music": "Thought: Enjoying the music",
-    "wow": "Thought: Wow!",
-    "wow2": "Thought: Double wow!",
-    "help": "Thought: Help!",
-    "running_out": "Thought: Running out of time",
+    // Not "wow" (guests never think it), "wow2" (only guests named John Wardley) or "help" (only
+    // while a player holds a guest up): those can't be reached by building a park
+    "running_out": "Thought: Running out of cash",
     "new_ride": "Thought: Excited for the new ride",
 };
 
@@ -109,9 +108,12 @@ function sharedGoal(definition: {
     };
 }
 
+/** Cash machine and first aid room: they can't charge, so they never make a profit */
+const UNPAID_RIDE_TYPES = [45, 48];
+
 /**
  * "Create all rides in the X category": every ride type of the category built, and enough of
- * them profitable (half for gentle/thrill, all otherwise)
+ * them profitable (half for gentle/thrill, otherwise every type that can charge)
  */
 function getCategoryRideTypes(category: string): number[] {
     const categoryRideTypes: number[] = [];
@@ -128,20 +130,30 @@ function getCategoryRideTypes(category: string): number[] {
     return categoryRideTypes;
 }
 
-function isCategoryComplete(rides: Ride[], category: string): boolean {
-    const categoryRideTypes = getCategoryRideTypes(category);
-    let profitableCount = 0;
-    for (let i = 0; i < categoryRideTypes.length; i++) {
-        const ofType = rides.filter((ride) => ride.type === categoryRideTypes[i]);
-        if (ofType.length === 0) return false; // not all built
-        if (anyRide(ofType, (ride) => ride.totalProfit > 0)) profitableCount++;
-    }
-    const requiredProfitableCount =
-        category === "gentle" || category === "thrill"
-            ? Math.ceil(categoryRideTypes.length / 2)
-            : categoryRideTypes.length;
-    return profitableCount >= requiredProfitableCount;
+function getRequiredProfitableCount(category: string, categoryRideTypes: number[]): number {
+    if (category === "gentle" || category === "thrill") return Math.ceil(categoryRideTypes.length / 2);
+    return categoryRideTypes.filter((type) => UNPAID_RIDE_TYPES.indexOf(type) === -1).length;
 }
+
+function getCategoryProgress(rides: Ride[], category: string): { types: number; built: number; profitable: number; required: number } {
+    const categoryRideTypes = getCategoryRideTypes(category);
+    let built = 0;
+    let profitable = 0;
+    categoryRideTypes.forEach((type) => {
+        const ofType = rides.filter((ride) => ride.type === type);
+        if (ofType.length > 0) built++;
+        if (anyRide(ofType, (ride) => ride.totalProfit > 0)) profitable++;
+    });
+    return { types: categoryRideTypes.length, built, profitable, required: getRequiredProfitableCount(category, categoryRideTypes) };
+}
+
+function isCategoryComplete(rides: Ride[], category: string): boolean {
+    const progress = getCategoryProgress(rides, category);
+    return progress.built === progress.types && progress.profitable >= progress.required;
+}
+
+/** Highest a footpath can go (248 x 8): a stall any higher can't be reached by guests */
+const WHITE_CASTLE_Z = 248 * 8;
 
 export const goals = (seed: number) => {
     let startMonth = date.monthsElapsed;
@@ -563,7 +575,7 @@ export const goals = (seed: number) => {
         {
             name: "White Castle (Burger Stall Highest Possible, with Profit)",
             playerProgress: (scope) => {
-                const stall = scope.rides.filter((ride) => ride.classification === "stall" && ride.type === 28 && ride.stations.some((station) => station.start && station.start.z >= 2000))[0];
+                const stall = scope.rides.filter((ride) => ride.classification === "stall" && ride.type === 28 && ride.stations.some((station) => station.start && station.start.z >= WHITE_CASTLE_Z))[0];
                 return stall ? stall.name : "No White Castle";
             },
             checkPlayer: (scope) =>
@@ -573,7 +585,7 @@ export const goals = (seed: number) => {
                         ride.classification === "stall" &&
                         ride.type === 28 &&
                         ride.totalProfit > 0 &&
-                        ride.stations.some((station) => station.start && station.start.z >= 2000),
+                        ride.stations.some((station) => station.start && station.start.z >= WHITE_CASTLE_Z),
                 ),
             slot: undefined,
             colors: "blank",
@@ -582,7 +594,7 @@ export const goals = (seed: number) => {
                 const ride = map.rides.filter(
                     ride => ride.classification === 'stall' &&
                         ride.type === 28 &&
-                        ride.stations.some(station => station.start && station.start.z >= 2000)
+                        ride.stations.some(station => station.start && station.start.z >= WHITE_CASTLE_Z)
                 )[0]
                 return ride !== undefined ? ride.name : "No White Castle";
             },
@@ -591,7 +603,7 @@ export const goals = (seed: number) => {
                 const ride = map.rides.filter(
                     ride => ride.classification === 'stall' &&
                         ride.type === 28 &&
-                        ride.stations.some(station => station.start && station.start.z >= 2000)
+                        ride.stations.some(station => station.start && station.start.z >= WHITE_CASTLE_Z)
                 )[0]
                 return ride !== undefined && ride.totalProfit > 0;
             }
@@ -607,122 +619,10 @@ export const goals = (seed: number) => {
             colors: "blank",
             status: "incomplete",
             currentCondition: () => {
-                const loweredRandomCategory = randomCategory.toLowerCase();
-
-                // Get unique rideTypes for the selected category manually
-                const categoryRideTypes: number[] = [];
-                INVENTION_ITEMS.forEach((ride) => {
-                    if (
-                        ride.type === "ride" &&
-                        ride.category === loweredRandomCategory &&
-                        ride.rideType !== undefined // Ensure rideType is defined
-                    ) {
-                        let alreadyAdded = false;
-                        for (let i = 0; i < categoryRideTypes.length; i++) {
-                            if (categoryRideTypes[i] === ride.rideType) {
-                                alreadyAdded = true;
-                                break;
-                            }
-                        }
-                        if (!alreadyAdded) {
-                            categoryRideTypes.push(ride.rideType);
-                        }
-                    }
-                });
-
-                // Count how many unique rideTypes are built and profitable
-                let builtCount = 0;
-                let builtProfitableCount = 0;
-                for (let i = 0; i < categoryRideTypes.length; i++) {
-                    const rideType = categoryRideTypes[i];
-                    let isBuilt = false;
-                    let isProfitable = false;
-                    for (let j = 0; j < map.rides.length; j++) {
-                        const builtRide = map.rides[j];
-                        if (builtRide.type === rideType) {
-                            isBuilt = true;
-                            if (builtRide.totalProfit > 0) {
-                                isProfitable = true;
-                            }
-                        }
-                    }
-                    if (isBuilt) {
-                        builtCount++;
-                    }
-                    if (isProfitable) {
-                        builtProfitableCount++;
-                    }
-                }
-
-                const requiredProfitableCount =
-                    loweredRandomCategory === "gentle" || loweredRandomCategory === "thrill"
-                        ? Math.ceil(categoryRideTypes.length / 2)
-                        : categoryRideTypes.length;
-
-                // Return progress in the format `built/current (profitable/requiredProfitable)`
-                return `${builtCount}/${categoryRideTypes.length} (required profitable ${builtProfitableCount}/${requiredProfitableCount})`;
+                const progress = getCategoryProgress(map.rides, randomCategory.toLowerCase());
+                return `${progress.built}/${progress.types} (required profitable ${progress.profitable}/${progress.required})`;
             },
-            checkCondition: () => {
-                const loweredRandomCategory = randomCategory.toLowerCase();
-
-                // Get unique rideTypes for the selected category manually
-                const categoryRideTypes: number[] = [];
-                INVENTION_ITEMS.forEach((ride) => {
-                    if (
-                        ride.type === "ride" &&
-                        ride.category === loweredRandomCategory &&
-                        ride.rideType !== undefined // Ensure rideType is defined
-                    ) {
-                        let alreadyAdded = false;
-                        for (let i = 0; i < categoryRideTypes.length; i++) {
-                            if (categoryRideTypes[i] === ride.rideType) {
-                                alreadyAdded = true;
-                                break;
-                            }
-                        }
-                        if (!alreadyAdded) {
-                            categoryRideTypes.push(ride.rideType);
-                        }
-                    }
-                });
-
-                // Ensure all rides are built
-                let allBuilt = true;
-                for (let i = 0; i < categoryRideTypes.length; i++) {
-                    const rideType = categoryRideTypes[i];
-                    let isBuilt = false;
-                    for (let j = 0; j < map.rides.length; j++) {
-                        if (map.rides[j].type === rideType) {
-                            isBuilt = true;
-                            break;
-                        }
-                    }
-                    if (!isBuilt) {
-                        allBuilt = false;
-                        break;
-                    }
-                }
-
-                // Count how many rides are profitable
-                let profitableCount = 0;
-                for (let i = 0; i < categoryRideTypes.length; i++) {
-                    const rideType = categoryRideTypes[i];
-                    for (let j = 0; j < map.rides.length; j++) {
-                        if (map.rides[j].type === rideType && map.rides[j].totalProfit > 0) {
-                            profitableCount++;
-                            break;
-                        }
-                    }
-                }
-
-                const requiredProfitableCount =
-                    loweredRandomCategory === "gentle" || loweredRandomCategory === "thrill"
-                        ? Math.ceil(categoryRideTypes.length / 2)
-                        : categoryRideTypes.length;
-
-                // Return true if all rides are built and profit condition is met
-                return allBuilt && profitableCount >= requiredProfitableCount;
-            },
+            checkCondition: () => isCategoryComplete(map.rides, randomCategory.toLowerCase()),
         },
         // Goals for every mode: coop checks the whole park, PvP/Lockout the player's region
         sharedGoal({

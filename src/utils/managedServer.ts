@@ -24,7 +24,7 @@ export function getManagedServer(): ManagedServer | null {
     return {
         id,
         mode,
-        durationYears: context.sharedStorage.get<number>("bingoServer.durationYears") || 2,
+        durationYears: context.sharedStorage.get<number>("bingoServer.durationYears") || 4,
         managerPort: context.sharedStorage.get<number>("bingoServer.managerPort") || 12414,
     };
 }

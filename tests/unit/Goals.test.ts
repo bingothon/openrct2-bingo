@@ -158,3 +158,50 @@ test("a rebuilt board shows who completed each goal", async (t) => {
     t.is(board[2].colors, "blank");
     parkStorage.data = {};
 });
+
+/** A goal pool whose random parts (category, thought) match, by trying seeds */
+function poolWhere(mode: "coop" | "lockout", predicate: (goal: { name: string }) => boolean) {
+    for (let seed = 1; seed < 5000; seed++) {
+        const pool = goalsForMode(goals(seed), mode);
+        const goal = pool.filter(predicate)[0];
+        if (goal) return goal;
+    }
+    throw new Error("no seed found");
+}
+
+test("all shop types: the cash machine and first aid room must be built, but can't make profit", (t) => {
+    const ground = createGround();
+    // Food stall, drink stall, shop, info kiosk, toilets profitable; cash machine and first aid at a loss
+    const rides = [28, 30, 32, 35, 36].map((type) => mockRide(10, 10, { type, totalProfit: 100 }));
+    const unpaid = [45, 48].map((type) => mockRide(10, 10, { type, totalProfit: -50 }));
+    const goal = poolWhere("lockout", (g) => g.name === "Create all rides in the Shop category");
+
+    setMap(rides, []);
+    t.false(goal.checkPlayer!(buildRegionScopes(ground)["top-left"]), "cash machine and first aid not built yet");
+    setMap(rides.concat(unpaid), []);
+    t.true(goal.checkPlayer!(buildRegionScopes(ground)["top-left"]));
+
+    const coop = poolWhere("coop", (g) => g.name === "Create all rides in the Shop category");
+    t.true(coop.checkCondition(), "coop uses the same rule");
+});
+
+test("White Castle: a burger stall at the highest footpath height counts", (t) => {
+    const ground = createGround();
+    const stall = (z: number) => mockRide(10, 10, { classification: "stall", type: 28, totalProfit: 10, stations: [{ start: { x: 336, y: 336, z } }] } as never);
+    const goal = goalsForMode(goals(1234), "lockout").filter((g) => g.name.indexOf("White Castle") === 0)[0];
+
+    setMap([stall(248 * 8)], []);
+    t.true(goal.checkPlayer!(buildRegionScopes(ground)["top-left"]), "248 is the highest a path can reach");
+    setMap([stall(247 * 8)], []);
+    t.false(goal.checkPlayer!(buildRegionScopes(ground)["top-left"]));
+});
+
+test("thought goals only use thoughts guests can have in a normal park", (t) => {
+    const names: string[] = [];
+    for (let seed = 1; seed < 2000; seed++) {
+        const goal = goals(seed).filter((g) => g.name.indexOf("Thought: ") === 0)[0];
+        if (names.indexOf(goal.name) === -1) names.push(goal.name);
+    }
+    t.false(names.some((name) => /Wow!|Double wow|Help!|Running out of time/.test(name)), names.join(" | "));
+    t.true(names.some((name) => name.indexOf("Running out of cash") !== -1));
+});

@@ -20,6 +20,7 @@ import { syncRegionSpawns } from "../bingo/regionSpawns";
 import { linkBingoSyncRoom } from "../bingo/bingosync-handler";
 import { scheduleNewGame } from "../subscriptions/server/newGame";
 import { celebrate } from "../bingo/notifications/celebration";
+import { getYearsLeft, getYearsPlayed, isTimerRunning, startTimer } from "../utils/gameTimer";
 
 export class GoalManager {
     private ground: GroundDivisionManager;
@@ -28,6 +29,8 @@ export class GoalManager {
     private isServer: boolean = false;
     private tickCounter: number = 0;
     private gameOver: boolean = false;
+    /** Whole years played at the last timer check, to announce each new year (null: not checked yet) */
+    private lastWholeYear: number | null = null;
 
     constructor(ground: GroundDivisionManager, players: PlayerManager) {
         this.ground = ground;
@@ -126,14 +129,32 @@ export class GoalManager {
     }
 
     /**
-     * Lockout/PvP: when the game duration is over without a clinch or bingo, the colour with
-     * the most goals wins
+     * Lockout/PvP: the clock starts once the first player has picked a colour; when the game
+     * duration is over without a clinch or bingo, the colour with the most goals wins
      */
     private checkTimer(): void {
         if (!this.board || this.gameOver || config.gameMode === "coop") return;
 
         const duration = context.getParkStorage().get("duration", 0);
-        if (duration <= 0 || date.yearsElapsed < duration) return;
+        if (duration <= 0) return;
+
+        if (!isTimerRunning()) {
+            if (this.getPlayerColours().length === 0) return;
+            startTimer();
+            sendGameMessage(`⏱️ The clock is running: ${duration} years to play!`);
+            return;
+        }
+
+        const yearsPlayed = getYearsPlayed();
+        if (yearsPlayed < duration) {
+            const wholeYears = Math.floor(yearsPlayed);
+            if (this.lastWholeYear !== null && wholeYears > this.lastWholeYear) {
+                const left = getYearsLeft(duration);
+                sendGameMessage(`⏱️ A year has passed - ${left} ${left === 1 ? "year" : "years"} left!`);
+            }
+            this.lastWholeYear = wholeYears;
+            return;
+        }
 
         const leaders = getLeaders(this.board, this.getPlayerColours());
         if (leaders.colours.length === 1) {

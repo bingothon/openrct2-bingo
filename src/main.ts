@@ -5,7 +5,7 @@ import {
     showGameModeDialog,
     showWelcomeDialog,
 } from './ui';
-import { checkIfStarted, getManagedServer, getSeed, setSeed, startGame } from './utils';
+import { checkIfStarted, getManagedServer, getSeed, getYearsLeft, isTimerRunning, setSeed, startGame } from './utils';
 import { connectToManager } from './bingo/bingosync-handler';
 import {
     subscribeToClientBoardSync,
@@ -36,6 +36,11 @@ import { subscribeToRegionPicker } from './ui/showRegionPicker';
 import { subscribeToGameResult } from './ui/showGameResult';
 import { subscriptions } from './subscriptions/manager';
 import { ScoreManager } from './managers/ScoreManager';
+
+function describeTimeLeft(duration: number): string {
+    if (!isTimerRunning()) return `Game already started - the ${duration}-year clock starts when the first player picks a colour.`;
+    return `Game already started, ${getYearsLeft(duration)} years remaining.`;
+}
 
 export function main(): void {
     registerActions();
@@ -118,9 +123,7 @@ export function main(): void {
                 } else {
                     const parkStorage = context.getParkStorage();
                     const duration = parkStorage.get('duration', 0);
-                    const getCurrentYear = date.year;
-                    const remainingYears = duration - getCurrentYear;
-                    network.sendMessage(`Game already started, ${remainingYears} years remaining.`);
+                    network.sendMessage(describeTimeLeft(duration));
                     console.log("Game already started, skipping game duration's dialog.");
                 }
                 subscribeIfStarted();
@@ -151,9 +154,7 @@ export function main(): void {
             } else {
                 const parkStorage = context.getParkStorage();
                 const duration = parkStorage.get('duration', 0);
-                const getCurrentYear = date.year;
-                const remainingYears = duration - getCurrentYear;
-                network.sendMessage(`Game already started, ${remainingYears} years remaining.`);
+                network.sendMessage(describeTimeLeft(duration));
                 console.log("Game already started, skipping game duration's dialog.");
             }
             subscribeIfStarted();
