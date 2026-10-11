@@ -16,9 +16,14 @@ let nextTimer = 1;
 const actions: { name: string; args: any }[] = [];
 const messages: string[] = [];
 let online: { id: number; name: string; publicKeyHash: string }[] = [];
+let guests: { x: number; y: number; removed: boolean; remove: () => void }[] = [];
+const guestAt = (tileX: number, tileY: number) => {
+    const guest = { x: tileX * 32 + 16, y: tileY * 32 + 16, removed: false, remove: () => { guest.removed = true; } };
+    return guest;
+};
 
 g.date = { monthsElapsed: 0 };
-g.map = { rides: [], getAllEntities: () => [], getTile: () => ({ elements: [] }), size: { x: 130, y: 192 } };
+g.map = { rides: [], getAllEntities: (type: string) => (type === "guest" ? guests : []), getTile: () => ({ elements: [] }), size: { x: 130, y: 192 } };
 g.objectManager = { load: () => null };
 g.network = {
     mode: "server",
@@ -44,6 +49,8 @@ g.context = {
         actions.push({ name, args });
         if (name === "setStorage") parkStorage.set(args.args.key, args.args.value);
         if (name === "closeRegion") closeRegionAction().execute({ args: args.args } as never);
+        if (name === "reopenRegion") reopenRegionAction().execute({ args: args.args } as never);
+        if (name === "removeRegionGuests") removeRegionGuestsAction().execute({ args: args.args } as never);
         if (callback) callback({ error: 0 } as GameActionResult);
     },
 };
@@ -52,7 +59,7 @@ const { config } = await import("../../src/config");
 const { GameManager } = await import("../../src/managers/GameManager");
 const { subscribeToLeavingPlayers } = await import("../../src/subscriptions/server/leavingPlayers");
 const { isColourClosed } = await import("../../src/bingo/closedRegions");
-const { closeRegionAction } = await import("../../src/actions/all/closeRegionAction");
+const { closeRegionAction, reopenRegionAction, removeRegionGuestsAction } = await import("../../src/actions/all/closeRegionAction");
 const { registerPlayerAction } = await import("../../src/actions/all/registerPlayerAction");
 
 const fire = (hook: string, e: any) => (hooks[hook] || []).forEach((callback) => callback(e));
@@ -63,6 +70,7 @@ function setup() {
     for (const id of Object.keys(timers)) delete timers[Number(id)];
     actions.length = 0;
     messages.length = 0;
+    guests = [];
     config.gameMode = "lockout";
     parkStorage.set("gameMode", "lockout");
     online = [{ id: 1, name: "Alice", publicKeyHash: "aaa" }, { id: 2, name: "Bob", publicKeyHash: "bbb" }];
@@ -97,28 +105,35 @@ test.serial("coming back within 5 minutes keeps the region", (t) => {
     t.false(actions.some((action) => action.name === "closeRegion"));
 });
 
-test.serial("not back after 5 minutes: the colour is closed and the region cleared", (t) => {
+test.serial("not back after 5 minutes: the region is cleared and free again", (t) => {
     setup();
+    parkStorage.set("budgetSpent", { red: 1_000_000, blue: 500 });
+    guests = [guestAt(10, 10), guestAt(20, 40), guestAt(100, 10)]; // two in red's region, one in blue's
     online = online.filter((player) => player.id !== 1);
     fire("network.leave", { player: 1 });
     pendingTimers()[0].callback();
 
-    t.true(isColourClosed("red"));
     t.deepEqual(GameManager.getInstance().getAllPlayers().map((player) => player.colour), ["blue"]);
-    t.true(messages.some((message) => /RED's region is being cleared/.test(message)));
-    t.true(actions.some((action) => action.name === "closeRegion" && action.args.args.colour === "red"));
+    t.deepEqual(guests.map((guest) => guest.removed), [true, true, false], "only the guests in red's region");
+    t.deepEqual(parkStorage.get("budgetSpent", {}), { blue: 500 }, "a new red player gets the full budget");
+    t.false(isColourClosed("red"), "free again once cleared");
+    const names = actions.map((action) => action.name);
+    for (const name of ["closeRegion", "removeRegionGuests", "reopenRegion"]) t.true(names.indexOf(name) !== -1, name);
+    t.true(names.indexOf("removeRegionGuests") > names.indexOf("closeRegion"));
+    t.true(messages.some((message) => /RED is free again/.test(message)));
 });
 
-test.serial("a closed colour can't be picked again", (t) => {
+test.serial("while the region is being cleared the colour can't be picked, afterwards it can", (t) => {
     setup();
-    online = online.filter((player) => player.id !== 1);
-    fire("network.leave", { player: 1 });
-    pendingTimers()[0].callback();
-
+    closeRegionAction().execute({ args: { colour: "red" } } as never);
     online.push({ id: 9, name: "Carol", publicKeyHash: "ccc" });
-    const result = registerPlayerAction().query({ args: { colour: "red" }, player: 9 } as never);
-    t.is(result.error, 1);
-    t.regex(result.errorMessage, /closed for this game/);
+
+    const during = registerPlayerAction().query({ args: { colour: "red" }, player: 9 } as never);
+    t.is(during.error, 1);
+    t.regex(during.errorMessage, /being cleared/);
+
+    reopenRegionAction().execute({ args: { colour: "red" } } as never);
+    t.is(registerPlayerAction().query({ args: { colour: "red" }, player: 9 } as never).error, 0);
 });
 
 test.serial("leaving in coop or after the game ended does nothing", (t) => {

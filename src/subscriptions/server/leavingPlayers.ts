@@ -8,12 +8,15 @@ import { isColourClosed } from "../../bingo/closedRegions";
 import { rememberRegion, restoreRegion } from "../../bingo/regionRestore";
 import { getPlayerIdentity } from "../../utils/playerIdentity";
 import { sendGameMessage } from "./helpers";
+import { syncRegionSpawns } from "../../bingo/regionSpawns";
+import { resetBudget } from "../../bingo/budgets";
 
 /*
  * PvP/Lockout: a player who leaves keeps their region for config.leaveGraceMinutes (real time).
- * If they don't come back, their colour is closed for the rest of the game (closeRegion action:
- * claimed goals stay locked, the score goes off the board) and the region is cleared: staff fired,
- * rides and stalls demolished, the land put back the way it was when the colour was picked.
+ * If they don't come back, their goals are released (score 0) and the region is cleared: staff
+ * fired, rides and stalls demolished, guests and the guest spawn removed, the land put back the way
+ * it was when the colour was picked. Then the colour is free again for a new player, with a fresh
+ * budget. Nobody can pick it while that runs (closeRegion / reopenRegion actions).
  */
 
 const MINUTE_MS = 60_000;
@@ -88,8 +91,8 @@ function fireStaff(colour: string): void {
 }
 
 /**
- * Server: close the colour and clear its region (also the /closeregion admin command).
- * False when the colour isn't in use.
+ * Server: clear a colour's region and open it for a new player (also the /closeregion admin
+ * command). False when the colour is already being cleared.
  */
 export function closeRegion(colour: string): boolean {
     const entry = COLOR_TO_REGION[colour];
@@ -103,13 +106,25 @@ export function closeRegion(colour: string): boolean {
             console.log(`[LeavingPlayers] Couldn't close ${colour}: ${result.errorMessage}`);
             return;
         }
-        GameManager.getInstance().getGoalManager().onColourClosed();
-        sendGameMessage(`🧹 ${colour.toUpperCase()}'s region is being cleared - it's closed for the rest of this game.`);
+        // Their goals are open again and their score is 0
+        GameManager.getInstance().getGoalManager().onColourClosed(colour);
+        sendGameMessage(`🧹 ${colour.toUpperCase()}'s player left - clearing their region...`);
 
         fireStaff(colour);
         demolishRides(entry.region, () => {
-            const ground = GameManager.getInstance().getGroundDivisionManager();
-            restoreRegion(ground, entry.region, () => console.log(`[LeavingPlayers] ${colour}'s region is cleared`));
+            // After the rides: their riders are back on the ground and can be removed
+            context.executeAction("removeRegionGuests", { args: { colour } }, () => {
+                // Unpicked colours have no guest spawn
+                syncRegionSpawns();
+                const ground = GameManager.getInstance().getGroundDivisionManager();
+                restoreRegion(ground, entry.region, () => {
+                    resetBudget(colour);
+                    context.executeAction("reopenRegion", { args: { colour } }, () => {
+                        console.log(`[LeavingPlayers] ${colour}'s region is cleared`);
+                        sendGameMessage(`✅ ${colour.toUpperCase()} is free again - a new player can pick it.`);
+                    });
+                });
+            });
         });
     });
     return true;

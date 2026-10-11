@@ -1,8 +1,8 @@
 /*
- * PvP/Lockout: colours whose player left and didn't come back in time (leavingPlayers.ts). Their
- * region is cleared and closed for the rest of the game: nobody can pick the colour again, their
- * claimed goals stay locked and their score is off the board. Kept in park storage, which the
- * closeRegion action changes on the server and every client.
+ * PvP/Lockout: colours whose region is being cleared because their player left and didn't come
+ * back in time (leavingPlayers.ts). Nobody can pick such a colour until the region is restored;
+ * then it's open again for a new player. Kept in park storage, which the closeRegion and
+ * reopenRegion actions change on the server and every client.
  */
 
 const CLOSED_KEY = "closedColours";
@@ -25,4 +25,9 @@ export function markColourClosed(colour: string): void {
     const colours = getClosedColours();
     if (colours.indexOf(colour) === -1) colours.push(colour);
     context.getParkStorage().set(CLOSED_KEY, JSON.stringify(colours));
+}
+
+/** Only from inside a game action (reopenRegion) */
+export function markColourOpen(colour: string): void {
+    context.getParkStorage().set(CLOSED_KEY, JSON.stringify(getClosedColours().filter((closed) => closed !== colour)));
 }

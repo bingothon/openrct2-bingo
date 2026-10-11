@@ -9,7 +9,7 @@ export { connectionDetailsAction } from "./all/connectionDetailsAction";
 export { clearAllTilesAction } from "./all/clearAllTilesAction";
 export { clearAllRidesAction } from "./all/clearAllRidesAction";
 export { resetDateAction } from "./all/resetDateAction";
-export { closeRegionAction } from "./all/closeRegionAction";
+export { closeRegionAction, reopenRegionAction, removeRegionGuestsAction } from "./all/closeRegionAction";
 export { setCashAction } from "./all/setCashAction";
 export { inventNextItemAction } from "./all/inventNextItemAction";
 export { resetResearchAction } from "./all/resetResearchAction";

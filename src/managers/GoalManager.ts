@@ -116,11 +116,29 @@ export class GoalManager {
     }
 
     /**
-     * A player left and their colour was closed (leavingPlayers.ts): their score goes off the
-     * board, and the others may now be out of reach
+     * A player left and their colour was closed (leavingPlayers.ts): the goals they claimed are
+     * open again (also on BingoSync), so their score is 0 and the colour can start over; the
+     * others may now be out of reach
      */
-    public onColourClosed(): void {
+    public onColourClosed(colour: string): void {
         if (!this.isServer || !this.board || this.gameOver) return;
+
+        this.board.forEach((goal) => {
+            if (!goal.completedBy || goal.completedBy.indexOf(colour) === -1) return;
+            const goalKey = `goal_${goal.slot}`;
+            goal.completedBy = goal.completedBy.filter((claimed) => claimed !== colour);
+            const stillCompleted = goal.completedBy.length > 0;
+            goal.status = stillCompleted ? "completed" : "incomplete";
+            goal.colors = stillCompleted ? goal.completedBy.join(" ") : "blank";
+            context.executeAction("setStorage", { args: { key: `${goalKey}_colors`, value: JSON.stringify(goal.completedBy) } });
+            if (!stillCompleted) this.setGoalCompletionStatus(goalKey, false, goal.name);
+
+            if (config.socket) {
+                config.socket.write(JSON.stringify({ action: "selectGoal", slot: goal.slot, color: colour, room: config.roomIdInput, remove: true }) + "\n");
+            }
+            console.log(`[GoalManager] Goal ${goal.slot} "${goal.name}" released by ${colour}`);
+        });
+
         this.syncScoresFromBoard();
         this.checkClinch();
     }

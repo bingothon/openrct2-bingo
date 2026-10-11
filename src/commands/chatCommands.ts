@@ -80,7 +80,7 @@ export function registerChatCommands(): void {
       return;
     }
 
-    // Clear and close a colour's region right away, e.g. a griefer (admins): /closeregion <colour>
+    // Clear a colour's region right away and free it for a new player, e.g. a griefer (admins): /closeregion <colour>
     if (message.indexOf("/closeregion ") === 0 && network.mode === "server") {
       if (!isAdmin(e.player)) {
         network.sendMessage("❌ Only admins can close a region.", [e.player]);
@@ -92,7 +92,7 @@ export function registerChatCommands(): void {
         return;
       }
       if (!closeRegion(colour)) {
-        network.sendMessage(`❌ ${colour.toUpperCase()} is already closed.`, [e.player]);
+        network.sendMessage(`❌ ${colour.toUpperCase()}'s region is already being cleared.`, [e.player]);
       }
       return;
     }

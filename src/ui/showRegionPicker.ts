@@ -36,7 +36,7 @@ function isUnavailable(colour: string): boolean {
 }
 
 function getButtonText(colour: string): string {
-    if (isColourClosed(colour)) return `${colour.toUpperCase()} - closed (player left)`;
+    if (isColourClosed(colour)) return `${colour.toUpperCase()} - being cleared...`;
     const takenBy = getTakenBy(colour);
     if (takenBy) {
         return `${colour.toUpperCase()} - taken by ${takenBy.name}`;

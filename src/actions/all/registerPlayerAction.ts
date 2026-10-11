@@ -44,7 +44,7 @@ export function registerPlayerAction() {
     }
 
     if (isColourClosed(colour)) {
-      return fail(`${colour.toUpperCase()}'s player left - that region is closed for this game.`);
+      return fail(`${colour.toUpperCase()}'s region is being cleared - try again in a moment.`);
     }
 
     const gameManager = GameManager.getInstance();

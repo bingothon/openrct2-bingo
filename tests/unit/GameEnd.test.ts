@@ -175,3 +175,23 @@ test.serial("time's up with equal goals is a draw", (t) => {
     day();
     t.regex(parkStorage.get("gameResult", ""), /draw between RED and BLUE with 1 goals each/);
 });
+
+test.serial("a player who left: their lockout goals are open again, others can take them", (t) => {
+    const { board, regions, check, goalManager } = setup("lockout", [RED, BLUE]);
+    regions[1] = ["top-left"];
+    regions[2] = ["top-left"];
+    regions[3] = ["top-right"];
+    check();
+    t.deepEqual(board[0].completedBy, ["red"]);
+
+    goalManager.onColourClosed("red");
+    t.deepEqual(board[0].completedBy, []);
+    t.is(board[0].status, "incomplete");
+    t.is(parkStorage.get("goal_1_colors", ""), "[]");
+    t.deepEqual(board[2].completedBy, ["blue"], "other players' goals stay");
+
+    // Blue meets goal 1 now: it's blue's
+    regions[1] = ["top-right"];
+    check();
+    t.deepEqual(board[0].completedBy, ["blue"]);
+});

@@ -72,6 +72,15 @@ export function resetBudgets(): void {
 }
 
 /**
+ * Server: a new player takes over a colour whose player left - they start with the full budget
+ */
+export function resetBudget(colour: string): void {
+    const spent = getSpent();
+    delete spent[colour];
+    context.getParkStorage().set(SPENT_KEY, spent);
+}
+
+/**
  * Server: add the cost of every executed player action to that player's spending
  */
 export function subscribeToBudgetTracking(): void {

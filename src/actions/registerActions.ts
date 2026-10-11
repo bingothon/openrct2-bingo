@@ -23,6 +23,8 @@ import {
   registerPlayerAction,
   resetDateAction,
   closeRegionAction,
+  reopenRegionAction,
+  removeRegionGuestsAction,
 } from "./index";
 
 type ActionHandler = (event: GameActionEventArgs<any>) => GameActionResult;
@@ -136,6 +138,10 @@ export function registerActions() {
 
   const closeRegion = closeRegionAction();
   registerAction(closeRegion.name, closeRegion.query, closeRegion.execute);
+  const reopenRegion = reopenRegionAction();
+  registerAction(reopenRegion.name, reopenRegion.query, reopenRegion.execute);
+  const removeRegionGuests = removeRegionGuestsAction();
+  registerAction(removeRegionGuests.name, removeRegionGuests.query, removeRegionGuests.execute);
 
   const resetDate = resetDateAction();
   registerAction(resetDate.name, resetDate.query, resetDate.execute);

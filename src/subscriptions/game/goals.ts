@@ -57,6 +57,8 @@ export function subscribeToClientBoardSync(seed: number, initialBoard: BingoBoar
                 try {
                     const stored = JSON.parse(parkStorage.get(`${goalKey}_colors`, "[]"));
                     if (Array.isArray(stored) && stored.length > 0) colours = stored.join(" ");
+                    // Released again (a player who left, see leavingPlayers.ts)
+                    else if (!completed) colours = "blank";
                 } catch (error) {
                     // Keep the current colours on malformed data
                 }
