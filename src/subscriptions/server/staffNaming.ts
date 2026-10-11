@@ -49,30 +49,10 @@ function moveStaffToRegion(staffId: number, player: RegisteredPlayer): void {
     });
 }
 
-/** StaffSetPatrolAreaMode::set */
-const PATROL_SET = 0;
-
-/**
- * Gives a staff member their player's whole region as patrol area. Without one, OpenRCT2 calls
- * the mechanic closest in a straight line to a broken ride, also one in another region who can't
- * reach it (the regions' paths aren't connected); mechanics only answer rides in their patrol area.
- */
-function setRegionPatrol(staffId: number, player: RegisteredPlayer): void {
-    const rect = GameManager.getInstance().getGroundDivisionManager().getRegion(player.region);
-    context.executeAction(
-        "staffsetpatrolarea",
-        { id: staffId, x1: rect.x1 * 32, y1: rect.y1 * 32, x2: rect.x2 * 32, y2: rect.y2 * 32, mode: PATROL_SET },
-        (result) => {
-            if (result.error) console.log(`[StaffNaming] Couldn't set the patrol area of staff ${staffId}: ${result.errorMessage}`);
-        },
-    );
-}
-
 /**
  * PvP/Lockout: rename hired staff to "<Colour> <name>" (e.g. "Red Handyman 1") so everyone can
  * see who hired them, and make sure they start in the hiring player's region. The prefix is also what makes them that player's staff: only they can
- * fire, re-order or move them (buildingRestrictions.ts). They patrol the player's region, and
- * always keep a patrol area there (see setRegionPatrol).
+ * fire, re-order or move them (buildingRestrictions.ts).
  */
 export function subscribeToStaffNaming(): void {
     subscriptions.upsert("staffNaming", () =>
@@ -95,27 +75,6 @@ export function subscribeToStaffNaming(): void {
                 }
             });
             moveStaffToRegion(staffId, player);
-            setRegionPatrol(staffId, player);
-        })
-    );
-
-    // A player cleared their staff member's patrol area: back to the whole region
-    subscriptions.upsert("staffPatrol", () =>
-        context.subscribe("action.execute", (e) => {
-            if (e.action !== "staffsetpatrolarea" || e.result.error || e.player === 0 || e.player === -1) return;
-
-            const player = GameManager.getInstance().getPlayer(e.player.toString());
-            const staffId = (e.args as { id?: number }).id;
-            if (!player || typeof staffId !== "number") return;
-
-            const staff = map.getEntity(staffId) as Staff | null;
-            if (!staff || getStaffOwner(staff.name) !== player.colour || staff.patrolArea.tiles.length > 0) return;
-
-            setRegionPatrol(staffId, player);
-            network.sendMessage(
-                `👷 ${staff.name} patrols your whole region again: staff need a patrol area, or mechanics get called to rides they can't reach.`,
-                [e.player],
-            );
         })
     );
 }
