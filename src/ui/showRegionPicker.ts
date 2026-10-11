@@ -3,6 +3,7 @@ import type { RegisteredPlayer } from "../managers/PlayerManager";
 import { PLAYER_COLOURS } from "../bingo/playerColours";
 import { colourTokenForName } from "../bingo/main";
 import { getPlayerIdentity } from "../utils/playerIdentity";
+import { isColourClosed } from "../bingo/closedRegions";
 
 const WINDOW_CLASS = "region-picker";
 const BUTTON_HEIGHT = 30;
@@ -30,7 +31,12 @@ function getTakenBy(colour: string): RegisteredPlayer | null {
     return null;
 }
 
+function isUnavailable(colour: string): boolean {
+    return getTakenBy(colour) !== null || isColourClosed(colour);
+}
+
 function getButtonText(colour: string): string {
+    if (isColourClosed(colour)) return `${colour.toUpperCase()} - closed (player left)`;
     const takenBy = getTakenBy(colour);
     if (takenBy) {
         return `${colour.toUpperCase()} - taken by ${takenBy.name}`;
@@ -44,7 +50,7 @@ function refresh(window: Window): void {
         const button = window.findWidget<ButtonWidget>(`pick-${colour}`);
         if (!button) return;
         button.text = getButtonText(colour);
-        button.isDisabled = getTakenBy(colour) !== null;
+        button.isDisabled = isUnavailable(colour);
     });
 }
 
@@ -73,7 +79,7 @@ export function showRegionPicker(onClose?: () => void): void {
             width: 280,
             height: BUTTON_HEIGHT,
             text: getButtonText(colour),
-            isDisabled: getTakenBy(colour) !== null,
+            isDisabled: isUnavailable(colour),
             onClick: () => {
                 context.executeAction("registerPlayer", { args: { colour } }, (result) => {
                     if (result.error) {

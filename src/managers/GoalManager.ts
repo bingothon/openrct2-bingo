@@ -116,6 +116,16 @@ export class GoalManager {
     }
 
     /**
+     * A player left and their colour was closed (leavingPlayers.ts): their score goes off the
+     * board, and the others may now be out of reach
+     */
+    public onColourClosed(): void {
+        if (!this.isServer || !this.board || this.gameOver) return;
+        this.syncScoresFromBoard();
+        this.checkClinch();
+    }
+
+    /**
      * Lockout: end the game as soon as the leader can no longer be caught
      */
     private checkClinch(): void {

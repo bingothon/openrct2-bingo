@@ -1,6 +1,7 @@
 import { GameManager } from "../../managers/GameManager";
 import { COLOR_TO_REGION } from "../../bingo/playerColours";
 import { getPlayerIdentity } from "../../utils/playerIdentity";
+import { isColourClosed } from "../../bingo/closedRegions";
 
 type RegisterPlayerArgs = {
   colour: string;
@@ -40,6 +41,10 @@ export function registerPlayerAction() {
     const colour = event.args.colour;
     if (!COLOR_TO_REGION[colour]) {
       return fail(`Invalid color! Available colors: ${Object.keys(COLOR_TO_REGION).join(", ")}`);
+    }
+
+    if (isColourClosed(colour)) {
+      return fail(`${colour.toUpperCase()}'s player left - that region is closed for this game.`);
     }
 
     const gameManager = GameManager.getInstance();

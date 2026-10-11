@@ -109,6 +109,8 @@ export interface Config {
   renewRidesIntervalDays: number;
   /** Rain/snow stops after this many in-game days */
   maxRainDays: number;
+  /** PvP/Lockout: real-time minutes a player who left keeps their region before it's cleared and closed */
+  leaveGraceMinutes: number;
   /** Managed servers start a new game this many real-time minutes after a PvP/Lockout game ended */
   newGameDelayMinutes: number;
   playerColorNames: PlayerColorNames;

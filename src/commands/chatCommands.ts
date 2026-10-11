@@ -7,6 +7,7 @@ import { COLOR_TO_REGION } from "../bingo/playerColours";
 import { formatMoney, getBudget } from "../bingo/budgets";
 import { canRequestServerRestart, requestServerRestart } from "../bingo/bingosync-handler";
 import { celebrate } from "../bingo/notifications/celebration";
+import { closeRegion } from "../subscriptions/server/leavingPlayers";
 import { PLAYER_COLOURS } from "../bingo/playerColours";
 
 
@@ -76,6 +77,23 @@ export function registerChatCommands(): void {
           network.sendMessage("❌ Lost the connection to the server manager - restart the server by hand.");
         }
       }, RESTART_DELAY_MS);
+      return;
+    }
+
+    // Clear and close a colour's region right away, e.g. a griefer (admins): /closeregion <colour>
+    if (message.indexOf("/closeregion ") === 0 && network.mode === "server") {
+      if (!isAdmin(e.player)) {
+        network.sendMessage("❌ Only admins can close a region.", [e.player]);
+        return;
+      }
+      const colour = message.substring("/closeregion ".length).trim();
+      if (PLAYER_COLOURS.indexOf(colour) === -1) {
+        network.sendMessage(`❌ Usage: /closeregion <${PLAYER_COLOURS.join("|")}>`, [e.player]);
+        return;
+      }
+      if (!closeRegion(colour)) {
+        network.sendMessage(`❌ ${colour.toUpperCase()} is already closed.`, [e.player]);
+      }
       return;
     }
 
@@ -151,7 +169,7 @@ export function registerChatCommands(): void {
         helpMessage += " /budget";
       }
       if (isAdmin(e.player)) {
-        helpMessage += " /restart /celebrate [colour] (admins)";
+        helpMessage += " /restart /celebrate [colour] /closeregion <colour> (admins)";
       }
       
       if (config.debug) {

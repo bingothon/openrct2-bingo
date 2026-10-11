@@ -1,3 +1,4 @@
+import { isColourClosed } from "../bingo/closedRegions";
 import { updateScore, getScoreboardSlotForColour } from "../bingo/notifications/scoreboard";
 import { GameManager } from "./GameManager";
 
@@ -65,7 +66,8 @@ export class ScoreManager {
 
         const allPlayers = GameManager.getInstance().getAllPlayers();
         ["red", "blue", "green", "yellow"].forEach((colour) => {
-            const score = claims[colour] || 0;
+            // A closed colour's player left: their goals stay locked, but their score is off the board
+            const score = isColourClosed(colour) ? 0 : claims[colour] || 0;
             for (const player of allPlayers) {
                 if (player.colour === colour && this.playerScores[player.id] !== score) {
                     this.playerScores[player.id] = score;

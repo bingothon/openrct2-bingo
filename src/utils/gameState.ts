@@ -13,6 +13,7 @@ export function startGame(n: number): void {
     context.executeAction('setStorage', { args: { key: 'gameResult', value: "" } });
     // The clock starts when the first player has picked a colour (gameTimer.ts)
     resetTimer();
+    context.executeAction('setStorage', { args: { key: 'closedColours', value: "[]" } });
     // Last: once started, players can't change the game settings anymore
     context.executeAction('setStorage', { args: { key: 'started', value: true } });
 }
@@ -23,6 +24,7 @@ export function resetGame(): void {
     context.executeAction('setStorage', { args: { key: 'gameOver', value: false } });
     context.executeAction('setStorage', { args: { key: 'gameResult', value: "" } });
     resetTimer();
+    context.executeAction('setStorage', { args: { key: 'closedColours', value: "[]" } });
 }
 
 

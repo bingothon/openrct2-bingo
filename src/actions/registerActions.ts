@@ -22,6 +22,7 @@ import {
   updateScoreAction,
   registerPlayerAction,
   resetDateAction,
+  closeRegionAction,
 } from "./index";
 
 type ActionHandler = (event: GameActionEventArgs<any>) => GameActionResult;
@@ -132,6 +133,9 @@ export function registerActions() {
 
   const flatLand = flatAllLandAction();
   registerAction(flatLand.name, flatLand.query, flatLand.execute);
+
+  const closeRegion = closeRegionAction();
+  registerAction(closeRegion.name, closeRegion.query, closeRegion.execute);
 
   const resetDate = resetDateAction();
   registerAction(resetDate.name, resetDate.query, resetDate.execute);

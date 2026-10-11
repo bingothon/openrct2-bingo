@@ -34,6 +34,7 @@ import { subscribeToBannerRegions } from './bingo/bannerRegions';
 import { subscribeToSetupLock } from './subscriptions/game/buildingRestrictions';
 import { subscribeToRegionPicker } from './ui/showRegionPicker';
 import { subscribeToGameResult } from './ui/showGameResult';
+import { subscribeToLeavingPlayers } from './subscriptions/server/leavingPlayers';
 import { subscriptions } from './subscriptions/manager';
 import { ScoreManager } from './managers/ScoreManager';
 
@@ -67,6 +68,8 @@ export function main(): void {
         subscribeToPlayerReconnects();
         // PvP/Lockout: hired staff get their player's colour in their name
         subscribeToStaffNaming();
+        // PvP/Lockout: clear and close the region of a player who left and didn't come back
+        subscribeToLeavingPlayers();
         // PvP/Lockout: each player can only spend their share of the park's cash
         subscribeToBudgetTracking();
         // Players wait while the game is being set up

@@ -27,6 +27,8 @@ const config: Config = {
   inventionIntervalDays: 3,
   renewRidesIntervalDays: 100,
   maxRainDays: 3,
+  // PvP/Lockout: a player who leaves keeps their region this long (real time) before it's cleared
+  leaveGraceMinutes: 5,
   // Managed servers start a new game this long (real time) after a PvP/Lockout game ended
   newGameDelayMinutes: 5,
   playerColors: {
