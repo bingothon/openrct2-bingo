@@ -1,5 +1,6 @@
 import { config } from "../../config";
 import { subscriptions } from "../manager";
+import { isTimerRunning } from "../../utils/gameTimer";
 
 /** OpenRCT2 advances research every 32 ticks */
 const RESEARCH_UPDATE_TICKS = 32;
@@ -13,7 +14,8 @@ function countInvented(): number {
  * three research stages (initial research, designing, completing design), each finishing when its
  * progress is full, so when one is due the progress is filled (inventNextItem) at every research
  * update until the item is invented - a few seconds. OpenRCT2 then announces it as usual.
- * Server only: research is part of the synchronised game state.
+ * Server only: research is part of the synchronised game state. In PvP/Lockout it starts with the
+ * game clock (gameTimer.ts).
  */
 export function subscribeToInventions() {
     let dayCounter = 0;
@@ -23,6 +25,8 @@ export function subscribeToInventions() {
 
     subscriptions.upsert("inventions", () =>
         context.subscribe("interval.day", () => {
+            // PvP/Lockout: no free inventions while the server waits for the first player
+            if (config.gameMode !== "coop" && !isTimerRunning()) return;
             dayCounter++;
             if (dayCounter >= config.inventionIntervalDays && park.research.uninventedItems.length > 0) {
                 dayCounter = 0;

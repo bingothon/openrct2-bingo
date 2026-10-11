@@ -1,7 +1,8 @@
 /*
  * PvP/Lockout game clock. It starts when the first player has picked a colour, not when the server
- * starts the game: the park may run empty for a long time before anyone joins. The start (in
- * months since the park opened) is kept in park storage, so a server restart keeps the clock.
+ * starts the game: the park may run empty for a long time before anyone joins. Then the park's date
+ * is put back to the start (resetDate), so the game starts in year 1. The start (in months since
+ * the park opened) is kept in park storage, so a server restart keeps the clock.
  */
 
 const TIMER_START_KEY = "timerStartMonth";
@@ -27,10 +28,11 @@ export function getYearsLeft(duration: number): number {
     return Math.max(0, Math.ceil(duration - getYearsPlayed()));
 }
 
-/** Server: start the clock now (no-op when it's already running) */
+/** Server: put the date back to year 1 and start the clock (no-op when it's already running) */
 export function startTimer(): void {
     if (isTimerRunning()) return;
-    context.executeAction("setStorage", { args: { key: TIMER_START_KEY, value: date.monthsElapsed } });
+    context.executeAction("resetDate", {});
+    context.executeAction("setStorage", { args: { key: TIMER_START_KEY, value: 0 } });
 }
 
 /** A new game: the clock waits for the first player again */

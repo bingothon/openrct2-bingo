@@ -21,6 +21,7 @@ import {
   clearScoreboardAction,
   updateScoreAction,
   registerPlayerAction,
+  resetDateAction,
 } from "./index";
 
 type ActionHandler = (event: GameActionEventArgs<any>) => GameActionResult;
@@ -131,6 +132,9 @@ export function registerActions() {
 
   const flatLand = flatAllLandAction();
   registerAction(flatLand.name, flatLand.query, flatLand.execute);
+
+  const resetDate = resetDateAction();
+  registerAction(resetDate.name, resetDate.query, resetDate.execute);
 
   const clearAllRides = clearAllRidesAction();
   registerAction(clearAllRides.name, clearAllRides.query, clearAllRides.execute);

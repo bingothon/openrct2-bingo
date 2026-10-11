@@ -20,6 +20,7 @@ g.context = {
     getParkStorage: () => parkStorage,
     executeAction: (name: string, args: any, callback?: (result: GameActionResult) => void) => {
         if (name === "setStorage") parkStorage.set(args.args.key, args.args.value);
+        if (name === "resetDate") g.date.monthsElapsed = 0;
         if (callback) callback({ error: 0 } as GameActionResult);
     },
     subscribe: () => ({ dispose: () => {} }),
@@ -138,11 +139,12 @@ test.serial("the clock starts with the first player, the timer ends the game aft
     day();
     t.is(parkStorage.get("timerStartMonth", -1), -1);
 
-    // First player: the clock starts now
+    // First player: the clock starts now, and the date goes back to year 1
     GameManager.getInstance().registerPlayer("1", "P1", "red", "top-left");
     GameManager.getInstance().registerPlayer("2", "P2", "blue", "top-right");
     day();
-    t.is(parkStorage.get("timerStartMonth", -1), 20);
+    t.is(g.date.monthsElapsed, 0, "the waiting time doesn't count");
+    t.is(parkStorage.get("timerStartMonth", -1), 0);
     t.true(messages.some((message) => /clock is running: 4 years/.test(message)));
 
     regions[1] = ["top-left"];
@@ -151,12 +153,12 @@ test.serial("the clock starts with the first player, the timer ends the game aft
     check();
 
     // 3 years 7 months in: still running, a year was announced
-    g.date.monthsElapsed = 20 + 8 * 3 + 7;
+    g.date.monthsElapsed = 8 * 3 + 7;
     day();
     t.false(goalManager.gameOver);
 
     // 4 years after the start: time's up, the most goals wins
-    g.date.monthsElapsed = 20 + 8 * 4;
+    g.date.monthsElapsed = 8 * 4;
     day();
     t.true(goalManager.gameOver);
     t.regex(parkStorage.get("gameResult", ""), /Time's up! RED wins with 2 goals/);
