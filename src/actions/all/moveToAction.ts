@@ -12,8 +12,10 @@ export function moveToAction() {
 
       const x = event.args.x;
       const y = event.args.y;
-      ui.mainViewport.moveTo({ x: x, y: y });
-      console.log(`Moved view to: ${x}, ${y}`);
+      // Moves every player's view; a headless server has no view
+      if (typeof ui !== "undefined") {
+        ui.mainViewport.moveTo({ x: x, y: y });
+      }
       return { error: 0 };
     }
   };

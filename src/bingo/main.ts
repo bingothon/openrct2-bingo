@@ -170,14 +170,8 @@ export function triggerBingo(lineKey: string, callback?: Function) {
         completedBingos[lineKey] = true; // Mark the bingo as completed
         console.log(`Bingo! ${lineKey} completed!`);
         
-        // Only show ground notifications for COOP mode
+        // COOP: reward and celebration (PvP/Lockout celebrate the winner when the game ends)
         if (config.gameMode === "coop") {
-            const pos = 64 * 32;
-            context.executeAction('moveTo', { args: { x: pos, y: pos } }, (result) => {
-                if (result.error) {
-                    console.log(`Failed to move camera to 0,0:`, result.errorMessage);
-                }
-            });
             context.executeAction('notifyBingo', { args: { lineKey } }, (result) => {
                 if (result.error) {
                     console.log(`Failed to trigger bingo for ${lineKey}:`, result.errorMessage);

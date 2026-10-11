@@ -133,7 +133,7 @@ const NUMBER_PATTERNS = {
     ],
 };
 
-const COLOUR_VALUES: { [colour: string]: number } = {
+export const COLOUR_VALUES: { [colour: string]: number } = {
     red: config.playerColors.player1,
     blue: config.playerColors.player2,
     green: config.playerColors.player3,
@@ -321,7 +321,7 @@ function readBillboardTile(x: number, y: number, objectId: number): { [z: number
  * Runs the given actions and calls onDone once every callback has fired (callbacks also fire
  * for actions that fail validation). Returns the number of failures through onDone.
  */
-function executeAll(
+export function executeAll(
     actions: { name: string; args: object }[],
     onDone: (failures: number, firstError: string | undefined) => void,
 ): void {
@@ -608,6 +608,14 @@ export function updateScore(playerNumber: number, newScore: number) {
     console.log(
         `[Scoreboard] ${slot.colour} score set to ${newScore}: ${repaints.length} blocks to repaint, prepared in ${preparedAt - startedAt} ms`,
     );
+}
+
+/**
+ * Tiles of the billboard's front face: columns x1 .. x1 + width - 1 on tile row frontRow. The
+ * front faces the player regions (lower y).
+ */
+export function getBillboardTiles(): { x1: number; width: number; frontRow: number } {
+    return { x1: getBaseTileX(), width: BILLBOARD_SIZE, frontRow: BILLBOARD_OFFSET_Y };
 }
 
 const billboardField = () => {

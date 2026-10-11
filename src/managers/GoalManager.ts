@@ -19,6 +19,7 @@ import { sendGameMessage } from "../subscriptions/server/helpers";
 import { syncRegionSpawns } from "../bingo/regionSpawns";
 import { linkBingoSyncRoom } from "../bingo/bingosync-handler";
 import { scheduleNewGame } from "../subscriptions/server/newGame";
+import { celebrate } from "../bingo/notifications/celebration";
 
 export class GoalManager {
     private ground: GroundDivisionManager;
@@ -120,7 +121,7 @@ export class GoalManager {
         const winner = getClinchWinner(this.board, this.getPlayerColours());
         if (winner) {
             const claims = countClaims(this.board)[winner];
-            this.endGame(`${winner.toUpperCase()} wins with ${claims} goals - nobody can catch up anymore!`);
+            this.endGame(`${winner.toUpperCase()} wins with ${claims} goals - nobody can catch up anymore!`, winner);
         }
     }
 
@@ -136,19 +137,20 @@ export class GoalManager {
 
         const leaders = getLeaders(this.board, this.getPlayerColours());
         if (leaders.colours.length === 1) {
-            this.endGame(`Time's up! ${leaders.colours[0].toUpperCase()} wins with ${leaders.claims} goals!`);
+            this.endGame(`Time's up! ${leaders.colours[0].toUpperCase()} wins with ${leaders.claims} goals!`, leaders.colours[0]);
         } else if (leaders.colours.length > 1) {
             const tied = leaders.colours.map((colour) => colour.toUpperCase()).join(" and ");
-            this.endGame(`Time's up! It's a draw between ${tied} with ${leaders.claims} goals each!`);
+            this.endGame(`Time's up! It's a draw between ${tied} with ${leaders.claims} goals each!`, null);
         } else {
             this.endGame("Time's up! No players registered, no winner.");
         }
     }
 
     /**
-     * Stop scoring and announce the result. Stored so a server restart doesn't resume the game.
+     * Stop scoring, announce the result and celebrate it (in the winner's colour, a rainbow for a
+     * draw, nothing without players). Stored so a server restart doesn't resume the game.
      */
-    private endGame(message: string): void {
+    private endGame(message: string, winnerColour?: string | null): void {
         if (this.gameOver) return;
         this.gameOver = true;
 
@@ -162,6 +164,9 @@ export class GoalManager {
 
         for (let i = 0; i < 3; i++) {
             sendGameMessage(message);
+        }
+        if (winnerColour !== undefined) {
+            celebrate(winnerColour);
         }
         scheduleNewGame();
     }
@@ -315,7 +320,7 @@ export class GoalManager {
         if (player && config.gameMode === "lockout") {
             this.checkClinch();
         } else if (player && config.gameMode === "pvp" && hasBingo(this.board, player.colour)) {
-            this.endGame(`BINGO! ${player.colour.toUpperCase()} wins with a full line!`);
+            this.endGame(`BINGO! ${player.colour.toUpperCase()} wins with a full line!`, player.colour);
         }
     }
 

@@ -6,6 +6,8 @@ import { updateScore } from "../bingo/notifications/scoreboard";
 import { COLOR_TO_REGION } from "../bingo/playerColours";
 import { formatMoney, getBudget } from "../bingo/budgets";
 import { canRequestServerRestart, requestServerRestart } from "../bingo/bingosync-handler";
+import { celebrate } from "../bingo/notifications/celebration";
+import { PLAYER_COLOURS } from "../bingo/playerColours";
 
 
 const RESTART_DELAY_MS = 10_000;
@@ -77,6 +79,23 @@ export function registerChatCommands(): void {
       return;
     }
 
+    // Test the bingo celebration in front of the billboard (admins): /celebrate [colour]
+    if ((message === "/celebrate" || message.indexOf("/celebrate ") === 0) && network.mode === "server") {
+      if (!isAdmin(e.player)) {
+        network.sendMessage("❌ Only admins can test the celebration.", [e.player]);
+        return;
+      }
+      const colour = message.substring("/celebrate".length).trim();
+      if (colour && PLAYER_COLOURS.indexOf(colour) === -1) {
+        network.sendMessage(`❌ Usage: /celebrate [${PLAYER_COLOURS.join("|")}] (no colour: rainbow)`, [e.player]);
+        return;
+      }
+      if (!celebrate(colour || null)) {
+        network.sendMessage("❌ A celebration is already running.", [e.player]);
+      }
+      return;
+    }
+
     // Test command - only available in debug mode
     if (message.indexOf("/test ") === 0 && config.debug) {
       const testTarget = message.substring(6).trim(); // Remove "/test " prefix
@@ -132,7 +151,7 @@ export function registerChatCommands(): void {
         helpMessage += " /budget";
       }
       if (isAdmin(e.player)) {
-        helpMessage += " /restart (admins)";
+        helpMessage += " /restart /celebrate [colour] (admins)";
       }
       
       if (config.debug) {
